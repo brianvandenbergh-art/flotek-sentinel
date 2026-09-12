@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flotek Sentinel | Fleet Command</title>
+    <title>Flotek Sentinel | Fleet Command v5.0</title>
     
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/manifest.json?v=5.0">
     <meta name="theme-color" content="#070a12">
     <meta name="apple-mobile-web-app-capable" content="yes">
     
@@ -34,7 +34,7 @@
                 <div>
                     <div class="flex items-center gap-1.5">
                         <h1 class="font-bold text-sm sm:text-base text-white tracking-tight">Flotek Sentinel</h1>
-                        <span class="bg-indigo-500/10 text-indigo-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-indigo-500/20">FLEET</span>
+                        <span class="bg-indigo-500/10 text-indigo-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-indigo-500/20">FLEET v5.0</span>
                     </div>
                     <p class="text-[11px] text-slate-400 hidden sm:block">Persistent Multi-Domain & Defense Ops</p>
                 </div>
@@ -183,9 +183,14 @@
                                 </a>
                             </div>
                         </div>
-                        <button onclick="closeDrawer()" class="text-slate-400 hover:text-white p-2 rounded-xl bg-slate-800/60 shrink-0">
-                            <i class="fa-solid fa-xmark text-lg"></i>
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button id="btn-drawer-delete-domain" onclick="deleteCurrentDrawerDomain()" class="hidden px-2.5 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center gap-1">
+                                <i class="fa-solid fa-trash text-[10px]"></i> Delete Domain
+                            </button>
+                            <button onclick="closeDrawer()" class="text-slate-400 hover:text-white p-2 rounded-xl bg-slate-800/60 shrink-0">
+                                <i class="fa-solid fa-xmark text-lg"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Navigation Tabs -->
@@ -314,7 +319,7 @@
                         </div>
                     </div>
 
-                    <!-- TAB 5: USERS & PASSWORD RESET & DELETE USER -->
+                    <!-- TAB 5: USERS WITH PROMINENT DELETE & RESET BUTTONS -->
                     <div id="tab-users" class="tab-content hidden space-y-4 text-xs">
                         <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
                             <h4 class="font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
@@ -360,7 +365,7 @@
 
                 <!-- Footer -->
                 <div class="border-t border-slate-800 pt-3 mt-6 text-[11px] text-slate-500 flex justify-between items-center">
-                    <span>Flotek Sentinel v4.5 PWA</span>
+                    <span>Flotek Sentinel v5.0 PWA</span>
                     <span>Persistent Cloud Engine: Active</span>
                 </div>
 
@@ -368,7 +373,7 @@
         </div>
     </div>
 
-    <!-- Script Logic with Real Delete User & Delete Domain Handlers -->
+    <!-- Script Logic with Prominent Delete Buttons & Cache Busting -->
     <script>
         let globalData = { sites: [], domains: [], events: [], audit_logs: [] };
         let activeSiteUrl = '';
@@ -392,7 +397,7 @@
 
         async function refreshData() {
             try {
-                const res = await fetch('/api/dashboard-data');
+                const res = await fetch('/api/dashboard-data?cb=' + Date.now());
                 const data = await res.json();
                 globalData = data;
 
@@ -518,8 +523,8 @@
                         </div>
 
                         <div class="flex items-center justify-end gap-2">
-                            <button onclick="event.stopPropagation(); deleteStandaloneDomain('${d.domain}')" class="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-semibold" title="Delete Domain">
-                                <i class="fa-solid fa-trash"></i>
+                            <button onclick="event.stopPropagation(); deleteStandaloneDomain('${d.domain}')" class="px-2.5 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center gap-1">
+                                <i class="fa-solid fa-trash text-[10px]"></i> Delete
                             </button>
                             <span class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 rounded-xl text-xs font-semibold">
                                 View DNS Zone
@@ -564,6 +569,13 @@
             document.getElementById('drawer-title').innerText = site.name;
             document.getElementById('drawer-url').href = site.url || `https://${site.domain}`;
             document.getElementById('drawer-url').querySelector('span').innerText = site.url || site.domain;
+
+            // Show or hide "Delete Domain" button in drawer header
+            const drawerDelBtn = document.getElementById('btn-drawer-delete-domain');
+            if (drawerDelBtn) {
+                if (!isWebsite) drawerDelBtn.classList.remove('hidden');
+                else drawerDelBtn.classList.add('hidden');
+            }
 
             document.querySelectorAll('.wp-only-tab').forEach(el => {
                 if (isWebsite) el.classList.remove('hidden');
@@ -621,7 +633,7 @@
                 </div>
             `).join('');
 
-            // Users Tab with Real Delete User Button
+            // Users Tab (NOW WITH PROMINENT RED DELETE USER BUTTON)
             const users = site.users || [];
             document.getElementById('drawer-tab-user-count').innerText = users.length;
             const usersContainer = document.getElementById('drawer-users-list');
@@ -629,18 +641,18 @@
                 usersContainer.innerHTML = `<div class="text-slate-500 p-2">No user metadata available.</div>`;
             } else {
                 usersContainer.innerHTML = users.map(u => `
-                    <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">
+                    <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-3">
                         <div>
-                            <strong class="text-white">${u.user_login}</strong>
+                            <strong class="text-white text-sm">${u.user_login}</strong>
                             <span class="text-slate-400 ml-1 sm:ml-2">(${u.user_email})</span>
                             <div class="text-[10px] text-slate-500 mt-0.5">Role: <span class="text-indigo-400 font-bold uppercase">${(u.roles || ['user']).join(', ')}</span></div>
                         </div>
-                        <div class="flex items-center gap-1.5 self-start sm:self-auto">
-                            <button onclick="resetUserPassword('${u.id}', '${u.user_login}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/20 rounded font-semibold text-[11px] flex items-center gap-1">
-                                <i class="fa-solid fa-key"></i> Reset Pass
+                        <div class="flex items-center gap-2 self-start sm:self-auto">
+                            <button onclick="resetUserPassword('${u.id}', '${u.user_login}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/20 rounded-xl font-semibold text-[11px] flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-key"></i> Reset Password
                             </button>
-                            <button onclick="deleteUser('${u.id}', '${u.user_login}')" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded font-semibold text-[11px]" title="Delete User">
-                                <i class="fa-solid fa-trash"></i>
+                            <button onclick="deleteUser('${u.id}', '${u.user_login}')" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold text-[11px] flex items-center gap-1.5 shadow-md shadow-rose-600/20 transition">
+                                <i class="fa-solid fa-trash"></i> Delete User
                             </button>
                         </div>
                     </div>
@@ -735,7 +747,7 @@
         }
 
         async function deleteStandaloneDomain(domain) {
-            if (!confirm(`Are you sure you want to remove '${domain}' from your dashboard?`)) return;
+            if (!confirm(`Are you sure you want to delete '${domain}' from your fleet?`)) return;
 
             try {
                 await fetch('/api/delete-domain', {
@@ -752,6 +764,11 @@
             } catch (e) {
                 alert(`Error: ${e.message}`);
             }
+        }
+
+        function deleteCurrentDrawerDomain() {
+            deleteStandaloneDomain(activeSiteUrl);
+            closeDrawer();
         }
 
         async function provisionNewUser() {
@@ -801,8 +818,9 @@
             }
         }
 
+        // REAL REMOTE USER DELETION
         async function deleteUser(userId, username) {
-            if (!confirm(`Are you sure you want to DELETE user '${username}' from ${activeSiteUrl}?\nThis action cannot be undone.`)) return;
+            if (!confirm(`⚠️ Are you sure you want to PERMANENTLY DELETE user '${username}' from ${activeSiteUrl}?\n\nThis will remove their WordPress account and reassign their content.`)) return;
 
             try {
                 const res = await fetch('/api/delete-user', {
@@ -812,10 +830,10 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert(`✅ User '${username}' deleted successfully from WordPress!`);
+                    alert(`✅ User '${username}' has been deleted from WordPress!`);
                     refreshData();
                 } else {
-                    alert(`❌ Failed: ${result.error || 'Could not delete user'}`);
+                    alert(`❌ Deletion failed: ${result.error || 'Could not delete user'}`);
                 }
             } catch (e) {
                 alert(`Error: ${e.message}`);
