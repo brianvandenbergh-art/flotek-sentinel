@@ -5,12 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Flotek Sentinel | Fleet Command</title>
     
-    <!-- PWA Meta Tags -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#070a12">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Sentinel">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -27,7 +24,7 @@
 </head>
 <body class="bg-[#070a12] text-slate-100 min-h-screen custom-scrollbar pb-10">
 
-    <!-- Top Header (Mobile Optimized) -->
+    <!-- Top Header -->
     <header class="border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 px-4 py-3 sm:px-6 sm:py-3.5">
         <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
             <div class="flex items-center gap-2.5 sm:gap-3">
@@ -39,17 +36,19 @@
                         <h1 class="font-bold text-sm sm:text-base text-white tracking-tight">Flotek Sentinel</h1>
                         <span class="bg-indigo-500/10 text-indigo-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-indigo-500/20">FLEET</span>
                     </div>
-                    <p class="text-[11px] text-slate-400 hidden sm:block">Continuous Defense & Remote Operations</p>
+                    <p class="text-[11px] text-slate-400 hidden sm:block">Persistent Multi-Domain & Defense Ops</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-2">
-                <!-- PWA Install Button (Shown on Mobile) -->
-                <button id="pwa-install-btn" onclick="installPWA()" class="hidden bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1">
-                    <i class="fa-solid fa-mobile-screen"></i> Install App
-                </button>
+                <div class="hidden md:flex items-center gap-2 bg-slate-800/60 border border-slate-700/60 px-3 py-1.5 rounded-xl text-xs">
+                    <span class="text-slate-400">Route:</span>
+                    <span class="text-indigo-300 font-mono">monitor@flotek.io</span>
+                    <i class="fa-solid fa-arrow-right text-[10px] text-slate-500"></i>
+                    <span class="text-slate-200 font-semibold">brian.vandenbergh@flotek.io</span>
+                </div>
                 <button onclick="refreshData()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20">
-                    <i class="fa-solid fa-rotate"></i> <span class="hidden sm:inline">Sync Fleet</span>
+                    <i class="fa-solid fa-rotate"></i> <span>Sync</span>
                 </button>
             </div>
         </div>
@@ -57,7 +56,7 @@
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-5 sm:space-y-6">
 
-        <!-- Top Fleet Metrics (Responsive Grid) -->
+        <!-- Top Fleet Metrics -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div class="bg-slate-900/70 border border-slate-800 p-3.5 sm:p-4 rounded-2xl">
                 <div class="flex items-center justify-between">
@@ -65,7 +64,7 @@
                     <i class="fa-solid fa-gauge-high text-emerald-400 text-xs sm:text-sm"></i>
                 </div>
                 <div class="text-xl sm:text-3xl font-extrabold mt-1.5 text-emerald-400" id="stat-health">100/100</div>
-                <div class="text-[10px] text-slate-500 mt-0.5 hidden sm:block">Weighted Security Score</div>
+                <div class="text-[10px] text-slate-500 mt-0.5 hidden sm:block">Fleet Security Index</div>
             </div>
 
             <div class="bg-slate-900/70 border border-slate-800 p-3.5 sm:p-4 rounded-2xl">
@@ -75,7 +74,7 @@
                 </div>
                 <div class="text-xl sm:text-3xl font-extrabold mt-1.5 text-white">99.9%</div>
                 <div class="text-[10px] text-emerald-400 mt-0.5 flex items-center gap-1">
-                    <i class="fa-solid fa-circle-check text-[9px]"></i> 30s Pings
+                    <i class="fa-solid fa-circle-check text-[9px]"></i> 30s Polling
                 </div>
             </div>
 
@@ -85,7 +84,7 @@
                     <i class="fa-solid fa-cubes-stacked text-amber-400 text-xs sm:text-sm"></i>
                 </div>
                 <div class="text-xl sm:text-3xl font-extrabold mt-1.5 text-amber-400" id="stat-updates">0</div>
-                <div class="text-[10px] text-slate-500 mt-0.5 hidden sm:block">Plugins & Themes</div>
+                <div class="text-[10px] text-slate-500 mt-0.5 hidden sm:block">Pending Patches</div>
             </div>
 
             <div class="bg-slate-900/70 border border-slate-800 p-3.5 sm:p-4 rounded-2xl">
@@ -104,14 +103,14 @@
             <!-- Left 2 Cols: Endpoints & Domains -->
             <div class="lg:col-span-2 space-y-3.5 sm:space-y-4">
                 
-                <!-- Main Category Switcher -->
+                <!-- Category Switcher -->
                 <div class="flex justify-between items-center border-b border-slate-800 pb-2 text-xs">
                     <div class="flex gap-1.5 sm:gap-2">
                         <button onclick="switchFleetCategory('websites')" id="btn-fleet-websites" class="fleet-tab-btn px-3 sm:px-4 py-2 font-bold text-indigo-400 border-b-2 border-indigo-500 flex items-center gap-1.5">
-                            <i class="fa-solid fa-globe"></i> Websites (<span id="site-count-badge">0</span>)
+                            <i class="fa-solid fa-globe"></i> WordPress Websites (<span id="site-count-badge">0</span>)
                         </button>
                         <button onclick="switchFleetCategory('domains')" id="btn-fleet-domains" class="fleet-tab-btn px-3 sm:px-4 py-2 font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5">
-                            <i class="fa-solid fa-network-wired"></i> Domains (<span id="domain-count-badge">0</span>)
+                            <i class="fa-solid fa-network-wired"></i> Domains & DNS (<span id="domain-count-badge">0</span>)
                         </button>
                     </div>
 
@@ -128,7 +127,7 @@
             <div class="space-y-3">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <i class="fa-solid fa-bolt text-amber-400"></i> Live Security & Audit Stream
+                        <i class="fa-solid fa-bolt text-amber-400"></i> Live Defense & Audit Stream
                     </h2>
                     <span class="text-[10px] text-slate-500 uppercase">Live</span>
                 </div>
@@ -149,7 +148,7 @@
                 </h3>
                 <button onclick="closeAddDomainModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
-            <p class="text-xs text-slate-400">Add any domain without WordPress (e.g. <code>grandprixexpress.co.uk</code> or Fasthosts parked domains) to automatically scan all DNS records and monitor SSL.</p>
+            <p class="text-xs text-slate-400">Add a domain without WordPress (e.g. <code>grandprixexpress.co.uk</code>) to automatically scan all DNS records, track SSL, and monitor nameservers.</p>
             <div>
                 <label class="text-[11px] font-semibold text-slate-300 block mb-1">Domain Name</label>
                 <input id="input-domain-name" type="text" placeholder="e.g. grandprixexpress.co.uk" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500">
@@ -163,12 +162,11 @@
         </div>
     </div>
 
-    <!-- FULL SLIDE-OVER / MOBILE FULLSCREEN DRAWER -->
+    <!-- ADAPTIVE MANAGEMENT DRAWER (Adapts for Domains vs Websites) -->
     <div id="site-drawer" class="fixed inset-0 z-50 overflow-hidden hidden">
         <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="closeDrawer()"></div>
 
         <div class="fixed inset-y-0 right-0 max-w-full flex w-full sm:pl-6">
-            <!-- Fullscreen on mobile, 4xl on desktop -->
             <div class="w-full sm:max-w-4xl bg-[#0c101c] sm:border-l border-slate-800 p-4 sm:p-6 flex flex-col justify-between shadow-2xl custom-scrollbar overflow-y-auto">
                 
                 <div>
@@ -190,48 +188,30 @@
                         </button>
                     </div>
 
-                    <!-- Horizontal Scrollable Navigation Tabs (Mobile Chip-Style) -->
-                    <div class="flex gap-1.5 sm:gap-2 border-b border-slate-800 my-3 sm:my-4 text-xs overflow-x-auto no-scrollbar pb-2">
-                        <button onclick="switchTab('tab-overview')" id="btn-tab-overview" class="tab-btn px-3 py-2 rounded-xl font-bold bg-indigo-600 text-white whitespace-nowrap">
+                    <!-- Navigation Tabs (Dynamically filtered for Domains vs Websites) -->
+                    <div id="drawer-tabs-bar" class="flex gap-1.5 sm:gap-2 border-b border-slate-800 my-3 sm:my-4 text-xs overflow-x-auto no-scrollbar pb-2">
+                        <button onclick="switchTab('tab-overview')" id="btn-tab-overview" class="tab-btn px-3 py-2 rounded-xl font-bold bg-indigo-600 text-white whitespace-nowrap wp-only-tab">
                             <i class="fa-solid fa-chart-pie mr-1"></i> Overview
                         </button>
                         <button onclick="switchTab('tab-dns')" id="btn-tab-dns" class="tab-btn px-3 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 whitespace-nowrap border border-slate-800">
-                            <i class="fa-solid fa-network-wired mr-1"></i> SSL & DNS (<span id="drawer-dns-count">0</span>)
+                            <i class="fa-solid fa-network-wired mr-1"></i> DNS & SSL (<span id="drawer-dns-count">0</span>)
                         </button>
-                        <button onclick="switchTab('tab-wp')" id="btn-tab-wp" class="tab-btn px-3 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 whitespace-nowrap border border-slate-800">
+                        <button onclick="switchTab('tab-wp')" id="btn-tab-wp" class="tab-btn px-3 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 whitespace-nowrap border border-slate-800 wp-only-tab">
                             <i class="fa-solid fa-cube mr-1"></i> Updates (<span id="drawer-tab-plugin-count">0</span>)
                         </button>
-                        <button onclick="switchTab('tab-vault')" id="btn-tab-vault" class="tab-btn px-3 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 whitespace-nowrap border border-slate-800">
+                        <button onclick="switchTab('tab-vault')" id="btn-tab-vault" class="tab-btn px-3 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 whitespace-nowrap border border-slate-800 wp-only-tab">
                             <i class="fa-solid fa-box-archive mr-1"></i> FTP Backups
                         </button>
-                        <button onclick="switchTab('tab-users')" id="btn-tab-users" class="tab-btn px-3 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 whitespace-nowrap border border-slate-800">
+                        <button onclick="switchTab('tab-users')" id="btn-tab-users" class="tab-btn px-3 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 whitespace-nowrap border border-slate-800 wp-only-tab">
                             <i class="fa-solid fa-users-gear mr-1"></i> Users (<span id="drawer-tab-user-count">0</span>)
                         </button>
-                        <button onclick="switchTab('tab-sec')" id="btn-tab-sec" class="tab-btn px-3 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 whitespace-nowrap border border-slate-800">
+                        <button onclick="switchTab('tab-sec')" id="btn-tab-sec" class="tab-btn px-3 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 whitespace-nowrap border border-slate-800 wp-only-tab">
                             <i class="fa-solid fa-shield-halved mr-1"></i> WAF & Defense
                         </button>
                     </div>
 
-                    <!-- TAB 1: OVERVIEW, THEME & VITALS -->
+                    <!-- TAB 1: OVERVIEW (Websites Only) -->
                     <div id="tab-overview" class="tab-content space-y-3.5 sm:space-y-4">
-                        <!-- SSL Summary on Overview -->
-                        <div class="bg-gradient-to-r from-slate-900 to-slate-950 border border-slate-800 p-4 rounded-xl flex items-center justify-between gap-3">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg shrink-0">
-                                    <i class="fa-solid fa-lock"></i>
-                                </div>
-                                <div>
-                                    <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">SSL Certificate Expiration</span>
-                                    <div class="text-base font-extrabold text-white mono" id="drawer-overview-ssl-days">84 Days Remaining</div>
-                                    <div class="text-[11px] text-slate-400" id="drawer-overview-ssl-issuer">Issuer: Cloudflare / Let's Encrypt</div>
-                                </div>
-                            </div>
-                            <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-lg border border-emerald-500/20 shrink-0">
-                                HTTPS ACTIVE
-                            </span>
-                        </div>
-
-                        <!-- Active Theme Card -->
                         <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
                             <div class="flex justify-between items-start">
                                 <div>
@@ -261,7 +241,7 @@
                         </div>
                     </div>
 
-                    <!-- TAB 2: PROMINENT SSL CARD & FASTHOSTS DNS ZONE -->
+                    <!-- TAB 2: DNS ZONE & SSL (For Both Websites & Standalone Domains) -->
                     <div id="tab-dns" class="tab-content hidden space-y-4">
                         <!-- Dedicated Prominent SSL Card -->
                         <div class="bg-gradient-to-r from-slate-900 to-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -280,7 +260,7 @@
                             </span>
                         </div>
 
-                        <!-- DNS Zone Table with Mobile Scroll Wrapper -->
+                        <!-- DNS Zone Table -->
                         <div>
                             <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-2">
                                 <div>
@@ -383,44 +363,17 @@
                 <!-- Footer -->
                 <div class="border-t border-slate-800 pt-3 mt-6 text-[11px] text-slate-500 flex justify-between items-center">
                     <span>Flotek Sentinel v4.5 PWA</span>
-                    <span>Cloud Heartbeat: Active</span>
+                    <span>Persistent Cloud Engine: Active</span>
                 </div>
 
             </div>
         </div>
     </div>
 
-    <!-- PWA & Frontend Scripts -->
+    <!-- Script Logic -->
     <script>
         let globalData = { sites: [], domains: [], events: [], audit_logs: [] };
         let activeSiteUrl = '';
-        let deferredPrompt;
-
-        // Register Service Worker for PWA
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration skipped', err));
-            });
-        }
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            const btn = document.getElementById('pwa-install-btn');
-            if (btn) btn.classList.remove('hidden');
-        });
-
-        function installPWA() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        document.getElementById('pwa-install-btn').classList.add('hidden');
-                    }
-                    deferredPrompt = null;
-                });
-            }
-        }
 
         async function refreshData() {
             try {
@@ -584,23 +537,34 @@
 
         function openDrawer(identifier) {
             activeSiteUrl = identifier;
+            const isWebsite = identifier.startsWith('http');
             const site = globalData.sites.find(s => s.url === identifier) || (globalData.domains || []).find(d => d.domain === identifier);
             if (!site) return;
 
             document.getElementById('drawer-title').innerText = site.name;
             document.getElementById('drawer-url').href = site.url || `https://${site.domain}`;
             document.getElementById('drawer-url').querySelector('span').innerText = site.url || site.domain;
+
+            // ADAPT DRAWER TABS (Hide WP tabs if it's a domain only)
+            document.querySelectorAll('.wp-only-tab').forEach(el => {
+                if (isWebsite) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            });
+
+            if (!isWebsite) {
+                switchTab('tab-dns'); // Auto open DNS for standalone domains
+            } else {
+                switchTab('tab-overview'); // Auto open Overview for websites
+            }
+
             document.getElementById('drawer-theme-name').innerText = site.theme ? site.theme.name : 'Active Theme';
             document.getElementById('drawer-theme-ver').innerText = site.theme ? `v${site.theme.version}` : 'v1.0';
 
-            // SSL Certificate Data (Updated across both places)
+            // SSL Certificate Data
             const sslDaysText = `${site.ssl ? (site.ssl.days_left || 84) : 84} Days Remaining`;
             const sslIssuerText = `Issuer: ${site.ssl ? (site.ssl.issuer || "Cloudflare / Let's Encrypt") : "Cloudflare / Let's Encrypt"}`;
-            
             document.getElementById('drawer-ssl-days').innerText = sslDaysText;
             document.getElementById('drawer-ssl-issuer').innerText = sslIssuerText;
-            document.getElementById('drawer-overview-ssl-days').innerText = sslDaysText;
-            document.getElementById('drawer-overview-ssl-issuer').innerText = sslIssuerText;
 
             // DNS Table
             const dnsRecords = site.dns_records || [];
@@ -689,8 +653,10 @@
 
             document.getElementById(tabId).classList.remove('hidden');
             const btn = document.getElementById(`btn-${tabId}`);
-            btn.classList.add('bg-indigo-600', 'text-white', 'font-bold');
-            btn.classList.remove('bg-slate-900', 'text-slate-400', 'border', 'border-slate-800');
+            if (btn) {
+                btn.classList.add('bg-indigo-600', 'text-white', 'font-bold');
+                btn.classList.remove('bg-slate-900', 'text-slate-400', 'border', 'border-slate-800');
+            }
         }
 
         function closeDrawer() {
@@ -721,7 +687,7 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert(`✅ Domain '${domain}' added with ${result.domain.dns_records.length} live DNS records!`);
+                    alert(`✅ Domain '${domain}' added permanently with ${result.domain.dns_records.length} live DNS records!`);
                     closeAddDomainModal();
                     switchFleetCategory('domains');
                     refreshData();
@@ -740,7 +706,7 @@
             const username = document.getElementById('new-user-name').value.trim();
             const email = document.getElementById('new-user-email').value.trim();
             const role = document.getElementById('new-user-role').value;
-            const password = prompt(`Enter secure password for ${username}:`, "FlotekSecurePass!2026");
+            const password = prompt(`Enter password for ${username}:`, "FlotekSecurePass!2026");
 
             if (!username || !email || !password) return alert("All fields are required.");
 
@@ -863,7 +829,7 @@
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(site.dns_records || [], null, 2));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `dns-zone-${activeSiteUrl.replace(/^https?:\/\//, '')}.json`);
+            downloadAnchor.setAttribute("download", `dns-zone-${(activeSiteUrl || 'domain').replace(/^https?:\/\//, '')}.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
