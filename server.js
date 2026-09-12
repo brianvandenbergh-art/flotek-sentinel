@@ -6,23 +6,28 @@ const path = require('path');
 const app = express();
 app.use(express.json());
 app.use(cors());
-app.use(express.static('public'));
 
-const PORT = 3000;
+// Serve index.html directly from current folder
+app.use(express.static(__dirname));
+
+const PORT = process.env.PORT || 3000;
 const ALERT_EMAIL = 'brian.vandenbergh@flotek.io';
 const SHARED_SECRET = 'flotek-super-secret-key-2026';
 
 let monitoredSites = {};
 let securityEvents = [];
 
-// ===================================================
+// Explicit root route so your dashboard always loads
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // AUTO-DISCOVERY ENDPOINT
-// ===================================================
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', (req, res) => {
     const authHeader = req.headers['x-hub-secret'];
     if (authHeader !== SHARED_SECRET) return res.status(403).json({ error: 'Unauthorized' });
 
-    const { site_url, site_name, wp_version, php_version, plugins, admin_email } = req.body;
+    const { site_url, site_name, wp_version, php_version, plugins, security_engine } = req.body;
     
     monitoredSites[site_url] = {
         name: site_name || site_url,
@@ -30,44 +35,37 @@ app.post('/api/register', async (req, res) => {
         wp_version: wp_version || '6.7',
         php_version: php_version || '8.2',
         plugins: plugins || [],
-        admin_email: admin_email || '',
+        security_engine: security_engine || 'Native Guard',
         status: 'ONLINE',
-        latency: Math.floor(Math.random() * 30 + 60), // ms
+        latency: Math.floor(Math.random() * 30 + 55),
         last_seen: new Date().toISOString()
     };
 
-    console.log(`✨ [AUTO-DISCOVERY] Registered: ${site_url} with ${plugins ? plugins.length : 0} plugins.`);
-    res.json({ success: true, message: 'Connected' });
+    console.log(`✨ [AUTO-DISCOVERY] Registered: ${site_url}`);
+    res.json({ success: true });
 });
 
-// ===================================================
 // SECURITY EVENT ENDPOINT
-// ===================================================
-app.post('/api/event', async (req, res) => {
+app.post('/api/event', (req, res) => {
     const authHeader = req.headers['x-hub-secret'];
     if (authHeader !== SHARED_SECRET) return res.status(403).json({ error: 'Unauthorized' });
 
     const { site_url, site_name, event, details, timestamp } = req.body;
 
-    const eventRecord = {
+    securityEvents.unshift({
         id: Date.now(),
         site_url,
         site_name,
         event,
         details,
         timestamp: timestamp || new Date().toISOString()
-    };
+    });
 
-    securityEvents.unshift(eventRecord);
     if (securityEvents.length > 50) securityEvents.pop();
-
-    console.log(`🚨 [ALERT] ${event} on ${site_name}`);
     res.json({ success: true });
 });
 
-// ===================================================
 // DASHBOARD DATA ENDPOINT
-// ===================================================
 app.get('/api/dashboard-data', (req, res) => {
     res.json({
         sites: Object.values(monitoredSites),
@@ -76,25 +74,6 @@ app.get('/api/dashboard-data', (req, res) => {
     });
 });
 
-// Real Latency & Uptime Pinger (every 30s)
-setInterval(async () => {
-    for (const url in monitoredSites) {
-        const start = Date.now();
-        try {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 6000);
-            const response = await fetch(url, { signal: controller.signal });
-            clearTimeout(timeout);
-            
-            monitoredSites[url].latency = Date.now() - start;
-            monitoredSites[url].status = response.ok ? 'ONLINE' : 'ERROR';
-        } catch (e) {
-            monitoredSites[url].status = 'DOWN';
-            monitoredSites[url].latency = 0;
-        }
-    }
-}, 30000);
-
 app.listen(PORT, () => {
-    console.log(`🛡️ Flotek Sentinel Enterprise running at http://localhost:${PORT}`);
+    console.log(`🛡️ Flotek Sentinel running on port ${PORT}`);
 });
