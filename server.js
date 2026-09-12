@@ -18,7 +18,9 @@ let monitoredSites = {};
 let securityEvents = [];
 let auditLogs = [];
 
-// Helper: Inspect Real SSL Certificate & DNS
+// =========================================================================
+// 1. REAL SSL & DNS INSPECTOR
+// =========================================================================
 async function inspectSSLAndDNS(domain) {
     const cleanHost = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
     let sslData = { valid: true, issuer: "Let's Encrypt / Cloudflare", days_left: 84, expires: '2026-12-05' };
@@ -34,7 +36,9 @@ async function inspectSSLAndDNS(domain) {
     return { ssl: sslData, dns: dnsData };
 }
 
-// 0-100 Health Score
+// =========================================================================
+// 2. 0-100 HEALTH SCORE ALGORITHM
+// =========================================================================
 function calculateHealthScore(site, threatsCount) {
     let score = 100;
     if (site.updates_count) score -= Math.min(site.updates_count * 3, 30);
@@ -48,7 +52,9 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// FULL TELEMETRY REGISTRATION
+// =========================================================================
+// 3. FULL TELEMETRY REGISTRATION ENDPOINT
+// =========================================================================
 app.post('/api/register', async (req, res) => {
     const authHeader = req.headers['x-hub-secret'];
     if (authHeader !== SHARED_SECRET) return res.status(403).json({ error: 'Unauthorized' });
@@ -86,7 +92,9 @@ app.post('/api/register', async (req, res) => {
     res.json({ success: true });
 });
 
-// EVENT LOGS
+// =========================================================================
+// 4. SECURITY & AUDIT EVENT RECEIVER
+// =========================================================================
 app.post('/api/event', (req, res) => {
     const authHeader = req.headers['x-hub-secret'];
     if (authHeader !== SHARED_SECRET) return res.status(403).json({ error: 'Unauthorized' });
@@ -124,7 +132,9 @@ app.post('/api/event', (req, res) => {
     res.json({ success: true });
 });
 
-// DASHBOARD FLEET DATA
+// =========================================================================
+// 5. FLEET DASHBOARD DATA API
+// =========================================================================
 app.get('/api/dashboard-data', (req, res) => {
     let totalUpdates = 0;
     let totalScore = 0;
@@ -145,7 +155,9 @@ app.get('/api/dashboard-data', (req, res) => {
     });
 });
 
-// 1-CLICK REPORT GENERATOR
+// =========================================================================
+// 6. EXECUTIVE REPORT GENERATOR
+// =========================================================================
 app.get('/api/generate-report', (req, res) => {
     const site = Object.values(monitoredSites)[0] || { name: 'Grand Prix Express', url: 'https://grandprixexpress.com', health_score: 98, wp_version: '6.7', php_version: '8.2', plugins: [] };
     res.send(`
@@ -154,4 +166,29 @@ app.get('/api/generate-report', (req, res) => {
     <body><div class="card"><h2>FLOTEK ENTERPRISE FLEET REPORT: ${site.name}</h2><p>Health Score: <strong>${site.health_score}/100</strong></p><p>Uptime: <strong>99.98%</strong> | SSL: <strong>Valid (84 Days)</strong> | DNS: <strong>Propagated</strong></p><script>window.print();</script></div></body></html>`);
 });
 
-app.listen(PORT, () => console.log(`🛡️ Flotek Enterprise Command Hub running on port ${PORT}`));
+// =========================================================================
+// 7. BACKGROUND UPTIME WORKER (Checks every 30s)
+// =========================================================================
+setInterval(async () => {
+    for (const url in monitoredSites) {
+        const start = Date.now();
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 6000);
+            const response = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeout);
+            monitoredSites[url].latency = Date.now() - start;
+            monitoredSites[url].status = response.ok ? 'ONLINE' : 'ERROR';
+        } catch (e) {
+            monitoredSites[url].status = 'DOWN';
+            monitoredSites[url].latency = 0;
+        }
+    }
+}, 30000);
+
+// =========================================================================
+// 8. START SERVER
+// =========================================================================
+app.listen(PORT, () => {
+    console.log(`🛡️ Flotek Enterprise Command Hub running on port ${PORT}`);
+});
