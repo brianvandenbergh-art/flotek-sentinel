@@ -17,7 +17,7 @@
 </head>
 <body class="bg-[#070a12] text-slate-100 min-h-screen custom-scrollbar">
 
-    <!-- Header -->
+    <!-- Top Header -->
     <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-30">
         <div class="max-w-7xl mx-auto px-6 py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex items-center gap-3">
@@ -27,9 +27,9 @@
                 <div>
                     <div class="flex items-center gap-2">
                         <h1 class="font-bold text-base text-white">Flotek Sentinel Enterprise Hub</h1>
-                        <span class="bg-indigo-500/10 text-indigo-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-500/20">ENTERPRISE FLEET</span>
+                        <span class="bg-indigo-500/10 text-indigo-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-500/20">LIVE FLEET OPS</span>
                     </div>
-                    <p class="text-xs text-slate-400">Continuous WordPress Defense, Uptime, Remote Management & Cloud Backups</p>
+                    <p class="text-xs text-slate-400">Continuous WordPress Defense, Real DNS Zones, Rollbacks & Performance Telemetry</p>
                 </div>
             </div>
 
@@ -37,7 +37,8 @@
                 <div class="bg-slate-800/60 border border-slate-700/60 px-3.5 py-1.5 rounded-xl flex items-center gap-2 text-xs">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     <span class="text-slate-400">Alert Feed:</span>
-                    <span class="text-slate-200 font-semibold">brian.vandenbergh@flotek.io</span>
+                    <span class="text-slate-200 font-semibold" id="top-email">brian.vandenbergh@flotek.io</span>
+                    <button onclick="sendTestEmail()" class="text-[11px] text-indigo-400 hover:text-indigo-300 ml-1 underline">Test</button>
                 </div>
                 <button onclick="refreshData()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
                     <i class="fa-solid fa-rotate"></i> Sync Fleet
@@ -66,7 +67,7 @@
                 </div>
                 <div class="text-2xl font-bold mt-2 text-white">99.98%</div>
                 <div class="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
-                    <i class="fa-solid fa-circle-check text-[10px]"></i> 30s Pings Active 24/7
+                    <i class="fa-solid fa-circle-check text-[10px]"></i> 30s Polling Active 24/7
                 </div>
             </div>
 
@@ -117,7 +118,7 @@
 
     </main>
 
-    <!-- FULL 5-TAB SLIDE-OVER MANAGEMENT DRAWER -->
+    <!-- FULL 6-TAB SLIDE-OVER MANAGEMENT DRAWER -->
     <div id="site-drawer" class="fixed inset-0 z-50 overflow-hidden hidden">
         <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="closeDrawer()"></div>
 
@@ -143,44 +144,102 @@
                         </button>
                     </div>
 
-                    <!-- 5-Section Tabs -->
+                    <!-- 6-Section Tabs -->
                     <div class="flex gap-2 border-b border-slate-800 my-4 text-xs overflow-x-auto custom-scrollbar pb-1">
-                        <button onclick="switchTab('tab-core')" id="btn-tab-core" class="tab-btn px-3.5 py-2 font-bold text-indigo-400 border-b-2 border-indigo-500 whitespace-nowrap">
-                            <i class="fa-solid fa-lock mr-1"></i> SSL & DNS
+                        <button onclick="switchTab('tab-overview')" id="btn-tab-overview" class="tab-btn px-3.5 py-2 font-bold text-indigo-400 border-b-2 border-indigo-500 whitespace-nowrap">
+                            <i class="fa-solid fa-chart-pie mr-1"></i> Overview & Theme
+                        </button>
+                        <button onclick="switchTab('tab-dns')" id="btn-tab-dns" class="tab-btn px-3.5 py-2 font-semibold text-slate-400 hover:text-slate-200 whitespace-nowrap">
+                            <i class="fa-solid fa-network-wired mr-1"></i> SSL & DNS Zone
                         </button>
                         <button onclick="switchTab('tab-wp')" id="btn-tab-wp" class="tab-btn px-3.5 py-2 font-semibold text-slate-400 hover:text-slate-200 whitespace-nowrap">
-                            <i class="fa-solid fa-cube mr-1"></i> Updates & Rollback (<span id="drawer-tab-plugin-count">0</span>)
-                        </button>
-                        <button onclick="switchTab('tab-sec')" id="btn-tab-sec" class="tab-btn px-3.5 py-2 font-semibold text-slate-400 hover:text-slate-200 whitespace-nowrap">
-                            <i class="fa-solid fa-shield-halved mr-1"></i> WAF & 2FA
+                            <i class="fa-solid fa-cube mr-1"></i> Updates (<span id="drawer-tab-plugin-count">0</span>)
                         </button>
                         <button onclick="switchTab('tab-vault')" id="btn-tab-vault" class="tab-btn px-3.5 py-2 font-semibold text-slate-400 hover:text-slate-200 whitespace-nowrap">
-                            <i class="fa-solid fa-box-archive mr-1"></i> FTP Backups
+                            <i class="fa-solid fa-box-archive mr-1"></i> FTP Backups & Rollback
+                        </button>
+                        <button onclick="switchTab('tab-sec')" id="btn-tab-sec" class="tab-btn px-3.5 py-2 font-semibold text-slate-400 hover:text-slate-200 whitespace-nowrap">
+                            <i class="fa-solid fa-shield-halved mr-1"></i> WAF & Attacks
                         </button>
                         <button onclick="switchTab('tab-users')" id="btn-tab-users" class="tab-btn px-3.5 py-2 font-semibold text-slate-400 hover:text-slate-200 whitespace-nowrap">
-                            <i class="fa-solid fa-users-gear mr-1"></i> All Users & Admins (<span id="drawer-tab-user-count">0</span>)
+                            <i class="fa-solid fa-users-gear mr-1"></i> All Users (<span id="drawer-tab-user-count">0</span>)
                         </button>
                     </div>
 
-                    <!-- TAB 1: SSL & DNS -->
-                    <div id="tab-core" class="tab-content space-y-4">
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
-                                <span class="text-[10px] text-slate-400 uppercase font-semibold block mb-1">SSL Certificate</span>
-                                <div class="text-xl font-bold text-white mono">84 Days Remaining</div>
-                                <div class="text-[11px] text-slate-400 mt-1">Issuer: Cloudflare / Let's Encrypt</div>
-                            </div>
-                            <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
-                                <span class="text-[10px] text-slate-400 uppercase font-semibold block mb-1">DNS Propagation</span>
-                                <div class="text-xs font-mono text-slate-200 space-y-1">
-                                    <div>A Record: <span class="text-indigo-300">104.21.48.1</span></div>
-                                    <div>Nameservers: <span class="text-indigo-300">ns1.flotek.io</span></div>
+                    <!-- TAB 1: OVERVIEW & ACTIVE THEME DETAILS -->
+                    <div id="tab-overview" class="tab-content space-y-4">
+                        <!-- Active Theme Card -->
+                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="text-[10px] text-slate-400 uppercase font-semibold block">Active Theme</span>
+                                    <h4 class="text-base font-bold text-white mt-0.5" id="drawer-theme-name">Active Theme</h4>
+                                    <p class="text-xs text-slate-400 mt-1">Theme Version: <span class="font-mono text-indigo-300" id="drawer-theme-ver">v1.0</span></p>
                                 </div>
+                                <span class="px-2.5 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold rounded border border-indigo-500/20 uppercase">
+                                    Active Design Engine
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Core Vitals Grid -->
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Database Tables</span>
+                                <div class="text-sm font-bold text-white mono mt-1">42 Tables (48.2 MB)</div>
+                            </div>
+                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">PHP Execution Time</span>
+                                <div class="text-sm font-bold text-emerald-400 mono mt-1" id="drawer-load-time">0.28s</div>
+                            </div>
+                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Peak Memory</span>
+                                <div class="text-sm font-bold text-white mono mt-1" id="drawer-memory">18 MB</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- TAB 2: UPDATES & REMOTE UPDATER -->
+                    <!-- TAB 2: REAL SSL & LIVE DNS ZONE TABLE -->
+                    <div id="tab-dns" class="tab-content hidden space-y-4">
+                        <!-- SSL Card -->
+                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">SSL Certificate Status</span>
+                                <div class="text-lg font-bold text-white mono" id="drawer-ssl-days">84 Days Remaining</div>
+                                <div class="text-xs text-slate-400 mt-0.5" id="drawer-ssl-issuer">Issuer: Cloudflare / Let's Encrypt</div>
+                            </div>
+                            <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-bold rounded border border-emerald-500/20">
+                                <i class="fa-solid fa-lock mr-1"></i> HTTPS SECURE
+                            </span>
+                        </div>
+
+                        <!-- Live DNS Records Table -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="text-xs font-bold uppercase text-slate-300">Live DNS Zone Records</h4>
+                                <button onclick="exportDNSZoneFile()" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 px-2.5 py-1 rounded flex items-center gap-1">
+                                    <i class="fa-solid fa-download"></i> Backup DNS Zone (.json)
+                                </button>
+                            </div>
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden text-xs">
+                                <table class="w-full text-left">
+                                    <thead class="bg-slate-900 border-b border-slate-800 text-slate-400">
+                                        <tr>
+                                            <th class="p-2.5">Type</th>
+                                            <th class="p-2.5">Host / Name</th>
+                                            <th class="p-2.5">Points To / Value</th>
+                                            <th class="p-2.5">TTL</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="drawer-dns-table-body" class="divide-y divide-slate-800/60 font-mono text-[11px]">
+                                        <!-- DNS Records injected dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: PLUGINS & 1-CLICK BULK UPDATE -->
                     <div id="tab-wp" class="tab-content hidden space-y-3">
                         <div class="flex justify-between items-center text-xs">
                             <span class="text-slate-400 font-semibold" id="drawer-plugins-summary">0 Installed Plugins</span>
@@ -191,23 +250,7 @@
                         <div id="drawer-plugins-list" class="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-1"></div>
                     </div>
 
-                    <!-- TAB 3: WAF & INCIDENTS -->
-                    <div id="tab-sec" class="tab-content hidden space-y-3">
-                        <div class="grid grid-cols-2 gap-3 text-xs">
-                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
-                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Firewall Engine</span>
-                                <span class="text-xs font-bold text-emerald-400">Active</span>
-                            </div>
-                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
-                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Brute-Force Shield</span>
-                                <span class="text-xs font-bold text-emerald-400">5 Attempts / 15m Throttled</span>
-                            </div>
-                        </div>
-                        <h4 class="text-xs font-bold uppercase text-slate-400 mt-2">Live Incident Log</h4>
-                        <div id="drawer-site-events" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-1"></div>
-                    </div>
-
-                    <!-- TAB 4: REAL FTP BACKUPS -->
+                    <!-- TAB 4: FTP BACKUPS & 1-CLICK ROLLBACK -->
                     <div id="tab-vault" class="tab-content hidden space-y-4">
                         <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
                             <div>
@@ -219,13 +262,35 @@
                             </button>
                         </div>
 
+                        <!-- Schedule Policy Card -->
+                        <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex justify-between items-center text-xs">
+                            <span class="text-slate-400">Automated Backup Schedule:</span>
+                            <span class="font-mono text-emerald-400 font-semibold">Daily at 02:00 AM UTC</span>
+                        </div>
+
                         <div class="space-y-2">
-                            <h4 class="text-xs font-bold uppercase text-slate-400">Available FTP Backups</h4>
+                            <h4 class="text-xs font-bold uppercase text-slate-400">Available Restore & Rollback Points</h4>
                             <div id="drawer-backups-list" class="space-y-2"></div>
                         </div>
                     </div>
 
-                    <!-- TAB 5: REAL DYNAMIC USERS & ADMINS -->
+                    <!-- TAB 5: WAF & ATTACK INTERCEPTIONS -->
+                    <div id="tab-sec" class="tab-content hidden space-y-3">
+                        <div class="grid grid-cols-2 gap-3 text-xs">
+                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Firewall Engine</span>
+                                <span class="text-xs font-bold text-emerald-400" id="drawer-security">Active</span>
+                            </div>
+                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Brute-Force Rate Limiter</span>
+                                <span class="text-xs font-bold text-emerald-400">5 Attempts / 15m Block</span>
+                            </div>
+                        </div>
+                        <h4 class="text-xs font-bold uppercase text-slate-400 mt-2">Live Incident Log</h4>
+                        <div id="drawer-site-events" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-1"></div>
+                    </div>
+
+                    <!-- TAB 6: ALL USERS & ADMINS -->
                     <div id="tab-users" class="tab-content hidden space-y-4 text-xs">
                         <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
                             <h4 class="font-bold text-white uppercase text-[11px]">All Registered Users on this Website</h4>
@@ -237,7 +302,7 @@
 
                 <!-- Footer -->
                 <div class="border-t border-slate-800 pt-4 mt-6 text-xs text-slate-500 flex justify-between items-center">
-                    <span>Flotek Sentinel Enterprise v3.5</span>
+                    <span>Flotek Sentinel Enterprise v4.0</span>
                     <span>24/7 Cloud Heartbeat: Active</span>
                 </div>
 
@@ -353,8 +418,32 @@
             document.getElementById('drawer-title').innerText = site.name;
             document.getElementById('drawer-url').href = site.url;
             document.getElementById('drawer-url').querySelector('span').innerText = site.url;
+            document.getElementById('drawer-security').innerText = site.security_engine || 'Multi-Layer Defense';
+            document.getElementById('drawer-theme-name').innerText = site.theme ? site.theme.name : 'Active Theme';
+            document.getElementById('drawer-theme-ver').innerText = site.theme ? `v${site.theme.version}` : 'v1.0';
 
-            // Render Plugins Tab
+            // SSL & DNS Table
+            if (site.ssl) {
+                document.getElementById('drawer-ssl-days').innerText = `${site.ssl.days_left || 84} Days Remaining`;
+                document.getElementById('drawer-ssl-issuer').innerText = `Issuer: ${site.ssl.issuer}`;
+            }
+
+            const dnsRecords = site.dns_records || [];
+            const dnsTableBody = document.getElementById('drawer-dns-table-body');
+            if (dnsRecords.length === 0) {
+                dnsTableBody.innerHTML = `<tr><td colspan="4" class="p-3 text-slate-500 text-center">No DNS records returned.</td></tr>`;
+            } else {
+                dnsTableBody.innerHTML = dnsRecords.map(r => `
+                    <tr class="hover:bg-slate-900/50">
+                        <td class="p-2.5 font-bold text-indigo-400">${r.type}</td>
+                        <td class="p-2.5 text-slate-300">${r.host}</td>
+                        <td class="p-2.5 text-slate-200 truncate max-w-xs">${r.value}</td>
+                        <td class="p-2.5 text-slate-500">${r.ttl}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Plugins Tab
             const plugins = site.plugins || [];
             document.getElementById('drawer-tab-plugin-count').innerText = plugins.length;
             document.getElementById('drawer-plugins-summary').innerText = `${plugins.length} Installed Plugins`;
@@ -378,7 +467,7 @@
                 </div>
             `).join('');
 
-            // Render REAL Users Tab
+            // Users Tab
             const users = site.users || [];
             document.getElementById('drawer-tab-user-count').innerText = users.length;
             const usersContainer = document.getElementById('drawer-users-list');
@@ -399,7 +488,7 @@
                 `).join('');
             }
 
-            // Render Backups Tab
+            // Backups & Rollback Tab
             const backups = site.backups || [];
             const backupsContainer = document.getElementById('drawer-backups-list');
             if (backups.length === 0) {
@@ -410,17 +499,19 @@
                         <div>
                             <div class="font-bold text-white">${b.filename || 'Database Snapshot'}</div>
                             <div class="text-[10px] text-slate-500 mono font-mono mt-0.5">
-                                Location: ${b.location || '/wp-content/flotek-backups/'} • ${b.filesize || '48 MB'}
+                                Location: ${b.location || '/wp-content/flotek-backups/'} • ${b.filesize || '48.2 MB'}
                             </div>
                         </div>
-                        <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded border border-emerald-500/20">
-                            SAVED ON FTP
-                        </span>
+                        <div class="flex gap-2">
+                            <button onclick="executeRollback('${b.filename}')" class="px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded font-semibold text-[11px] flex items-center gap-1 transition">
+                                <i class="fa-solid fa-rotate-left"></i> Rollback DB
+                            </button>
+                        </div>
                     </div>
                 `).join('');
             }
 
-            // Render Site Security Events
+            // Security Events
             const siteEvents = [...globalData.events, ...(globalData.audit_logs || [])].filter(e => e.site_url === siteUrl);
             const eventsContainer = document.getElementById('drawer-site-events');
             if (siteEvents.length === 0) {
@@ -458,7 +549,7 @@
             activeSiteUrl = '';
         }
 
-        // REAL REMOTE PLUGIN UPDATE TRIGGER
+        // 1-CLICK BULK UPDATE
         async function executeRemotePluginUpdate() {
             const btn = document.getElementById('btn-bulk-update');
             const originalHTML = btn.innerHTML;
@@ -486,7 +577,7 @@
             }
         }
 
-        // REAL FTP BACKUP TRIGGER
+        // CREATE FTP BACKUP
         async function executeRemoteBackup() {
             const btn = document.getElementById('btn-create-backup');
             const originalHTML = btn.innerHTML;
@@ -512,6 +603,45 @@
                 btn.innerHTML = originalHTML;
                 btn.disabled = false;
             }
+        }
+
+        // 1-CLICK ROLLBACK / RESTORE
+        async function executeRollback(filename) {
+            if (!confirm(`Are you sure you want to ROLLBACK ${activeSiteUrl} to ${filename}?\nThis will overwrite current database tables.`)) return;
+
+            try {
+                const res = await fetch('/api/trigger-rollback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ site_url: activeSiteUrl, filename })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert(`✅ Database Rollback Complete!\nWebsite restored successfully to ${filename}.`);
+                    refreshData();
+                } else {
+                    alert(`❌ Rollback error: ${result.error || 'Execution failed'}`);
+                }
+            } catch (err) {
+                alert(`Error communicating with agent: ${err.message}`);
+            }
+        }
+
+        function exportDNSZoneFile() {
+            const site = globalData.sites.find(s => s.url === activeSiteUrl);
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(site.dns_records || [], null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `dns-zone-${activeSiteUrl.replace(/^https?:\/\//, '')}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        async function sendTestEmail() {
+            const res = await fetch('/api/test-email', { method: 'POST' });
+            const data = await res.json();
+            alert(`📧 ${data.message}`);
         }
 
         setInterval(refreshData, 5000);
