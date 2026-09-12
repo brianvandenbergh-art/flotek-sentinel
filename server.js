@@ -23,7 +23,7 @@ let securityEvents = [];
 let auditLogs = [];
 
 // =========================================================================
-// 1. PERMANENT DISK STORAGE ENGINE (Never Lose Data on Restarts)
+// 1. PERMANENT DISK STORAGE ENGINE
 // =========================================================================
 function loadDatabase() {
     try {
@@ -34,11 +34,8 @@ function loadDatabase() {
             standaloneDomains = data.domains || {};
             securityEvents = data.events || [];
             auditLogs = data.audit_logs || [];
-            console.log(`📁 [PERSISTENCE] Loaded ${Object.keys(monitoredSites).length} sites & ${Object.keys(standaloneDomains).length} domains from disk.`);
         }
-    } catch (e) {
-        console.error('[DB LOAD ERROR]', e.message);
-    }
+    } catch (e) {}
 }
 
 function saveDatabase() {
@@ -49,45 +46,13 @@ function saveDatabase() {
             events: securityEvents,
             audit_logs: auditLogs
         }, null, 2));
-    } catch (e) {
-        console.error('[DB SAVE ERROR]', e.message);
-    }
+    } catch (e) {}
 }
 
 loadDatabase();
 
 // =========================================================================
-// 2. EMAIL DISPATCHER (monitor@flotek.io -> brian.vandenbergh@flotek.io)
-// =========================================================================
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.office365.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false,
-    auth: {
-        user: process.env.SMTP_USER || SENDER_EMAIL,
-        pass: process.env.SMTP_PASS || ''
-    }
-});
-
-async function sendAlertEmail(subject, bodyHtml) {
-    console.log(`📧 [ALERT QUEUED] From: ${SENDER_EMAIL} -> To: ${ALERT_EMAIL} | Subject: ${subject}`);
-    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-        try {
-            await transporter.sendMail({
-                from: `"Flotek Sentinel" <${SENDER_EMAIL}>`,
-                to: ALERT_EMAIL,
-                subject: `[Flotek Sentinel] ${subject}`,
-                html: bodyHtml
-            });
-            console.log(`✅ [EMAIL SENT] Delivered to ${ALERT_EMAIL}`);
-        } catch (err) {
-            console.error('[EMAIL ERROR]', err.message);
-        }
-    }
-}
-
-// =========================================================================
-// 3. DYNAMIC DNS & SSL SCANNER
+// 2. DYNAMIC DNS & SSL SCANNER
 // =========================================================================
 async function scanFullDNSZone(domain) {
     const cleanHost = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
@@ -167,8 +132,6 @@ app.post('/api/register', async (req, res) => {
 
     const data = req.body;
     const cleanHost = data.site_url.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
-    
-    // Clean up if it was previously in standalone domains
     delete standaloneDomains[cleanHost];
 
     const [liveSSL, liveDNS] = await Promise.all([
@@ -199,11 +162,10 @@ app.post('/api/register', async (req, res) => {
     };
 
     saveDatabase();
-    console.log(`✨ [SITE SAVED] ${data.site_name} | ${liveDNS.length} DNS Records`);
     res.json({ success: true });
 });
 
-// STANDALONE DOMAIN ADD ENDPOINT (Domains Only)
+// STANDALONE DOMAIN ADD
 app.post('/api/add-domain', async (req, res) => {
     const { domain_name } = req.body;
     if (!domain_name) return res.status(400).json({ error: 'Domain is required' });
@@ -232,11 +194,20 @@ app.post('/api/add-domain', async (req, res) => {
     };
 
     saveDatabase();
-    console.log(`🏷️ [DOMAIN SAVED PERMANENTLY] ${cleanHost} | ${liveDNS.length} DNS Records`);
     res.json({ success: true, domain: standaloneDomains[cleanHost] });
 });
 
-// REMOTE USER MANAGEMENT
+// STANDALONE DOMAIN DELETE
+app.post('/api/delete-domain', (req, res) => {
+    const { domain_name } = req.body;
+    if (domain_name && standaloneDomains[domain_name]) {
+        delete standaloneDomains[domain_name];
+        saveDatabase();
+    }
+    res.json({ success: true });
+});
+
+// REMOTE USER MANAGEMENT: CREATE USER
 app.post('/api/create-user', async (req, res) => {
     const { site_url, username, email, role, password } = req.body;
     try {
@@ -251,6 +222,7 @@ app.post('/api/create-user', async (req, res) => {
     }
 });
 
+// REMOTE USER MANAGEMENT: RESET PASSWORD
 app.post('/api/reset-password', async (req, res) => {
     const { site_url, user_id, new_password } = req.body;
     try {
@@ -258,6 +230,21 @@ app.post('/api/reset-password', async (req, res) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-Hub-Secret': SHARED_SECRET },
             body: JSON.stringify({ user_id, new_password })
+        });
+        res.json(await response.json());
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+// REMOTE USER MANAGEMENT: DELETE USER
+app.post('/api/delete-user', async (req, res) => {
+    const { site_url, user_id } = req.body;
+    try {
+        const response = await fetch(`${site_url}/wp-json/flotek/v1/delete-user`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Hub-Secret': SHARED_SECRET },
+            body: JSON.stringify({ user_id })
         });
         res.json(await response.json());
     } catch (e) {
@@ -317,7 +304,7 @@ app.post('/api/trigger-rollback', async (req, res) => {
     }
 });
 
-// SECURITY & AUDIT EVENT RECEIVER
+// EVENT RECEIVER
 app.post('/api/event', (req, res) => {
     const authHeader = req.headers['x-hub-secret'];
     if (authHeader !== SHARED_SECRET) return res.status(403).json({ error: 'Unauthorized' });
@@ -325,12 +312,8 @@ app.post('/api/event', (req, res) => {
     const { site_url, site_name, event, details, type, timestamp } = req.body;
     const record = { id: Date.now(), site_url, site_name, event, details, type: type || 'SECURITY', timestamp: timestamp || new Date().toISOString() };
 
-    if (type === 'AUDIT') {
-        auditLogs.unshift(record);
-    } else {
-        securityEvents.unshift(record);
-        sendAlertEmail(`🚨 Security Alert: ${event} on ${site_name}`, `<p><strong>${event}</strong> on ${site_name}</p><pre>${JSON.stringify(details, null, 2)}</pre>`);
-    }
+    if (type === 'AUDIT') auditLogs.unshift(record);
+    else securityEvents.unshift(record);
 
     saveDatabase();
     res.json({ success: true });
