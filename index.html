@@ -3,11 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flotek Sentinel | Fleet Command v5.0</title>
+    <title>Flotek Sentinel | Fleet Command v5.5</title>
     
-    <link rel="manifest" href="/manifest.json?v=5.0">
-    <meta name="theme-color" content="#070a12">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- Automatic Cache-Buster: Forces Browser to Dump Old Cached PWA -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) { registration.unregister(); }
+            });
+        }
+        if ('caches' in window) {
+            caches.keys().then(function(names) {
+                for (let name of names) caches.delete(name);
+            });
+        }
+    </script>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -34,7 +44,7 @@
                 <div>
                     <div class="flex items-center gap-1.5">
                         <h1 class="font-bold text-sm sm:text-base text-white tracking-tight">Flotek Sentinel</h1>
-                        <span class="bg-indigo-500/10 text-indigo-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-indigo-500/20">FLEET v5.0</span>
+                        <span class="bg-indigo-500/10 text-indigo-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-indigo-500/20">FLEET v5.5</span>
                     </div>
                     <p class="text-[11px] text-slate-400 hidden sm:block">Persistent Multi-Domain & Defense Ops</p>
                 </div>
@@ -184,8 +194,9 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button id="btn-drawer-delete-domain" onclick="deleteCurrentDrawerDomain()" class="hidden px-2.5 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center gap-1">
-                                <i class="fa-solid fa-trash text-[10px]"></i> Delete Domain
+                            <!-- Prominent Red Delete Domain Button (in Drawer for Standalone Domains) -->
+                            <button id="btn-drawer-delete-domain" onclick="deleteCurrentDrawerDomain()" class="hidden px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-red-600/30 transition">
+                                <i class="fa-solid fa-trash"></i> Delete Domain
                             </button>
                             <button onclick="closeDrawer()" class="text-slate-400 hover:text-white p-2 rounded-xl bg-slate-800/60 shrink-0">
                                 <i class="fa-solid fa-xmark text-lg"></i>
@@ -319,7 +330,7 @@
                         </div>
                     </div>
 
-                    <!-- TAB 5: USERS WITH PROMINENT DELETE & RESET BUTTONS -->
+                    <!-- TAB 5: USERS (WITH PROMINENT RED DELETE BUTTONS) -->
                     <div id="tab-users" class="tab-content hidden space-y-4 text-xs">
                         <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
                             <h4 class="font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
@@ -365,15 +376,15 @@
 
                 <!-- Footer -->
                 <div class="border-t border-slate-800 pt-3 mt-6 text-[11px] text-slate-500 flex justify-between items-center">
-                    <span>Flotek Sentinel v5.0 PWA</span>
-                    <span>Persistent Cloud Engine: Active</span>
+                    <span>Flotek Sentinel v5.5 Persistent</span>
+                    <span>Cloud Heartbeat: Active</span>
                 </div>
 
             </div>
         </div>
     </div>
 
-    <!-- Script Logic with Prominent Delete Buttons & Cache Busting -->
+    <!-- Script Logic with Prominent Red Delete Buttons & Auto-Refresh -->
     <script>
         let globalData = { sites: [], domains: [], events: [], audit_logs: [] };
         let activeSiteUrl = '';
@@ -494,6 +505,7 @@
             }).join('');
         }
 
+        // RENDER DOMAINS WITH PROMINENT RED DELETE BUTTON
         function renderDomains(domains) {
             const container = document.getElementById('domains-fleet-container');
             if (domains.length === 0) {
@@ -522,9 +534,10 @@
                             </div>
                         </div>
 
+                        <!-- Action Buttons -->
                         <div class="flex items-center justify-end gap-2">
-                            <button onclick="event.stopPropagation(); deleteStandaloneDomain('${d.domain}')" class="px-2.5 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center gap-1">
-                                <i class="fa-solid fa-trash text-[10px]"></i> Delete
+                            <button onclick="event.stopPropagation(); deleteStandaloneDomain('${d.domain}')" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-red-600/30 transition">
+                                <i class="fa-solid fa-trash"></i> Delete Domain
                             </button>
                             <span class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 rounded-xl text-xs font-semibold">
                                 View DNS Zone
@@ -633,7 +646,7 @@
                 </div>
             `).join('');
 
-            // Users Tab (NOW WITH PROMINENT RED DELETE USER BUTTON)
+            // Users Tab (NOW WITH BRIGHT RED DELETE BUTTON)
             const users = site.users || [];
             document.getElementById('drawer-tab-user-count').innerText = users.length;
             const usersContainer = document.getElementById('drawer-users-list');
@@ -651,7 +664,7 @@
                             <button onclick="resetUserPassword('${u.id}', '${u.user_login}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/20 rounded-xl font-semibold text-[11px] flex items-center gap-1.5 transition">
                                 <i class="fa-solid fa-key"></i> Reset Password
                             </button>
-                            <button onclick="deleteUser('${u.id}', '${u.user_login}')" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold text-[11px] flex items-center gap-1.5 shadow-md shadow-rose-600/20 transition">
+                            <button onclick="deleteUser('${u.id}', '${u.user_login}')" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-[11px] flex items-center gap-1.5 shadow-md shadow-red-600/30 transition">
                                 <i class="fa-solid fa-trash"></i> Delete User
                             </button>
                         </div>
@@ -746,8 +759,9 @@
             }
         }
 
+        // REAL DELETE STANDALONE DOMAIN
         async function deleteStandaloneDomain(domain) {
-            if (!confirm(`Are you sure you want to delete '${domain}' from your fleet?`)) return;
+            if (!confirm(`⚠️ Are you sure you want to PERMANENTLY REMOVE '${domain}' from your dashboard?`)) return;
 
             try {
                 await fetch('/api/delete-domain', {
