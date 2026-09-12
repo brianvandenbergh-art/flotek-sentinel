@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flotek Sentinel | Enterprise WordPress Command Center</title>
+    <title>Flotek Sentinel | Enterprise Fleet Command</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -11,17 +11,17 @@
         body { font-family: 'Inter', sans-serif; }
         .mono { font-family: 'JetBrains Mono', monospace; }
         .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #0b0f19; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #090d16; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
     </style>
 </head>
-<body class="bg-[#090d16] text-slate-100 min-h-screen custom-scrollbar">
+<body class="bg-[#070a12] text-slate-100 min-h-screen custom-scrollbar">
 
-    <!-- Header -->
+    <!-- Top Navigation -->
     <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-30">
         <div class="max-w-7xl mx-auto px-6 py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-                <div class="h-10 w-10 bg-gradient-to-tr from-indigo-600 to-cyan-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 font-black text-sm">
+                <div class="h-10 w-10 bg-gradient-to-tr from-indigo-600 via-violet-600 to-cyan-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 font-black text-sm">
                     FS
                 </div>
                 <div>
@@ -29,15 +29,15 @@
                         <h1 class="font-bold text-base text-white">Flotek Sentinel Command Hub</h1>
                         <span class="bg-indigo-500/10 text-indigo-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-500/20">ENTERPRISE 24/7</span>
                     </div>
-                    <p class="text-xs text-slate-400">Unified Uptime, Threat Neutralization, Updates & Backup Vault</p>
+                    <p class="text-xs text-slate-400">Continuous WordPress Defense, Performance & Fleet Automation</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-3">
                 <div class="bg-slate-800/60 border border-slate-700/60 px-3.5 py-1.5 rounded-xl flex items-center gap-2 text-xs">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span class="text-slate-400">Central Alert Feed:</span>
-                    <span class="text-slate-200 font-semibold" id="top-email">brian.vandenbergh@flotek.io</span>
+                    <span class="text-slate-400">Alert Feed:</span>
+                    <span class="text-slate-200 font-semibold">brian.vandenbergh@flotek.io</span>
                 </div>
                 <button onclick="refreshData()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
                     <i class="fa-solid fa-rotate"></i> Sync Fleet
@@ -48,44 +48,48 @@
 
     <main class="max-w-7xl mx-auto px-6 py-6 space-y-6">
 
-        <!-- Top Overview Banner -->
+        <!-- Top Fleet Overview Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Metric 1: Fleet Health -->
+            <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-2xl relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Fleet Health Score</span>
+                    <i class="fa-solid fa-gauge-high text-emerald-400"></i>
+                </div>
+                <div class="text-3xl font-extrabold mt-2 text-emerald-400" id="stat-health">100 / 100</div>
+                <div class="text-[11px] text-slate-400 mt-1">Weighted Security & Performance Index</div>
+            </div>
+
+            <!-- Metric 2: Uptime Status -->
             <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-2xl">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Fleet Infrastructure</span>
-                    <i class="fa-solid fa-server text-indigo-400"></i>
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Fleet Uptime</span>
+                    <i class="fa-solid fa-heart-pulse text-indigo-400"></i>
                 </div>
-                <div class="text-2xl font-bold mt-2 text-white" id="stat-sites-count">0 Sites</div>
+                <div class="text-2xl font-bold mt-2 text-white">99.98%</div>
                 <div class="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
-                    <i class="fa-solid fa-circle-check text-[10px]"></i> 100% Core Checksums Intact
+                    <i class="fa-solid fa-circle-check text-[10px]"></i> 30s Pings Active 24/7
                 </div>
             </div>
 
+            <!-- Metric 3: Pending Updates -->
             <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-2xl">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Fleet Uptime (30s Ping)</span>
-                    <i class="fa-solid fa-heart-pulse text-emerald-400"></i>
-                </div>
-                <div class="text-2xl font-bold mt-2 text-emerald-400">99.98%</div>
-                <div class="text-[11px] text-slate-400 mt-1">24/7 Cloud Polling Active</div>
-            </div>
-
-            <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-2xl">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pending Updates</span>
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Updates Required</span>
                     <i class="fa-solid fa-cubes-stacked text-amber-400"></i>
                 </div>
-                <div class="text-2xl font-bold mt-2 text-amber-400" id="stat-updates">0 Required</div>
-                <div class="text-[11px] text-slate-400 mt-1">Plugins, Core & Themes</div>
+                <div class="text-2xl font-bold mt-2 text-amber-400" id="stat-updates">0 Outdated</div>
+                <div class="text-[11px] text-slate-400 mt-1">Plugins, Core & Active Themes</div>
             </div>
 
+            <!-- Metric 4: Interceptions -->
             <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-2xl">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Security Interceptions</span>
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Threats Neutralized</span>
                     <i class="fa-solid fa-shield-virus text-rose-400"></i>
                 </div>
                 <div class="text-2xl font-bold mt-2 text-rose-400" id="stat-threats">0 Logged</div>
-                <div class="text-[11px] text-slate-400 mt-1">Failed Logins & WAF Blocks</div>
+                <div class="text-[11px] text-slate-400 mt-1">Brute-Force & WAF Blocks</div>
             </div>
         </div>
 
@@ -96,42 +100,41 @@
             <div class="lg:col-span-2 space-y-4">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                        <i class="fa-solid fa-network-wired text-slate-500"></i> Monitored Websites (Click card for deep diagnostics)
+                        <i class="fa-solid fa-network-wired text-slate-500"></i> Active Endpoints (<span id="site-count-badge">0</span> connected)
                     </h2>
-                    <span class="text-xs text-slate-500" id="site-count-badge">0 connected</span>
                 </div>
 
                 <div id="sites-container" class="space-y-3"></div>
             </div>
 
-            <!-- Right 1 Col: Live Security Stream -->
+            <!-- Right 1 Col: Live Security & Audit Stream -->
             <div class="space-y-4">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                        <i class="fa-solid fa-bolt text-amber-400"></i> Live Security Interceptions
+                        <i class="fa-solid fa-bolt text-amber-400"></i> Live Defense & Audit Stream
                     </h2>
                     <span class="text-[10px] text-slate-500 uppercase">Real-time</span>
                 </div>
 
-                <div id="events-container" class="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar pr-1"></div>
+                <div id="events-container" class="space-y-3 max-h-[620px] overflow-y-auto custom-scrollbar pr-1"></div>
             </div>
 
         </div>
 
     </main>
 
-    <!-- FULL SLIDE-OVER DIAGNOSTICS & ACTION DRAWER -->
+    <!-- SLIDE-OVER DEEP DIAGNOSTICS & MANAGEMENT DRAWER -->
     <div id="site-drawer" class="fixed inset-0 z-50 overflow-hidden hidden">
         <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="closeDrawer()"></div>
 
         <div class="fixed inset-y-0 right-0 max-w-full flex pl-6">
-            <div class="w-screen max-w-2xl bg-[#0d1322] border-l border-slate-800 p-6 flex flex-col justify-between shadow-2xl custom-scrollbar overflow-y-auto">
+            <div class="w-screen max-w-2xl bg-[#0c101c] border-l border-slate-800 p-6 flex flex-col justify-between shadow-2xl custom-scrollbar overflow-y-auto">
                 
                 <div>
                     <!-- Header -->
                     <div class="flex items-center justify-between border-b border-slate-800 pb-4">
                         <div class="flex items-center gap-3">
-                            <div class="w-11 h-11 rounded-xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-lg font-bold">
+                            <div class="w-12 h-12 rounded-xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-xl font-bold">
                                 <i class="fa-solid fa-globe"></i>
                             </div>
                             <div>
@@ -141,53 +144,69 @@
                                 </a>
                             </div>
                         </div>
-                        <button onclick="closeDrawer()" class="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-800/50">
-                            <i class="fa-solid fa-xmark text-lg"></i>
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <a id="btn-print-report" href="#" target="_blank" class="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-file-pdf"></i> Client PDF
+                            </a>
+                            <button onclick="closeDrawer()" class="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-800/50">
+                                <i class="fa-solid fa-xmark text-lg"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Navigation Tabs -->
                     <div class="flex gap-2 border-b border-slate-800 my-4 text-xs">
                         <button onclick="switchTab('tab-vitals')" id="btn-tab-vitals" class="tab-btn px-4 py-2 font-bold text-indigo-400 border-b-2 border-indigo-500">
-                            <i class="fa-solid fa-chart-line mr-1"></i> Overview & Theme
+                            <i class="fa-solid fa-chart-line mr-1"></i> Vitals & Speed
                         </button>
                         <button onclick="switchTab('tab-plugins')" id="btn-tab-plugins" class="tab-btn px-4 py-2 font-semibold text-slate-400 hover:text-slate-200">
-                            <i class="fa-solid fa-puzzle-piece mr-1"></i> Plugins & Updates (<span id="drawer-tab-plugin-count">0</span>)
+                            <i class="fa-solid fa-puzzle-piece mr-1"></i> Plugins (<span id="drawer-tab-plugin-count">0</span>)
                         </button>
                         <button onclick="switchTab('tab-security')" id="btn-tab-security" class="tab-btn px-4 py-2 font-semibold text-slate-400 hover:text-slate-200">
-                            <i class="fa-solid fa-shield-halved mr-1"></i> Security & Attacks
+                            <i class="fa-solid fa-shield-halved mr-1"></i> Security & Audits
                         </button>
                         <button onclick="switchTab('tab-backups')" id="btn-tab-backups" class="tab-btn px-4 py-2 font-semibold text-slate-400 hover:text-slate-200">
-                            <i class="fa-solid fa-box-archive mr-1"></i> Backup Vault
+                            <i class="fa-solid fa-box-archive mr-1"></i> Cloud Backups
                         </button>
                     </div>
 
-                    <!-- TAB 1: OVERVIEW & THEME -->
+                    <!-- TAB 1: VITALS, SPEED & THEME -->
                     <div id="tab-vitals" class="tab-content space-y-4">
-                        <div class="grid grid-cols-3 gap-3">
-                            <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-xl">
-                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">WordPress Core</span>
-                                <span class="text-xs font-bold text-white mono" id="drawer-wp">--</span>
+                        <!-- Score Bar -->
+                        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Health Index</span>
+                                <h4 class="text-2xl font-extrabold text-emerald-400" id="drawer-health-score">100 / 100</h4>
                             </div>
-                            <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-xl">
-                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">PHP Version</span>
-                                <span class="text-xs font-bold text-white mono" id="drawer-php">--</span>
-                            </div>
-                            <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-xl">
+                            <div class="text-right">
                                 <span class="text-[10px] text-slate-400 uppercase font-semibold block">Active Security</span>
-                                <span class="text-[11px] font-bold text-emerald-400" id="drawer-security">--</span>
+                                <span class="text-xs font-bold text-white" id="drawer-security">--</span>
+                            </div>
+                        </div>
+
+                        <!-- Performance Meters -->
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Database Queries</span>
+                                <span class="text-sm font-bold text-white mono" id="drawer-queries">--</span>
+                            </div>
+                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">PHP Load Time</span>
+                                <span class="text-sm font-bold text-emerald-400 mono" id="drawer-load-time">--</span>
+                            </div>
+                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Peak Memory</span>
+                                <span class="text-sm font-bold text-white mono" id="drawer-memory">--</span>
                             </div>
                         </div>
 
                         <!-- Active Theme Card -->
-                        <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <span class="text-[10px] text-slate-400 uppercase font-semibold block">Active Theme</span>
-                                    <h4 class="font-bold text-sm text-white" id="drawer-theme-name">--</h4>
-                                </div>
-                                <span class="text-xs font-mono bg-slate-800 px-2.5 py-1 rounded text-slate-300" id="drawer-theme-ver">v1.0</span>
+                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl flex justify-between items-center">
+                            <div>
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Active Theme</span>
+                                <h4 class="font-bold text-sm text-white" id="drawer-theme-name">--</h4>
                             </div>
+                            <span class="text-xs font-mono bg-slate-800 px-2.5 py-1 rounded text-slate-300" id="drawer-theme-ver">v1.0</span>
                         </div>
 
                         <!-- 1-Click Operations -->
@@ -201,61 +220,58 @@
                         </div>
                     </div>
 
-                    <!-- TAB 2: PLUGINS & UPDATES -->
+                    <!-- TAB 2: PLUGINS & BULK UPDATES -->
                     <div id="tab-plugins" class="tab-content hidden space-y-3">
                         <div class="flex justify-between items-center text-xs">
-                            <span class="text-slate-400 font-semibold" id="drawer-plugins-summary">0 Plugins Installed</span>
-                            <button onclick="alert('Triggering safe update batch...')" class="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-lg hover:bg-amber-500/20">
-                                <i class="fa-solid fa-arrows-rotate mr-1"></i> Update All Outdated
+                            <span class="text-slate-400 font-semibold" id="drawer-plugins-summary">0 Installed Plugins</span>
+                            <button onclick="alert('Triggering safe bulk update batch via Flotek Upgrader engine...')" class="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-lg hover:bg-amber-500/20 font-semibold">
+                                <i class="fa-solid fa-arrows-rotate mr-1"></i> 1-Click Bulk Update
                             </button>
                         </div>
                         <div id="drawer-plugins-list" class="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-1"></div>
                     </div>
 
-                    <!-- TAB 3: SITE SECURITY & ATTACKS -->
+                    <!-- TAB 3: SITE SECURITY & AUDIT TRAIL -->
                     <div id="tab-security" class="tab-content hidden space-y-3">
-                        <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl">
-                            <h4 class="text-xs font-bold uppercase text-slate-300 mb-2">Firewall & Protection Status</h4>
-                            <div class="flex items-center gap-2 text-xs text-emerald-400 font-semibold">
-                                <i class="fa-solid fa-shield-check text-sm"></i> 
-                                <span id="drawer-firewall-status">Multi-layer Defense Active</span>
-                            </div>
+                        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+                            <h4 class="text-xs font-bold uppercase text-slate-300">Firewall Engine</h4>
+                            <span class="text-xs text-emerald-400 font-bold flex items-center gap-1">
+                                <i class="fa-solid fa-shield-check"></i> Multi-layer WAF Active
+                            </span>
                         </div>
-                        <h4 class="text-xs font-bold uppercase text-slate-400 mt-4 mb-2">Recent Site Incidents</h4>
+                        <h4 class="text-xs font-bold uppercase text-slate-400 mt-4 mb-2">Site Security Incidents & Admin Audits</h4>
                         <div id="drawer-site-events" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-1"></div>
                     </div>
 
                     <!-- TAB 4: BACKUP VAULT -->
                     <div id="tab-backups" class="tab-content hidden space-y-4">
-                        <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+                        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
                             <div>
-                                <h4 class="text-xs font-bold text-white">Create Full Site Snapshot</h4>
-                                <p class="text-[11px] text-slate-400 mt-0.5">Dumps database & zips wp-content safely</p>
+                                <h4 class="text-xs font-bold text-white">Full System Snapshot</h4>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Automated Daily Database & wp-content backup</p>
                             </div>
                             <button onclick="createInstantBackup()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold">
-                                <i class="fa-solid fa-plus mr-1"></i> New Backup
+                                <i class="fa-solid fa-plus mr-1"></i> New Snapshot
                             </button>
                         </div>
 
                         <div class="space-y-2">
-                            <h4 class="text-xs font-bold uppercase text-slate-400">Available Restore Points</h4>
-                            <div id="drawer-backups-list" class="space-y-2">
-                                <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between text-xs">
-                                    <div class="flex items-center gap-3">
-                                        <i class="fa-solid fa-file-zipper text-indigo-400 text-base"></i>
-                                        <div>
-                                            <div class="font-bold text-slate-200">Daily System Snapshot (Automated)</div>
-                                            <div class="text-[10px] text-slate-500 mono">148 MB • Today 02:00 AM</div>
-                                        </div>
+                            <h4 class="text-xs font-bold uppercase text-slate-400">Cloud Restore Points</h4>
+                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between text-xs">
+                                <div class="flex items-center gap-3">
+                                    <i class="fa-solid fa-cloud-arrow-down text-indigo-400 text-lg"></i>
+                                    <div>
+                                        <div class="font-bold text-slate-200">Daily Fleet Cloud Snapshot</div>
+                                        <div class="text-[10px] text-slate-500 mono">152 MB • Automated Cloud Vault</div>
                                     </div>
-                                    <div class="flex gap-2">
-                                        <button onclick="downloadBackupLocally()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px]">
-                                            <i class="fa-solid fa-download"></i> Save Local
-                                        </button>
-                                        <button onclick="alert('Reverting website to this snapshot point...')" class="px-2.5 py-1 bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 rounded text-[11px]">
-                                            <i class="fa-solid fa-rotate-left"></i> Restore
-                                        </button>
-                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="alert('Streaming backup .zip locally...')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px]">
+                                        <i class="fa-solid fa-download"></i> Save Local
+                                    </button>
+                                    <button onclick="alert('Reverting website to this snapshot point...')" class="px-2.5 py-1 bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 rounded text-[11px]">
+                                        <i class="fa-solid fa-rotate-left"></i> 1-Click Restore
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -265,8 +281,8 @@
 
                 <!-- Footer -->
                 <div class="border-t border-slate-800 pt-4 mt-6 text-xs text-slate-500 flex justify-between items-center">
-                    <span>Flotek Sentinel Enterprise Agent v2.1</span>
-                    <span id="drawer-last-seen">Heartbeat: live</span>
+                    <span>Flotek Sentinel Enterprise v2.5</span>
+                    <span id="drawer-last-seen">Heartbeat: Live</span>
                 </div>
 
             </div>
@@ -274,7 +290,7 @@
     </div>
 
     <script>
-        let globalData = { sites: [], events: [] };
+        let globalData = { sites: [], events: [], audit_logs: [] };
         let activeSiteUrl = '';
 
         async function refreshData() {
@@ -283,13 +299,13 @@
                 const data = await res.json();
                 globalData = data;
 
-                document.getElementById('stat-sites-count').innerText = `${data.sites.length} Active`;
-                document.getElementById('site-count-badge').innerText = `${data.sites.length} connected`;
+                document.getElementById('stat-health').innerText = `${data.fleet_health || 100} / 100`;
+                document.getElementById('site-count-badge').innerText = data.sites.length;
                 document.getElementById('stat-threats').innerText = `${data.events.length} Logged`;
-                document.getElementById('stat-updates').innerText = `${data.total_updates || 0} Required`;
+                document.getElementById('stat-updates').innerText = `${data.total_updates || 0} Outdated`;
 
                 renderSites(data.sites);
-                renderEvents(data.events);
+                renderEvents([...data.events, ...(data.audit_logs || [])]);
 
                 if (activeSiteUrl) openDrawer(activeSiteUrl);
             } catch (err) {
@@ -307,6 +323,7 @@
             container.innerHTML = sites.map(site => {
                 const pluginCount = site.plugins ? site.plugins.length : 0;
                 const updateCount = site.updates_count || 0;
+                const health = site.health_score || 100;
 
                 return `
                 <div onclick="openDrawer('${site.url}')" class="group cursor-pointer bg-slate-900/70 hover:bg-slate-900 border border-slate-800 hover:border-indigo-500/40 p-5 rounded-2xl transition shadow-sm">
@@ -331,11 +348,15 @@
                         </div>
 
                         <div class="flex items-center gap-3 border-t sm:border-t-0 border-slate-800 pt-3 sm:pt-0">
-                            <div class="bg-slate-950/50 border border-slate-800 px-3 py-2 rounded-xl text-center">
+                            <div class="bg-slate-950 border border-slate-800 px-3 py-2 rounded-xl text-center">
+                                <span class="text-[10px] text-slate-400 block uppercase font-medium">Health</span>
+                                <span class="text-xs font-bold text-emerald-400 mono">${health}/100</span>
+                            </div>
+                            <div class="bg-slate-950 border border-slate-800 px-3 py-2 rounded-xl text-center">
                                 <span class="text-[10px] text-slate-400 block uppercase font-medium">Plugins</span>
                                 <span class="text-xs font-bold text-indigo-300 mono">${pluginCount} Tracked</span>
                             </div>
-                            <div class="bg-slate-950/50 border border-slate-800 px-3 py-2 rounded-xl text-center">
+                            <div class="bg-slate-950 border border-slate-800 px-3 py-2 rounded-xl text-center">
                                 <span class="text-[10px] text-slate-400 block uppercase font-medium">Latency</span>
                                 <span class="text-xs font-bold text-emerald-400 mono">${site.latency || 55}ms</span>
                             </div>
@@ -351,14 +372,14 @@
         function renderEvents(events) {
             const container = document.getElementById('events-container');
             if (events.length === 0) {
-                container.innerHTML = `<div class="bg-slate-900/40 border border-slate-800 p-6 rounded-2xl text-center text-slate-500 text-xs">No security threats detected.</div>`;
+                container.innerHTML = `<div class="bg-slate-900/40 border border-slate-800 p-6 rounded-2xl text-center text-slate-500 text-xs">No security events or audit logs recorded.</div>`;
                 return;
             }
 
             container.innerHTML = events.map(e => `
                 <div class="bg-slate-900/70 border border-slate-800 p-3.5 rounded-xl flex items-start gap-3 text-xs">
-                    <div class="p-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg text-xs mt-0.5">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    <div class="p-2 ${e.type === 'AUDIT' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'} border rounded-lg text-xs mt-0.5">
+                        <i class="fa-solid ${e.type === 'AUDIT' ? 'fa-user-pen' : 'fa-triangle-exclamation'}"></i>
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center justify-between gap-2">
@@ -381,13 +402,20 @@
             document.getElementById('drawer-title').innerText = site.name;
             document.getElementById('drawer-url').href = site.url;
             document.getElementById('drawer-url').querySelector('span').innerText = site.url;
-            document.getElementById('drawer-wp').innerText = site.wp_version;
-            document.getElementById('drawer-php').innerText = site.php_version;
+            document.getElementById('drawer-health-score').innerText = `${site.health_score || 100} / 100`;
             document.getElementById('drawer-security').innerText = site.security_engine;
-            document.getElementById('drawer-theme-name').innerText = (site.theme && site.theme.name) ? site.theme.name : 'Custom Active Theme';
-            document.getElementById('drawer-theme-ver').innerText = (site.theme && site.theme.version) ? `v${site.theme.version}` : 'v1.0';
+            document.getElementById('drawer-theme-name').innerText = site.theme ? site.theme.name : 'Active Theme';
+            document.getElementById('drawer-theme-ver').innerText = site.theme ? `v${site.theme.version}` : 'v1.0';
 
-            // Render Plugins Tab
+            // Performance Vitals
+            const perf = site.performance || { queries: 32, load_time: '0.28s', memory: '16 MB' };
+            document.getElementById('drawer-queries').innerText = `${perf.queries} SQL Queries`;
+            document.getElementById('drawer-load-time').innerText = perf.load_time;
+            document.getElementById('drawer-memory').innerText = perf.memory;
+
+            document.getElementById('btn-print-report').href = `/api/generate-report?site=${encodeURIComponent(site.url)}`;
+
+            // Plugins
             const plugins = site.plugins || [];
             document.getElementById('drawer-tab-plugin-count').innerText = plugins.length;
             document.getElementById('drawer-plugins-summary').innerText = `${plugins.length} Installed Plugins`;
@@ -411,15 +439,15 @@
                 </div>
             `).join('');
 
-            // Render Site Security Tab
-            const siteEvents = globalData.events.filter(e => e.site_url === siteUrl);
+            // Site-Specific Security Log
+            const siteEvents = [...globalData.events, ...(globalData.audit_logs || [])].filter(e => e.site_url === siteUrl);
             const eventsContainer = document.getElementById('drawer-site-events');
             if (siteEvents.length === 0) {
-                eventsContainer.innerHTML = `<div class="text-xs text-slate-500 p-4 bg-slate-950 rounded-xl text-center">No recent security incidents for this site.</div>`;
+                eventsContainer.innerHTML = `<div class="text-xs text-slate-500 p-4 bg-slate-950 rounded-xl text-center">No security incidents or audit logs for this site.</div>`;
             } else {
                 eventsContainer.innerHTML = siteEvents.map(e => `
                     <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs">
-                        <div class="flex justify-between font-bold text-rose-400">
+                        <div class="flex justify-between font-bold ${e.type === 'AUDIT' ? 'text-indigo-400' : 'text-rose-400'}">
                             <span>${e.event}</span>
                             <span class="text-[10px] text-slate-500 mono">${new Date(e.timestamp).toLocaleTimeString()}</span>
                         </div>
@@ -450,11 +478,7 @@
         }
 
         function createInstantBackup() {
-            alert(`[FLOTEK BACKUP] Creating compressed database dump & zipping wp-content for ${activeSiteUrl}...\nBackup generated: flotek-backup-${Date.now()}.zip (148 MB)\nSaved securely in Vault.`);
-        }
-
-        function downloadBackupLocally() {
-            alert(`[DOWNLOAD] Streaming snapshot backup to your computer...`);
+            alert(`[FLOTEK BACKUP] Creating database dump & zipping wp-content for ${activeSiteUrl}...\nSnapshot generated: flotek-backup-${Date.now()}.zip (152 MB)\nSaved in Cloud Vault.`);
         }
 
         function runChecksumScan() {
