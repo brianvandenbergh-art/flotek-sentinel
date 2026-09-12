@@ -123,7 +123,7 @@
                 <div id="domains-fleet-container" class="hidden space-y-3"></div>
             </div>
 
-            <!-- Right 1 Col: Live Security & Audit Stream -->
+            <!-- Right 1 Col: Live Security Stream -->
             <div class="space-y-3">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
@@ -162,7 +162,7 @@
         </div>
     </div>
 
-    <!-- ADAPTIVE DRAWER WITH FIXED TAB MEMORY -->
+    <!-- ADAPTIVE MANAGEMENT DRAWER -->
     <div id="site-drawer" class="fixed inset-0 z-50 overflow-hidden hidden">
         <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="closeDrawer()"></div>
 
@@ -286,7 +286,7 @@
                         </div>
                     </div>
 
-                    <!-- TAB 3: PLUGINS & UPDATES -->
+                    <!-- TAB 3: PLUGINS & 1-CLICK UPDATE -->
                     <div id="tab-wp" class="tab-content hidden space-y-3">
                         <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-xs">
                             <span class="text-slate-400 font-semibold" id="drawer-plugins-summary">0 Installed Plugins</span>
@@ -314,7 +314,7 @@
                         </div>
                     </div>
 
-                    <!-- TAB 5: USERS -->
+                    <!-- TAB 5: USERS & PASSWORD RESET & DELETE USER -->
                     <div id="tab-users" class="tab-content hidden space-y-4 text-xs">
                         <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
                             <h4 class="font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
@@ -368,13 +368,12 @@
         </div>
     </div>
 
-    <!-- Script Logic with Tab Locking & Self-Healing Persistence -->
+    <!-- Script Logic with Real Delete User & Delete Domain Handlers -->
     <script>
         let globalData = { sites: [], domains: [], events: [], audit_logs: [] };
         let activeSiteUrl = '';
-        let currentActiveTab = 'tab-overview'; // Locks the active tab
+        let currentActiveTab = 'tab-overview';
 
-        // SELF-HEALING STORAGE: Auto-recover standalone domains from localStorage if server restarted
         function recoverDomainsFromLocalStorage() {
             try {
                 const saved = JSON.parse(localStorage.getItem('flotek_saved_domains') || '[]');
@@ -409,7 +408,6 @@
                 renderDomains(data.domains || []);
                 renderEvents([...data.events, ...(data.audit_logs || [])]);
 
-                // Update drawer in place WITHOUT resetting the active tab
                 if (activeSiteUrl) openDrawer(activeSiteUrl, true);
             } catch (err) {
                 console.error(err);
@@ -519,7 +517,10 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-end">
+                        <div class="flex items-center justify-end gap-2">
+                            <button onclick="event.stopPropagation(); deleteStandaloneDomain('${d.domain}')" class="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-semibold" title="Delete Domain">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
                             <span class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 rounded-xl text-xs font-semibold">
                                 View DNS Zone
                             </span>
@@ -564,13 +565,11 @@
             document.getElementById('drawer-url').href = site.url || `https://${site.domain}`;
             document.getElementById('drawer-url').querySelector('span').innerText = site.url || site.domain;
 
-            // ADAPT DRAWER TABS (Hide WP tabs if domain only)
             document.querySelectorAll('.wp-only-tab').forEach(el => {
                 if (isWebsite) el.classList.remove('hidden');
                 else el.classList.add('hidden');
             });
 
-            // TAB LOCK: Only set default tab when manually opened, never on 5s background sync
             if (!isBackgroundSync) {
                 currentActiveTab = isWebsite ? 'tab-overview' : 'tab-dns';
             }
@@ -622,7 +621,7 @@
                 </div>
             `).join('');
 
-            // Users Tab
+            // Users Tab with Real Delete User Button
             const users = site.users || [];
             document.getElementById('drawer-tab-user-count').innerText = users.length;
             const usersContainer = document.getElementById('drawer-users-list');
@@ -636,9 +635,14 @@
                             <span class="text-slate-400 ml-1 sm:ml-2">(${u.user_email})</span>
                             <div class="text-[10px] text-slate-500 mt-0.5">Role: <span class="text-indigo-400 font-bold uppercase">${(u.roles || ['user']).join(', ')}</span></div>
                         </div>
-                        <button onclick="resetUserPassword('${u.id}', '${u.user_login}')" class="self-start sm:self-auto px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/20 rounded font-semibold text-[11px] flex items-center gap-1">
-                            <i class="fa-solid fa-key"></i> Reset Password
-                        </button>
+                        <div class="flex items-center gap-1.5 self-start sm:self-auto">
+                            <button onclick="resetUserPassword('${u.id}', '${u.user_login}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/20 rounded font-semibold text-[11px] flex items-center gap-1">
+                                <i class="fa-solid fa-key"></i> Reset Pass
+                            </button>
+                            <button onclick="deleteUser('${u.id}', '${u.user_login}')" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded font-semibold text-[11px]" title="Delete User">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
                 `).join('');
             }
@@ -663,7 +667,6 @@
             document.getElementById('site-drawer').classList.remove('hidden');
         }
 
-        // TAB SWITCHER: Remembers exactly which tab you are viewing
         function switchTab(tabId) {
             currentActiveTab = tabId;
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -710,7 +713,6 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    // Save to localStorage for permanent recovery
                     let saved = JSON.parse(localStorage.getItem('flotek_saved_domains') || '[]');
                     if (!saved.includes(domain)) {
                         saved.push(domain);
@@ -729,6 +731,26 @@
             } finally {
                 btn.innerHTML = originalHTML;
                 btn.disabled = false;
+            }
+        }
+
+        async function deleteStandaloneDomain(domain) {
+            if (!confirm(`Are you sure you want to remove '${domain}' from your dashboard?`)) return;
+
+            try {
+                await fetch('/api/delete-domain', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain_name: domain })
+                });
+
+                let saved = JSON.parse(localStorage.getItem('flotek_saved_domains') || '[]');
+                saved = saved.filter(d => d !== domain);
+                localStorage.setItem('flotek_saved_domains', JSON.stringify(saved));
+
+                refreshData();
+            } catch (e) {
+                alert(`Error: ${e.message}`);
             }
         }
 
@@ -773,6 +795,27 @@
                     alert(`✅ Password for '${username}' updated successfully in WordPress!`);
                 } else {
                     alert(`❌ Failed: ${result.error || 'Error'}`);
+                }
+            } catch (e) {
+                alert(`Error: ${e.message}`);
+            }
+        }
+
+        async function deleteUser(userId, username) {
+            if (!confirm(`Are you sure you want to DELETE user '${username}' from ${activeSiteUrl}?\nThis action cannot be undone.`)) return;
+
+            try {
+                const res = await fetch('/api/delete-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ site_url: activeSiteUrl, user_id: userId })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert(`✅ User '${username}' deleted successfully from WordPress!`);
+                    refreshData();
+                } else {
+                    alert(`❌ Failed: ${result.error || 'Could not delete user'}`);
                 }
             } catch (e) {
                 alert(`Error: ${e.message}`);
