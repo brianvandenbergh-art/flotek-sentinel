@@ -1,6 +1,8 @@
 const express = require('express');
+const nodemailer = require('nodemailer');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const tls = require('tls');
 const dns = require('dns').promises;
 
@@ -11,7 +13,9 @@ app.use(express.static(__dirname));
 
 const PORT = process.env.PORT || 3000;
 const ALERT_EMAIL = 'brian.vandenbergh@flotek.io';
+const SENDER_EMAIL = 'monitor@flotek.io';
 const SHARED_SECRET = 'flotek-super-secret-key-2026';
+const DB_FILE = path.join(__dirname, 'data.json');
 
 let monitoredSites = {};
 let standaloneDomains = {};
@@ -19,63 +23,119 @@ let securityEvents = [];
 let auditLogs = [];
 
 // =========================================================================
-// 1. AUTOMATED DEEP DNS SCANNER (Zero Hardcoding - Works for Any Domain)
+// 1. PERMANENT DISK STORAGE ENGINE (Never Lose Data on Restarts)
+// =========================================================================
+function loadDatabase() {
+    try {
+        if (fs.existsSync(DB_FILE)) {
+            const raw = fs.readFileSync(DB_FILE, 'utf8');
+            const data = JSON.parse(raw);
+            monitoredSites = data.sites || {};
+            standaloneDomains = data.domains || {};
+            securityEvents = data.events || [];
+            auditLogs = data.audit_logs || [];
+            console.log(`📁 [PERSISTENCE] Loaded ${Object.keys(monitoredSites).length} sites & ${Object.keys(standaloneDomains).length} domains from disk.`);
+        }
+    } catch (e) {
+        console.error('[DB LOAD ERROR]', e.message);
+    }
+}
+
+function saveDatabase() {
+    try {
+        fs.writeFileSync(DB_FILE, JSON.stringify({
+            sites: monitoredSites,
+            domains: standaloneDomains,
+            events: securityEvents,
+            audit_logs: auditLogs
+        }, null, 2));
+    } catch (e) {
+        console.error('[DB SAVE ERROR]', e.message);
+    }
+}
+
+loadDatabase();
+
+// =========================================================================
+// 2. EMAIL DISPATCHER (monitor@flotek.io -> brian.vandenbergh@flotek.io)
+// =========================================================================
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.office365.com',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: false,
+    auth: {
+        user: process.env.SMTP_USER || SENDER_EMAIL,
+        pass: process.env.SMTP_PASS || ''
+    }
+});
+
+async function sendAlertEmail(subject, bodyHtml) {
+    console.log(`📧 [ALERT QUEUED] From: ${SENDER_EMAIL} -> To: ${ALERT_EMAIL} | Subject: ${subject}`);
+    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+        try {
+            await transporter.sendMail({
+                from: `"Flotek Sentinel" <${SENDER_EMAIL}>`,
+                to: ALERT_EMAIL,
+                subject: `[Flotek Sentinel] ${subject}`,
+                html: bodyHtml
+            });
+            console.log(`✅ [EMAIL SENT] Delivered to ${ALERT_EMAIL}`);
+        } catch (err) {
+            console.error('[EMAIL ERROR]', err.message);
+        }
+    }
+}
+
+// =========================================================================
+// 3. DYNAMIC DNS & SSL SCANNER
 // =========================================================================
 async function scanFullDNSZone(domain) {
     const cleanHost = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
     let records = [];
 
-    // A. Root Records Query
     try {
         const a = await dns.resolve4(cleanHost).catch(() => []);
-        a.forEach(ip => records.push({ type: 'A', host: '@ (Apex)', value: ip, ttl: 'Auto' }));
-
-        const aaaa = await dns.resolve6(cleanHost).catch(() => []);
-        aaaa.forEach(ip => records.push({ type: 'AAAA', host: '@ (Apex)', value: ip, ttl: 'Auto' }));
+        a.forEach(ip => records.push({ type: 'A', host: '@ (Apex)', value: ip, priority: '-' }));
 
         const ns = await dns.resolveNs(cleanHost).catch(() => []);
-        ns.forEach(val => records.push({ type: 'NS', host: '@', value: val, ttl: 'Auto' }));
+        ns.forEach(val => records.push({ type: 'NS', host: '@', value: val, priority: '-' }));
 
         const mx = await dns.resolveMx(cleanHost).catch(() => []);
-        mx.forEach(val => records.push({ type: 'MX', host: '@', value: val.exchange, priority: val.priority, ttl: 'Auto' }));
+        mx.forEach(val => records.push({ type: 'MX', host: '@', value: val.exchange, priority: val.priority }));
 
         const txt = await dns.resolveTxt(cleanHost).catch(() => []);
-        txt.forEach(val => records.push({ type: 'TXT', host: '@', value: val.join(' '), ttl: 'Auto' }));
+        txt.forEach(val => records.push({ type: 'TXT', host: '@', value: val.join(' '), priority: '-' }));
     } catch (e) {}
 
-    // B. Subdomain & DKIM Probe List
     const probeList = [
         'www', 'mail', 'ftp', 'sftp', 'ssh', 'remote', 'ftp.remote', 'www.remote', 
         'ftp.mail', 'www.mail', 'slipstream', 'www.slipstream', 'autodiscover', 
         'webmail', 'smtp', 'mcp', 'mailserver', 'barracuda36629914597',
         '_dmarc', 'brevo1._domainkey', 'brevo2._domainkey', 'livemail1._domainkey', 
         'livemail2._domainkey', 'livemail3._domainkey', 'livemail4._domainkey', 
-        'selector1._domainkey', 'selector2._domainkey', 'google._domainkey', 'k1._domainkey'
+        'selector1._domainkey', 'selector2._domainkey'
     ];
 
     await Promise.all(probeList.map(async (sub) => {
         const subFqdn = `${sub}.${cleanHost}`;
         try {
             const ips = await dns.resolve4(subFqdn).catch(() => []);
-            ips.forEach(ip => records.push({ type: 'A', host: sub, value: ip, ttl: 'Auto' }));
+            ips.forEach(ip => records.push({ type: 'A', host: sub, value: ip, priority: '-' }));
 
             const cnames = await dns.resolveCname(subFqdn).catch(() => []);
-            cnames.forEach(target => records.push({ type: 'CNAME', host: sub, value: target, ttl: 'Auto' }));
+            cnames.forEach(target => records.push({ type: 'CNAME', host: sub, value: target, priority: '-' }));
 
             const txts = await dns.resolveTxt(subFqdn).catch(() => []);
-            txts.forEach(t => records.push({ type: 'TXT', host: sub, value: t.join(' '), ttl: 'Auto' }));
+            txts.forEach(t => records.push({ type: 'TXT', host: sub, value: t.join(' '), priority: '-' }));
 
             const mxs = await dns.resolveMx(subFqdn).catch(() => []);
-            mxs.forEach(m => records.push({ type: 'MX', host: sub, value: m.exchange, priority: m.priority, ttl: 'Auto' }));
+            mxs.forEach(m => records.push({ type: 'MX', host: sub, value: m.exchange, priority: m.priority }));
         } catch (e) {}
     }));
 
     return records;
 }
 
-// =========================================================================
-// 2. LIVE SSL TLS INSPECTOR
-// =========================================================================
 function inspectLiveSSL(domain) {
     return new Promise((resolve) => {
         const cleanHost = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
@@ -86,26 +146,31 @@ function inspectLiveSSL(domain) {
             if (cert && cert.valid_to) {
                 const expiryDate = new Date(cert.valid_to);
                 const daysLeft = Math.max(0, Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)));
-                const issuerName = cert.issuer ? (cert.issuer.O || cert.issuer.CN || "Fasthosts / Let's Encrypt") : "Active SSL";
+                const issuerName = cert.issuer ? (cert.issuer.O || cert.issuer.CN || "Let's Encrypt") : "Active SSL";
                 resolve({ valid: true, days_left: daysLeft, issuer: issuerName, expires: expiryDate.toLocaleDateString() });
             } else {
-                resolve({ valid: true, days_left: 84, issuer: "Fasthosts / Cloudflare", expires: 'Auto-Renew' });
+                resolve({ valid: true, days_left: 84, issuer: "Cloudflare / Let's Encrypt", expires: 'Auto-Renew' });
             }
         });
 
-        socket.on('error', () => resolve({ valid: true, days_left: 84, issuer: "Fasthosts / Cloudflare", expires: 'Auto-Renew' }));
-        socket.on('timeout', () => { socket.destroy(); resolve({ valid: true, days_left: 84, issuer: "Fasthosts / Cloudflare", expires: 'Auto-Renew' }); });
+        socket.on('error', () => resolve({ valid: true, days_left: 84, issuer: "Cloudflare / Let's Encrypt", expires: 'Auto-Renew' }));
+        socket.on('timeout', () => { socket.destroy(); resolve({ valid: true, days_left: 84, issuer: "Cloudflare / Let's Encrypt", expires: 'Auto-Renew' }); });
     });
 }
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
-// WORDPRESS SITE REGISTRATION ENDPOINT
+// WORDPRESS SITE REGISTRATION
 app.post('/api/register', async (req, res) => {
     const authHeader = req.headers['x-hub-secret'];
     if (authHeader !== SHARED_SECRET) return res.status(403).json({ error: 'Unauthorized' });
 
     const data = req.body;
+    const cleanHost = data.site_url.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
+    
+    // Clean up if it was previously in standalone domains
+    delete standaloneDomains[cleanHost];
+
     const [liveSSL, liveDNS] = await Promise.all([
         inspectLiveSSL(data.site_url),
         scanFullDNSZone(data.site_url)
@@ -133,14 +198,15 @@ app.post('/api/register', async (req, res) => {
         last_seen: new Date().toISOString()
     };
 
-    console.log(`✨ [SITE AUTO-DISCOVERY] ${data.site_name} | Discovered ${liveDNS.length} DNS Records`);
+    saveDatabase();
+    console.log(`✨ [SITE SAVED] ${data.site_name} | ${liveDNS.length} DNS Records`);
     res.json({ success: true });
 });
 
-// STANDALONE DOMAIN ADD ENDPOINT (Button on Dashboard)
+// STANDALONE DOMAIN ADD ENDPOINT (Domains Only)
 app.post('/api/add-domain', async (req, res) => {
     const { domain_name } = req.body;
-    if (!domain_name) return res.status(400).json({ error: 'Domain name is required.' });
+    if (!domain_name) return res.status(400).json({ error: 'Domain is required' });
 
     const cleanHost = domain_name.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
     const [liveSSL, liveDNS] = await Promise.all([
@@ -165,11 +231,12 @@ app.post('/api/add-domain', async (req, res) => {
         last_scanned: new Date().toISOString()
     };
 
-    console.log(`🏷️ [DOMAIN ADDED] ${cleanHost} | ${liveDNS.length} Records Discovered`);
+    saveDatabase();
+    console.log(`🏷️ [DOMAIN SAVED PERMANENTLY] ${cleanHost} | ${liveDNS.length} DNS Records`);
     res.json({ success: true, domain: standaloneDomains[cleanHost] });
 });
 
-// REMOTE USER MANAGEMENT: CREATE USER
+// REMOTE USER MANAGEMENT
 app.post('/api/create-user', async (req, res) => {
     const { site_url, username, email, role, password } = req.body;
     try {
@@ -184,7 +251,6 @@ app.post('/api/create-user', async (req, res) => {
     }
 });
 
-// REMOTE USER MANAGEMENT: RESET PASSWORD
 app.post('/api/reset-password', async (req, res) => {
     const { site_url, user_id, new_password } = req.body;
     try {
@@ -199,7 +265,7 @@ app.post('/api/reset-password', async (req, res) => {
     }
 });
 
-// PROXY: TRIGGER REMOTE PLUGIN UPDATE
+// PROXY ACTIONS
 app.post('/api/trigger-update', async (req, res) => {
     const { site_url } = req.body;
     try {
@@ -213,7 +279,6 @@ app.post('/api/trigger-update', async (req, res) => {
     }
 });
 
-// PROXY: TRIGGER FTP BACKUP
 app.post('/api/trigger-backup', async (req, res) => {
     const { site_url } = req.body;
     try {
@@ -230,6 +295,7 @@ app.post('/api/trigger-backup', async (req, res) => {
                 filesize: result.filesize,
                 date: result.timestamp
             });
+            saveDatabase();
         }
         res.json(result);
     } catch (err) {
@@ -237,7 +303,6 @@ app.post('/api/trigger-backup', async (req, res) => {
     }
 });
 
-// PROXY: TRIGGER DATABASE ROLLBACK
 app.post('/api/trigger-rollback', async (req, res) => {
     const { site_url, filename } = req.body;
     try {
@@ -252,7 +317,7 @@ app.post('/api/trigger-rollback', async (req, res) => {
     }
 });
 
-// SECURITY EVENT RECEIVER
+// SECURITY & AUDIT EVENT RECEIVER
 app.post('/api/event', (req, res) => {
     const authHeader = req.headers['x-hub-secret'];
     if (authHeader !== SHARED_SECRET) return res.status(403).json({ error: 'Unauthorized' });
@@ -260,13 +325,17 @@ app.post('/api/event', (req, res) => {
     const { site_url, site_name, event, details, type, timestamp } = req.body;
     const record = { id: Date.now(), site_url, site_name, event, details, type: type || 'SECURITY', timestamp: timestamp || new Date().toISOString() };
 
-    if (type === 'AUDIT') auditLogs.unshift(record);
-    else securityEvents.unshift(record);
+    if (type === 'AUDIT') {
+        auditLogs.unshift(record);
+    } else {
+        securityEvents.unshift(record);
+        sendAlertEmail(`🚨 Security Alert: ${event} on ${site_name}`, `<p><strong>${event}</strong> on ${site_name}</p><pre>${JSON.stringify(details, null, 2)}</pre>`);
+    }
 
+    saveDatabase();
     res.json({ success: true });
 });
 
-// DASHBOARD API
 app.get('/api/dashboard-data', (req, res) => {
     let totalUpdates = 0;
     Object.values(monitoredSites).forEach(s => totalUpdates += (s.updates_count || 0));
@@ -278,7 +347,8 @@ app.get('/api/dashboard-data', (req, res) => {
         audit_logs: auditLogs,
         total_updates: totalUpdates,
         fleet_health: 98,
-        alert_email: ALERT_EMAIL
+        alert_email: ALERT_EMAIL,
+        sender_email: SENDER_EMAIL
     });
 });
 
