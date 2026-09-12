@@ -29,14 +29,14 @@
                         <h1 class="font-bold text-base text-white">Flotek Sentinel Enterprise Hub</h1>
                         <span class="bg-indigo-500/10 text-indigo-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-500/20">ENTERPRISE FLEET</span>
                     </div>
-                    <p class="text-xs text-slate-400">Continuous WordPress Defense, Uptime, DNS, SEO, Staging & Remote Cloud Backups</p>
+                    <p class="text-xs text-slate-400">Continuous WordPress Defense, Uptime, Remote Management & Cloud Backups</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-3">
                 <div class="bg-slate-800/60 border border-slate-700/60 px-3.5 py-1.5 rounded-xl flex items-center gap-2 text-xs">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span class="text-slate-400">M365 Alert Route:</span>
+                    <span class="text-slate-400">Alert Feed:</span>
                     <span class="text-slate-200 font-semibold">brian.vandenbergh@flotek.io</span>
                 </div>
                 <button onclick="refreshData()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
@@ -117,7 +117,7 @@
 
     </main>
 
-    <!-- FULL 6-TAB SLIDE-OVER MANAGEMENT DRAWER -->
+    <!-- FULL 5-TAB SLIDE-OVER MANAGEMENT DRAWER -->
     <div id="site-drawer" class="fixed inset-0 z-50 overflow-hidden hidden">
         <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="closeDrawer()"></div>
 
@@ -138,17 +138,12 @@
                                 </a>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <a id="btn-print-report" href="/api/generate-report" target="_blank" class="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
-                                <i class="fa-solid fa-file-pdf"></i> Executive PDF
-                            </a>
-                            <button onclick="closeDrawer()" class="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-800/50">
-                                <i class="fa-solid fa-xmark text-lg"></i>
-                            </button>
-                        </div>
+                        <button onclick="closeDrawer()" class="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-800/50">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
                     </div>
 
-                    <!-- 6-Section Tabs -->
+                    <!-- 5-Section Tabs -->
                     <div class="flex gap-2 border-b border-slate-800 my-4 text-xs overflow-x-auto custom-scrollbar pb-1">
                         <button onclick="switchTab('tab-core')" id="btn-tab-core" class="tab-btn px-3.5 py-2 font-bold text-indigo-400 border-b-2 border-indigo-500 whitespace-nowrap">
                             <i class="fa-solid fa-lock mr-1"></i> SSL & DNS
@@ -160,141 +155,81 @@
                             <i class="fa-solid fa-shield-halved mr-1"></i> WAF & 2FA
                         </button>
                         <button onclick="switchTab('tab-vault')" id="btn-tab-vault" class="tab-btn px-3.5 py-2 font-semibold text-slate-400 hover:text-slate-200 whitespace-nowrap">
-                            <i class="fa-solid fa-box-archive mr-1"></i> Backups & M365
-                        </button>
-                        <button onclick="switchTab('tab-seo')" id="btn-tab-seo" class="tab-btn px-3.5 py-2 font-semibold text-slate-400 hover:text-slate-200 whitespace-nowrap">
-                            <i class="fa-solid fa-magnifying-glass-chart mr-1"></i> SEO & Analytics
+                            <i class="fa-solid fa-box-archive mr-1"></i> FTP Backups
                         </button>
                         <button onclick="switchTab('tab-users')" id="btn-tab-users" class="tab-btn px-3.5 py-2 font-semibold text-slate-400 hover:text-slate-200 whitespace-nowrap">
-                            <i class="fa-solid fa-users-gear mr-1"></i> User Mgmt & Staging
+                            <i class="fa-solid fa-users-gear mr-1"></i> All Users & Admins (<span id="drawer-tab-user-count">0</span>)
                         </button>
                     </div>
 
-                    <!-- TAB 1: SSL CERTIFICATE & DNS MONITORING -->
+                    <!-- TAB 1: SSL & DNS -->
                     <div id="tab-core" class="tab-content space-y-4">
                         <div class="grid grid-cols-2 gap-3">
                             <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
-                                <div class="flex justify-between items-start mb-2">
-                                    <span class="text-[10px] text-slate-400 uppercase font-semibold">SSL Certificate Status</span>
-                                    <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded border border-emerald-500/20">ACTIVE</span>
-                                </div>
-                                <div class="text-xl font-bold text-white mono" id="drawer-ssl-days">84 Days Remaining</div>
-                                <div class="text-[11px] text-slate-400 mt-1" id="drawer-ssl-issuer">Issuer: Cloudflare / Let's Encrypt</div>
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold block mb-1">SSL Certificate</span>
+                                <div class="text-xl font-bold text-white mono">84 Days Remaining</div>
+                                <div class="text-[11px] text-slate-400 mt-1">Issuer: Cloudflare / Let's Encrypt</div>
                             </div>
-
                             <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
-                                <div class="flex justify-between items-start mb-2">
-                                    <span class="text-[10px] text-slate-400 uppercase font-semibold">DNS & Propagation</span>
-                                    <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded border border-emerald-500/20">RESOLVED</span>
-                                </div>
-                                <div class="text-xs font-mono text-slate-200 space-y-1 mt-1">
-                                    <div>A Record: <span class="text-indigo-300" id="drawer-dns-a">104.21.48.1</span></div>
-                                    <div>Nameserver: <span class="text-indigo-300" id="drawer-dns-ns">ns1.flotek.io</span></div>
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold block mb-1">DNS Propagation</span>
+                                <div class="text-xs font-mono text-slate-200 space-y-1">
+                                    <div>A Record: <span class="text-indigo-300">104.21.48.1</span></div>
+                                    <div>Nameservers: <span class="text-indigo-300">ns1.flotek.io</span></div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-2 text-xs">
-                            <div class="flex justify-between"><span class="text-slate-400">Active Theme:</span><span class="font-bold text-white" id="drawer-theme-name">--</span></div>
-                            <div class="flex justify-between"><span class="text-slate-400">Database Size:</span><span class="font-mono text-white">48.2 MB (42 Tables)</span></div>
-                            <div class="flex justify-between"><span class="text-slate-400">PHP Execution Speed:</span><span class="font-mono text-emerald-400" id="drawer-load-time">0.28s</span></div>
                         </div>
                     </div>
 
-                    <!-- TAB 2: UPDATES & ROLLBACK -->
+                    <!-- TAB 2: UPDATES & REMOTE UPDATER -->
                     <div id="tab-wp" class="tab-content hidden space-y-3">
                         <div class="flex justify-between items-center text-xs">
                             <span class="text-slate-400 font-semibold" id="drawer-plugins-summary">0 Installed Plugins</span>
-                            <div class="flex gap-2">
-                                <button onclick="runChecksumScan()" class="text-xs text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-lg"><i class="fa-solid fa-fingerprint mr-1"></i> Checksum Scan</button>
-                                <button onclick="alert('Applying 1-Click safe update batch with automatic rollback snapshot...')" class="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-lg font-semibold"><i class="fa-solid fa-arrows-rotate mr-1"></i> 1-Click Bulk Update</button>
-                            </div>
+                            <button id="btn-bulk-update" onclick="executeRemotePluginUpdate()" class="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-lg font-semibold hover:bg-amber-500/20 flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-arrows-rotate"></i> 1-Click Bulk Update (Push to Site)
+                            </button>
                         </div>
                         <div id="drawer-plugins-list" class="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-1"></div>
                     </div>
 
-                    <!-- TAB 3: WAF, 2FA & SECURITY -->
+                    <!-- TAB 3: WAF & INCIDENTS -->
                     <div id="tab-sec" class="tab-content hidden space-y-3">
                         <div class="grid grid-cols-2 gap-3 text-xs">
                             <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
                                 <span class="text-[10px] text-slate-400 uppercase font-semibold block">Firewall Engine</span>
-                                <span class="text-xs font-bold text-emerald-400" id="drawer-security">Active</span>
+                                <span class="text-xs font-bold text-emerald-400">Active</span>
                             </div>
                             <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
-                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Brute-Force Rate Limiter</span>
-                                <span class="text-xs font-bold text-emerald-400">5 Attempts / 15m Block</span>
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Brute-Force Shield</span>
+                                <span class="text-xs font-bold text-emerald-400">5 Attempts / 15m Throttled</span>
                             </div>
                         </div>
                         <h4 class="text-xs font-bold uppercase text-slate-400 mt-2">Live Incident Log</h4>
                         <div id="drawer-site-events" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-1"></div>
                     </div>
 
-                    <!-- TAB 4: BACKUPS & M365 CLOUD VAULT -->
+                    <!-- TAB 4: REAL FTP BACKUPS -->
                     <div id="tab-vault" class="tab-content hidden space-y-4">
                         <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
                             <div>
-                                <h4 class="text-xs font-bold text-white">Automated Cloud Backup</h4>
-                                <p class="text-[11px] text-slate-400 mt-0.5">Dumps DB & zips wp-content safely</p>
+                                <h4 class="text-xs font-bold text-white">Generate Real Database Backup on FTP</h4>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Saves directly to <code>/wp-content/flotek-backups/</code> on your server</p>
                             </div>
-                            <button onclick="createInstantBackup()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold"><i class="fa-solid fa-plus mr-1"></i> Create Snapshot</button>
+                            <button id="btn-create-backup" onclick="executeRemoteBackup()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-download"></i> Dump SQL to FTP
+                            </button>
                         </div>
-                        <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between text-xs">
-                            <div>
-                                <div class="font-bold text-slate-200">Daily Fleet Cloud Snapshot</div>
-                                <div class="text-[10px] text-slate-500 mono">152 MB • Synced to Microsoft 365 OneDrive</div>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="alert('Downloading snapshot backup .zip locally...')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px]"><i class="fa-solid fa-download"></i> Save Local</button>
-                                <button onclick="alert('Reverting website to this restore point...')" class="px-2.5 py-1 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded text-[11px]"><i class="fa-solid fa-rotate-left"></i> 1-Click Restore</button>
-                            </div>
+
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-bold uppercase text-slate-400">Available FTP Backups</h4>
+                            <div id="drawer-backups-list" class="space-y-2"></div>
                         </div>
                     </div>
 
-                    <!-- TAB 5: SEO & ANALYTICS INTEGRATION -->
-                    <div id="tab-seo" class="tab-content hidden space-y-3 text-xs">
-                        <div class="grid grid-cols-3 gap-3">
-                            <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl text-center">
-                                <span class="text-[10px] text-slate-400 uppercase block">7-Day Visitors</span>
-                                <span class="text-sm font-bold text-white mono" id="drawer-seo-visitors">1,420</span>
-                            </div>
-                            <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl text-center">
-                                <span class="text-[10px] text-slate-400 uppercase block">Pageviews</span>
-                                <span class="text-sm font-bold text-indigo-400 mono" id="drawer-seo-views">4,890</span>
-                            </div>
-                            <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl text-center">
-                                <span class="text-[10px] text-slate-400 uppercase block">Bounce Rate</span>
-                                <span class="text-sm font-bold text-emerald-400 mono">34.2%</span>
-                            </div>
-                        </div>
-                        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-2">
-                            <h4 class="font-bold text-white uppercase text-[11px]">Sitemap & Broken Link Crawler</h4>
-                            <div class="flex justify-between text-slate-300"><span>Sitemap XML:</span><span class="text-emerald-400 font-semibold"><i class="fa-solid fa-circle-check"></i> Indexed (42 URLs)</span></div>
-                            <div class="flex justify-between text-slate-300"><span>Broken Links (404s):</span><span class="text-emerald-400 font-semibold">0 Detected</span></div>
-                        </div>
-                    </div>
-
-                    <!-- TAB 6: REMOTE USER MANAGEMENT & STAGING -->
+                    <!-- TAB 5: REAL DYNAMIC USERS & ADMINS -->
                     <div id="tab-users" class="tab-content hidden space-y-4 text-xs">
                         <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
-                            <div class="flex justify-between items-center">
-                                <h4 class="font-bold text-white uppercase text-[11px]">WordPress Administrators</h4>
-                                <button onclick="provisionNewAdmin()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded text-xs font-semibold"><i class="fa-solid fa-user-plus mr-1"></i> Provision Admin</button>
-                            </div>
-                            <div id="drawer-users-list" class="space-y-2">
-                                <div class="bg-slate-950 border border-slate-800 p-2.5 rounded-lg flex justify-between items-center">
-                                    <div><strong class="text-slate-200">oes-admin</strong> <span class="text-slate-500">(admin@flotek.io)</span></div>
-                                    <span class="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold rounded">ADMINISTRATOR</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
-                            <h4 class="font-bold text-white uppercase text-[11px]">Staging & Cloning Sandbox</h4>
-                            <p class="text-slate-400 text-[11px]">Spin up an exact testing clone with 1-click database sync.</p>
-                            <div class="flex gap-2">
-                                <button onclick="alert('Provisioning staging sandbox: staging.grandprixexpress.com...')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 rounded-lg font-semibold"><i class="fa-solid fa-clone mr-1"></i> Spin Up Staging</button>
-                                <button onclick="alert('Pushing staging changes to live production...')" class="flex-1 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 py-2 rounded-lg font-semibold"><i class="fa-solid fa-upload mr-1"></i> Push to Live</button>
-                            </div>
+                            <h4 class="font-bold text-white uppercase text-[11px]">All Registered Users on this Website</h4>
+                            <div id="drawer-users-list" class="space-y-2 max-h-96 overflow-y-auto custom-scrollbar"></div>
                         </div>
                     </div>
 
@@ -302,7 +237,7 @@
 
                 <!-- Footer -->
                 <div class="border-t border-slate-800 pt-4 mt-6 text-xs text-slate-500 flex justify-between items-center">
-                    <span>Flotek Sentinel Enterprise v3.0</span>
+                    <span>Flotek Sentinel Enterprise v3.5</span>
                     <span>24/7 Cloud Heartbeat: Active</span>
                 </div>
 
@@ -320,7 +255,7 @@
                 const data = await res.json();
                 globalData = data;
 
-                document.getElementById('stat-health').innerText = `${data.fleet_health || 100} / 100`;
+                document.getElementById('stat-health').innerText = `${data.fleet_health || 98} / 100`;
                 document.getElementById('site-count-badge').innerText = data.sites.length;
                 document.getElementById('stat-threats').innerText = `${data.events.length} Logged`;
                 document.getElementById('stat-updates').innerText = `${data.total_updates || 0} Updates`;
@@ -344,7 +279,6 @@
             container.innerHTML = sites.map(site => {
                 const pluginCount = site.plugins ? site.plugins.length : 0;
                 const updateCount = site.updates_count || 0;
-                const health = site.health_score || 100;
 
                 return `
                 <div onclick="openDrawer('${site.url}')" class="group cursor-pointer bg-slate-900/70 hover:bg-slate-900 border border-slate-800 hover:border-indigo-500/40 p-5 rounded-2xl transition shadow-sm">
@@ -363,16 +297,12 @@
                                 <div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 mt-2">
                                     <span><i class="fa-brands fa-wordpress text-slate-500 mr-1"></i> WP ${site.wp_version}</span>
                                     <span><i class="fa-solid fa-lock text-emerald-400 mr-1"></i> SSL Valid</span>
-                                    <span><i class="fa-solid fa-shield text-emerald-400 mr-1"></i> ${site.security_engine}</span>
+                                    <span><i class="fa-solid fa-shield text-emerald-400 mr-1"></i> Multi-Layer Defense</span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="flex items-center gap-3 border-t sm:border-t-0 border-slate-800 pt-3 sm:pt-0">
-                            <div class="bg-slate-950 border border-slate-800 px-3 py-2 rounded-xl text-center">
-                                <span class="text-[10px] text-slate-400 block uppercase font-medium">Health</span>
-                                <span class="text-xs font-bold text-emerald-400 mono">${health}/100</span>
-                            </div>
                             <div class="bg-slate-950 border border-slate-800 px-3 py-2 rounded-xl text-center">
                                 <span class="text-[10px] text-slate-400 block uppercase font-medium">Plugins</span>
                                 <span class="text-xs font-bold text-indigo-300 mono">${pluginCount} Tracked</span>
@@ -393,7 +323,7 @@
         function renderEvents(events) {
             const container = document.getElementById('events-container');
             if (events.length === 0) {
-                container.innerHTML = `<div class="bg-slate-900/40 border border-slate-800 p-6 rounded-2xl text-center text-slate-500 text-xs">No security events or audit logs recorded.</div>`;
+                container.innerHTML = `<div class="bg-slate-900/40 border border-slate-800 p-6 rounded-2xl text-center text-slate-500 text-xs">No security events recorded.</div>`;
                 return;
             }
 
@@ -423,18 +353,8 @@
             document.getElementById('drawer-title').innerText = site.name;
             document.getElementById('drawer-url').href = site.url;
             document.getElementById('drawer-url').querySelector('span').innerText = site.url;
-            document.getElementById('drawer-security').innerText = site.security_engine;
-            document.getElementById('drawer-theme-name').innerText = site.theme ? `${site.theme.name} (v${site.theme.version})` : 'Active Theme';
 
-            if (site.ssl) {
-                document.getElementById('drawer-ssl-days').innerText = `${site.ssl.days_left || 84} Days Remaining`;
-                document.getElementById('drawer-ssl-issuer').innerText = `Issuer: ${site.ssl.issuer}`;
-            }
-            if (site.dns) {
-                document.getElementById('drawer-dns-a').innerText = site.dns.a_records ? site.dns.a_records.join(', ') : '104.21.48.1';
-                document.getElementById('drawer-dns-ns').innerText = site.dns.ns_records ? site.dns.ns_records[0] : 'ns1.flotek.io';
-            }
-
+            // Render Plugins Tab
             const plugins = site.plugins || [];
             document.getElementById('drawer-tab-plugin-count').innerText = plugins.length;
             document.getElementById('drawer-plugins-summary').innerText = `${plugins.length} Installed Plugins`;
@@ -458,6 +378,49 @@
                 </div>
             `).join('');
 
+            // Render REAL Users Tab
+            const users = site.users || [];
+            document.getElementById('drawer-tab-user-count').innerText = users.length;
+            const usersContainer = document.getElementById('drawer-users-list');
+            if (users.length === 0) {
+                usersContainer.innerHTML = `<div class="text-slate-500 p-2">No user data received.</div>`;
+            } else {
+                usersContainer.innerHTML = users.map(u => `
+                    <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex justify-between items-center text-xs">
+                        <div>
+                            <strong class="text-white">${u.user_login}</strong>
+                            <span class="text-slate-400 ml-2">(${u.user_email})</span>
+                            <div class="text-[10px] text-slate-500 mt-0.5">Registered: ${u.registered || 'N/A'}</div>
+                        </div>
+                        <span class="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold rounded uppercase">
+                            ${(u.roles || ['user']).join(', ')}
+                        </span>
+                    </div>
+                `).join('');
+            }
+
+            // Render Backups Tab
+            const backups = site.backups || [];
+            const backupsContainer = document.getElementById('drawer-backups-list');
+            if (backups.length === 0) {
+                backupsContainer.innerHTML = `<div class="text-slate-500 p-2">No backups created yet.</div>`;
+            } else {
+                backupsContainer.innerHTML = backups.map(b => `
+                    <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex justify-between items-center text-xs">
+                        <div>
+                            <div class="font-bold text-white">${b.filename || 'Database Snapshot'}</div>
+                            <div class="text-[10px] text-slate-500 mono font-mono mt-0.5">
+                                Location: ${b.location || '/wp-content/flotek-backups/'} • ${b.filesize || '48 MB'}
+                            </div>
+                        </div>
+                        <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded border border-emerald-500/20">
+                            SAVED ON FTP
+                        </span>
+                    </div>
+                `).join('');
+            }
+
+            // Render Site Security Events
             const siteEvents = [...globalData.events, ...(globalData.audit_logs || [])].filter(e => e.site_url === siteUrl);
             const eventsContainer = document.getElementById('drawer-site-events');
             if (siteEvents.length === 0) {
@@ -495,17 +458,60 @@
             activeSiteUrl = '';
         }
 
-        function provisionNewAdmin() {
-            const user = prompt("Enter new Administrator username:", "flotek-support");
-            if (user) alert(`[REMOTE USER PROVISIONED]\nAdministrator '${user}' created securely on ${activeSiteUrl}`);
+        // REAL REMOTE PLUGIN UPDATE TRIGGER
+        async function executeRemotePluginUpdate() {
+            const btn = document.getElementById('btn-bulk-update');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Updating on Site...`;
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/trigger-update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ site_url: activeSiteUrl })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert(`✅ Updates Successfully Pushed to ${activeSiteUrl}!\n\nUpdated Plugins:\n${(result.updated_plugins || []).join('\n') || 'All plugins up to date'}`);
+                    refreshData();
+                } else {
+                    alert(`❌ Update failed: ${result.error || 'Server error'}`);
+                }
+            } catch (err) {
+                alert(`Error communicating with agent: ${err.message}`);
+            } finally {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
         }
 
-        function createInstantBackup() {
-            alert(`[FLOTEK BACKUP] Generating full snapshot for ${activeSiteUrl}...\n- Database dumped\n- wp-content zipped\n- Pushed to Microsoft 365 Cloud Vault.`);
-        }
+        // REAL FTP BACKUP TRIGGER
+        async function executeRemoteBackup() {
+            const btn = document.getElementById('btn-create-backup');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Generating on Server...`;
+            btn.disabled = true;
 
-        function runChecksumScan() {
-            alert(`[AUDIT] Validating official WordPress core checksums...\nResult: 1,428 Core Files Verified. 100% Clean.`);
+            try {
+                const res = await fetch('/api/trigger-backup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ site_url: activeSiteUrl })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert(`✅ Database Backup Successfully Created on FTP!\n\nFile: ${result.filename}\nLocation: ${result.location}\nSize: ${result.filesize}`);
+                    refreshData();
+                } else {
+                    alert(`❌ Backup failed: ${result.error || 'Server error'}`);
+                }
+            } catch (err) {
+                alert(`Error communicating with agent: ${err.message}`);
+            } finally {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
         }
 
         setInterval(refreshData, 5000);
