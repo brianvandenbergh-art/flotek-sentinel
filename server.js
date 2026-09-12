@@ -7,7 +7,6 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Serve index.html directly from current folder
 app.use(express.static(__dirname));
 
 const PORT = process.env.PORT || 3000;
@@ -17,7 +16,6 @@ const SHARED_SECRET = 'flotek-super-secret-key-2026';
 let monitoredSites = {};
 let securityEvents = [];
 
-// Explicit root route so your dashboard always loads
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -35,9 +33,9 @@ app.post('/api/register', (req, res) => {
         wp_version: wp_version || '6.7',
         php_version: php_version || '8.2',
         plugins: plugins || [],
-        security_engine: security_engine || 'Native Guard',
+        security_engine: security_engine || 'Wordfence + AIOS',
         status: 'ONLINE',
-        latency: Math.floor(Math.random() * 30 + 55),
+        latency: Math.floor(Math.random() * 25 + 50),
         last_seen: new Date().toISOString()
     };
 
@@ -45,12 +43,31 @@ app.post('/api/register', (req, res) => {
     res.json({ success: true });
 });
 
-// SECURITY EVENT ENDPOINT
+// SECURITY EVENT ENDPOINT (Auto-creates the site card if not already created)
 app.post('/api/event', (req, res) => {
     const authHeader = req.headers['x-hub-secret'];
     if (authHeader !== SHARED_SECRET) return res.status(403).json({ error: 'Unauthorized' });
 
     const { site_url, site_name, event, details, timestamp } = req.body;
+
+    // AUTO-CREATE SITE CARD FROM EVENT
+    if (!monitoredSites[site_url]) {
+        monitoredSites[site_url] = {
+            name: site_name || site_url,
+            url: site_url,
+            wp_version: 'WordPress 6.7',
+            php_version: 'PHP 8.2',
+            plugins: [
+                { name: 'Wordfence Security', version: 'Active' },
+                { name: 'All-In-One Security (AIOS)', version: 'Active' },
+                { name: 'Flotek Sentinel Agent', version: 'v2.1' }
+            ],
+            security_engine: details.security_layer || 'Wordfence + AIOS',
+            status: 'ONLINE',
+            latency: Math.floor(Math.random() * 20 + 45),
+            last_seen: new Date().toISOString()
+        };
+    }
 
     securityEvents.unshift({
         id: Date.now(),
