@@ -1,0 +1,17 @@
+{
+  "name": "Flotek Sentinel",
+  "short_name": "Sentinel",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070a12",
+  "theme_color": "#070a12",
+  "description": "Continuous WordPress Defense, Uptime & Fleet Ops Command",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/9438/9438495.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
