@@ -7,7 +7,6 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -15,10 +14,6 @@
         .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #070a12; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
-
-        /* ABSOLUTE MODAL LOCK: CANNOT BLOCK CLICKS WHEN CLOSED */
-        #add-domain-modal, #site-drawer { display: none !important; }
-        #add-domain-modal.active, #site-drawer.active { display: flex !important; }
     </style>
 </head>
 <body class="bg-[#0b101b] text-slate-100 min-h-screen custom-scrollbar flex flex-col md:flex-row">
@@ -32,7 +27,7 @@
                 </div>
                 <div>
                     <h1 class="font-extrabold text-sm text-white tracking-tight">Flotek Sentinel</h1>
-                    <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">Enterprise Fleet</span>
+                    <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">Enterprise Live</span>
                 </div>
             </div>
 
@@ -56,7 +51,7 @@
     </aside>
 
     <!-- MAIN CONTENT AREA -->
-    <div class="flex-1 flex flex-col min-w-0 z-0">
+    <div class="flex-1 flex flex-col min-w-0">
 
         <!-- Top Header Bar -->
         <div class="border-b border-slate-800/80 bg-[#080d17]/50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -87,10 +82,10 @@
                 <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-[#080d17] border border-slate-800 p-3 rounded-2xl">
                     <div class="flex gap-1.5 text-xs">
                         <button onclick="switchFleetCategory('websites')" id="btn-fleet-websites" class="fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer">
-                            WordPress Sites (<span id="site-count-badge">2</span>)
+                            WordPress Sites (<span id="site-count-badge">0</span>)
                         </button>
                         <button onclick="switchFleetCategory('domains')" id="btn-fleet-domains" class="fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition cursor-pointer">
-                            Domains Only (<span id="domain-count-badge">2</span>)
+                            Domains Only (<span id="domain-count-badge">0</span>)
                         </button>
                     </div>
 
@@ -100,97 +95,12 @@
                     </div>
                 </div>
 
-                <!-- Websites List Container -->
-                <div id="websites-fleet-container" class="space-y-2.5">
-                    <!-- Grand Prix Express -->
-                    <div onclick="openDrawer('https://grandprixexpress.com')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0 shadow-sm shadow-emerald-400/50"></div>
-                            <div class="min-w-0">
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <h4 class="font-bold text-sm text-white group-hover:text-emerald-300 transition truncate">Grand Prix Express</h4>
-                                    <span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">flotek website</span>
-                                    <span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-md border border-amber-500/20">12 updates</span>
-                                </div>
-                                <span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">https://grandprixexpress.com</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">
-                            <span class="text-[11px] text-slate-500 flex items-center gap-1"><i class="fa-solid fa-rotate text-[9px]"></i> 30s</span>
-                            <div class="flex items-center gap-0.5"><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span></div>
-                            <span class="text-xs font-bold text-emerald-400 mono">100%</span>
-                            <span class="text-xs font-mono text-slate-400">45ms</span>
-                            <div class="text-slate-600 group-hover:text-slate-300"><i class="fa-solid fa-chevron-right text-xs"></i></div>
-                        </div>
-                    </div>
-
-                    <!-- Gamlins Solicitors -->
-                    <div onclick="openDrawer('https://gamlins.com')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0 shadow-sm shadow-emerald-400/50"></div>
-                            <div class="min-w-0">
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <h4 class="font-bold text-sm text-white group-hover:text-emerald-300 transition truncate">Gamlins Solicitors</h4>
-                                    <span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">flotek client</span>
-                                    <span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-md border border-amber-500/20">22 updates</span>
-                                </div>
-                                <span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">https://gamlins.com</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">
-                            <span class="text-[11px] text-slate-500 flex items-center gap-1"><i class="fa-solid fa-rotate text-[9px]"></i> 30s</span>
-                            <div class="flex items-center gap-0.5"><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span></div>
-                            <span class="text-xs font-bold text-emerald-400 mono">100%</span>
-                            <span class="text-xs font-mono text-slate-400">48ms</span>
-                            <div class="text-slate-600 group-hover:text-slate-300"><i class="fa-solid fa-chevron-right text-xs"></i></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Standalone Domains Container -->
-                <div id="domains-fleet-container" style="display: none;" class="space-y-2.5">
-                    <!-- gamlins.co.uk -->
-                    <div onclick="openDrawer('gamlins.co.uk')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0"></div>
-                            <div class="min-w-0">
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <h4 class="font-bold text-sm text-white group-hover:text-indigo-300 transition truncate">gamlins.co.uk</h4>
-                                    <span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">Fasthosts</span>
-                                </div>
-                                <span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">gamlins.co.uk</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">
-                            <span class="text-xs font-mono text-slate-400">No SSL (Parked)</span>
-                            <span class="text-xs font-mono text-indigo-300">22 DNS Records</span>
-                            <button onclick="event.stopPropagation(); deleteStandaloneDomain('gamlins.co.uk')" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold cursor-pointer">Delete</button>
-                        </div>
-                    </div>
-
-                    <!-- moolawise.co.za -->
-                    <div onclick="openDrawer('moolawise.co.za')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0"></div>
-                            <div class="min-w-0">
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <h4 class="font-bold text-sm text-white group-hover:text-indigo-300 transition truncate">moolawise.co.za</h4>
-                                    <span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">ZADNS</span>
-                                </div>
-                                <span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">moolawise.co.za</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">
-                            <span class="text-xs font-mono text-slate-400">No SSL (Parked)</span>
-                            <span class="text-xs font-mono text-indigo-300">10 DNS Records</span>
-                            <button onclick="event.stopPropagation(); deleteStandaloneDomain('moolawise.co.za')" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold cursor-pointer">Delete</button>
-                        </div>
-                    </div>
-                </div>
-
+                <!-- Containers -->
+                <div id="websites-fleet-container" class="space-y-2.5"></div>
+                <div id="domains-fleet-container" class="hidden space-y-2.5"></div>
             </div>
 
-            <!-- Right Column -->
+            <!-- Right Column: Status Summary Cards -->
             <div class="space-y-4">
                 <div class="bg-[#080d17] border border-slate-800 p-5 rounded-2xl space-y-4">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Current Status</h3>
@@ -199,14 +109,14 @@
                             <div class="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto text-sm font-bold">
                                 <i class="fa-solid fa-circle-up"></i>
                             </div>
-                            <div class="text-lg font-extrabold text-white mt-1" id="stat-up-count">4</div>
+                            <div class="text-lg font-extrabold text-white mt-1" id="stat-up-count">0</div>
                             <span class="text-[10px] text-slate-400 font-semibold uppercase">Up</span>
                         </div>
                         <div>
                             <div class="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-sm font-bold">
                                 <i class="fa-solid fa-circle-down"></i>
                             </div>
-                            <div class="text-lg font-extrabold text-white mt-1">0</div>
+                            <div class="text-lg font-extrabold text-white mt-1" id="stat-down-count">0</div>
                             <span class="text-[10px] text-slate-400 font-semibold uppercase">Down</span>
                         </div>
                         <div>
@@ -227,7 +137,7 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-400">Average Fleet Latency:</span>
-                        <span class="font-bold text-white mono">46 ms</span>
+                        <span class="font-bold text-white mono" id="stat-avg-latency">45 ms</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-400">Active Incidents:</span>
@@ -250,7 +160,7 @@
     </div>
 
     <!-- MODAL: ADD STANDALONE DOMAIN -->
-    <div id="add-domain-modal" class="fixed inset-0 z-50 items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+    <div id="add-domain-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
         <div class="relative bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full z-10 shadow-2xl space-y-4">
             <div class="flex justify-between items-center">
                 <h3 class="font-bold text-base text-white flex items-center gap-2">
@@ -258,10 +168,10 @@
                 </h3>
                 <button onclick="closeAddDomainModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
-            <p class="text-xs text-slate-400">Add any domain without WordPress (e.g. <code>grandprixexpress.co.uk</code>) to automatically scan all DNS records and monitor SSL.</p>
+            <p class="text-xs text-slate-400">Add any domain without WordPress (e.g. <code>grandprixexpress.co.uk</code> or <code>moolawise.co.za</code>) to track DNS records and nameservers.</p>
             <div>
                 <label class="text-[11px] font-semibold text-slate-300 block mb-1">Domain Name</label>
-                <input id="input-domain-name" type="text" placeholder="e.g. moolawise.co.za" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500">
+                <input id="input-domain-name" type="text" placeholder="e.g. grandprixexpress.co.uk" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500">
             </div>
             <div class="flex justify-end gap-2 pt-2">
                 <button onclick="closeAddDomainModal()" class="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl font-semibold cursor-pointer">Cancel</button>
@@ -272,8 +182,8 @@
         </div>
     </div>
 
-    <!-- DRAWER: DEEP INSPECTION -->
-    <div id="site-drawer" class="fixed inset-0 z-50 justify-end bg-slate-950/80 backdrop-blur-sm">
+    <!-- DRAWER -->
+    <div id="site-drawer" class="fixed inset-0 z-50 hidden flex justify-end bg-slate-950/80 backdrop-blur-sm">
         <div class="w-full sm:max-w-4xl bg-[#090e18] sm:border-l border-slate-800 p-4 sm:p-6 flex flex-col justify-between shadow-2xl custom-scrollbar overflow-y-auto">
             
             <div class="space-y-4">
@@ -508,99 +418,23 @@
         </div>
     </div>
 
-    <!-- GLOBALLY BOUND CONTROLLERS -->
+    <!-- PURE GLOBAL JAVASCRIPT CONTROLLERS -->
     <script>
-        window.CLIENT_SITES = [
-            {
-                name: 'Grand Prix Express',
-                url: 'https://grandprixexpress.com',
-                domain: 'grandprixexpress.com',
-                tag: 'flotek website',
-                wp_version: '7.0.4',
-                theme: { name: 'ServerEast', version: '1.1.4' },
-                plugins: [
-                    { name: 'Meta Box', version: '5.6.17', has_update: true, new_version: '5.15.0' },
-                    { name: 'Redirection', version: '5.3.10', has_update: true, new_version: '5.10.0' },
-                    { name: 'Wordfence Security', version: '7.11.0', has_update: false }
-                ],
-                users: [
-                    { id: 1, user_login: 'garry', user_email: 'garry.whitney@grandprixexpress.com', roles: ['editor'] },
-                    { id: 2, user_login: 'oes-admin', user_email: 'paul.hesketh@oes-uk.com', roles: ['administrator'] }
-                ],
-                updates_count: 12,
-                ssl: { valid: true, days_left: 84, issuer: "Cloudflare / Let's Encrypt" },
-                dns_records: [
-                    { type: 'A', host: '@ (Apex)', value: '77.68.64.20', priority: '-' },
-                    { type: 'A', host: 'www', value: '77.68.64.20', priority: '-' },
-                    { type: 'A', host: 'ftp', value: '84.18.207.60', priority: '-' },
-                    { type: 'A', host: 'mail', value: '82.153.170.129', priority: '-' },
-                    { type: 'MX', host: '@', value: 'grandprixexpress-com.mail.protection.outlook.com', priority: 0 }
-                ],
-                seo: { sitemap_status: 'Indexed (42 URLs Valid)', broken_links: 0 },
-                analytics: { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' },
-                latency: 45,
-                type: 'WEBSITE'
-            },
-            {
-                name: 'Gamlins Solicitors',
-                url: 'https://gamlins.com',
-                domain: 'gamlins.com',
-                tag: 'flotek client',
-                wp_version: '7.0.4',
-                theme: { name: 'Gamlins Theme', version: '2.0.1' },
-                plugins: [
-                    { name: 'Advanced Custom Fields Pro', version: '6.1.0', has_update: true, new_version: '6.3.2' },
-                    { name: 'Contact Form 7', version: '5.8.0', has_update: true, new_version: '5.9.4' }
-                ],
-                users: [
-                    { id: 1, user_login: 'gamlins-admin', user_email: 'info@gamlins.com', roles: ['administrator'] }
-                ],
-                updates_count: 22,
-                ssl: { valid: true, days_left: 56, issuer: "Let's Encrypt" },
-                dns_records: [
-                    { type: 'A', host: '@ (Apex)', value: '88.208.252.9', priority: '-' },
-                    { type: 'MX', host: '@', value: 'mailserver.livemail.co.uk', priority: 10 }
-                ],
-                seo: { sitemap_status: 'Indexed (184 URLs Valid)', broken_links: 0 },
-                analytics: { visitors_7d: 3920, pageviews: 11480, bounce_rate: '24.1%' },
-                latency: 48,
-                type: 'WEBSITE'
-            }
-        ];
-
-        window.CLIENT_DOMAINS = [
-            {
-                name: 'gamlins.co.uk',
-                domain: 'gamlins.co.uk',
-                registrar: 'Fasthosts',
-                ssl: { valid: false, days_left: 0, issuer: 'No Certificate (Domain Only / Parked)' },
-                dns_records: [
-                    { type: 'A', host: '@', value: '88.208.252.9', priority: '-' },
-                    { type: 'MX', host: '@', value: 'mailserver.livemail.co.uk', priority: 10 }
-                ],
-                type: 'DOMAIN_ONLY'
-            },
-            {
-                name: 'moolawise.co.za',
-                domain: 'moolawise.co.za',
-                registrar: 'ZADNS / Absolute Hosting',
-                ssl: { valid: false, days_left: 0, issuer: 'No Certificate (Domain Only / Parked)' },
-                dns_records: [
-                    { type: 'A', host: '@ (Apex)', value: '102.214.8.65', priority: '-' },
-                    { type: 'NS', host: '@', value: 'ns21.zadns.co.za', priority: '-' },
-                    { type: 'MX', host: '@', value: 'mail.moolawise.co.za', priority: 10 }
-                ],
-                type: 'DOMAIN_ONLY'
-            }
-        ];
-
-        window.globalData = { sites: window.CLIENT_SITES, domains: window.CLIENT_DOMAINS, events: [], audit_logs: [] };
+        window.globalData = { sites: [], domains: [], events: [], audit_logs: [] };
         window.activeSiteUrl = '';
         window.currentActiveTab = 'tab-overview';
 
         window.setTxt = function(id, val) {
             const el = document.getElementById(id);
             if (el) el.innerText = val;
+        };
+
+        window.generateUptimeBars = function() {
+            let bars = '';
+            for (let i = 0; i < 20; i++) {
+                bars += '<span class="h-4 w-1 rounded-sm bg-emerald-400"></span>';
+            }
+            return '<div class="flex items-center gap-0.5">' + bars + '</div>';
         };
 
         window.switchFleetCategory = function(category) {
@@ -610,15 +444,15 @@
             const navDomains = document.getElementById('nav-btn-domains');
 
             if (category === 'websites') {
-                document.getElementById('websites-fleet-container').style.display = 'block';
-                document.getElementById('domains-fleet-container').style.display = 'none';
+                document.getElementById('websites-fleet-container').classList.remove('hidden');
+                document.getElementById('domains-fleet-container').classList.add('hidden');
                 if (btnWebsites) btnWebsites.className = "fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer";
                 if (btnDomains) btnDomains.className = "fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition cursor-pointer";
                 if (navWebsites) navWebsites.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition cursor-pointer";
                 if (navDomains) navDomains.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left cursor-pointer";
             } else {
-                document.getElementById('websites-fleet-container').style.display = 'none';
-                document.getElementById('domains-fleet-container').style.display = 'block';
+                document.getElementById('websites-fleet-container').classList.add('hidden');
+                document.getElementById('domains-fleet-container').classList.remove('hidden');
                 if (btnDomains) btnDomains.className = "fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer";
                 if (btnWebsites) btnWebsites.className = "fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition cursor-pointer";
                 if (navDomains) navDomains.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition cursor-pointer";
@@ -627,17 +461,20 @@
         };
 
         window.openAddDomainModal = function() {
-            document.getElementById('add-domain-modal').classList.add('active');
+            const m = document.getElementById('add-domain-modal');
+            if (m) m.classList.remove('hidden');
         };
 
         window.closeAddDomainModal = function() {
-            document.getElementById('add-domain-modal').classList.remove('active');
+            const m = document.getElementById('add-domain-modal');
+            if (m) m.classList.add('hidden');
             const inp = document.getElementById('input-domain-name');
             if (inp) inp.value = '';
         };
 
         window.closeDrawer = function() {
-            document.getElementById('site-drawer').classList.remove('active');
+            const drawer = document.getElementById('site-drawer');
+            if (drawer) drawer.classList.add('hidden');
             window.activeSiteUrl = '';
         };
 
@@ -651,11 +488,108 @@
             const activeContent = document.getElementById(tabId);
             if (activeContent) activeContent.classList.remove('hidden');
 
-            const activeBtn = document.getElementById(`btn-${tabId}`);
+            const activeBtn = document.getElementById('btn-' + tabId);
             if (activeBtn) activeBtn.className = "tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5 cursor-pointer";
         };
 
-        window.openDrawer = function(identifier) {
+        window.renderWebsites = function(sites) {
+            const container = document.getElementById('websites-fleet-container');
+            if (!container) return;
+
+            if (!sites || sites.length === 0) {
+                container.innerHTML = '<div class="bg-[#080d17] border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-sm">Waiting for WordPress site connection...</div>';
+                return;
+            }
+
+            container.innerHTML = sites.map(site => {
+                const updateCount = site.updates_count || 0;
+                return `
+                <div onclick="openDrawer('${site.url}')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0 shadow-sm shadow-emerald-400/50"></div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h4 class="font-bold text-sm text-white group-hover:text-emerald-300 transition truncate">${site.name}</h4>
+                                <span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">${site.tag || 'wordpress site'}</span>
+                                ${updateCount > 0 ? `<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-md border border-amber-500/20">${updateCount} updates</span>` : ''}
+                            </div>
+                            <span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">${site.url}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">
+                        <span class="text-[11px] text-slate-500 flex items-center gap-1"><i class="fa-solid fa-rotate text-[9px]"></i> 30s</span>
+                        ${window.generateUptimeBars()}
+                        <span class="text-xs font-bold text-emerald-400 mono">100%</span>
+                        <span class="text-xs font-mono text-slate-400">${site.latency || 45}ms</span>
+                        <div class="text-slate-600 group-hover:text-slate-300"><i class="fa-solid fa-chevron-right text-xs"></i></div>
+                    </div>
+                </div>`;
+            }).join('');
+        };
+
+        window.renderDomains = function(domains) {
+            const container = document.getElementById('domains-fleet-container');
+            if (!container) return;
+
+            if (!domains || domains.length === 0) {
+                container.innerHTML = '<div class="bg-[#080d17] border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-sm">No standalone domains added yet. Click "+ Add Domain" above.</div>';
+                return;
+            }
+
+            container.innerHTML = domains.map(d => `
+                <div onclick="openDrawer('${d.domain}')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0"></div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h4 class="font-bold text-sm text-white group-hover:text-indigo-300 transition truncate">${d.name}</h4>
+                                <span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">${d.registrar || 'Fasthosts'}</span>
+                            </div>
+                            <span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">${d.domain}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">
+                        <span class="text-xs font-mono ${d.ssl && d.ssl.valid ? 'text-emerald-400' : 'text-slate-500'}">
+                            <i class="fa-solid fa-lock text-[10px]"></i> ${d.ssl && d.ssl.valid ? d.ssl.days_left + 'd SSL' : 'No SSL'}
+                        </span>
+                        <span class="text-xs font-mono text-indigo-300">${(d.dns_records || []).length} DNS Records</span>
+                        <button onclick="event.stopPropagation(); deleteStandaloneDomain('${d.domain}')" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold cursor-pointer">
+                            Delete
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+        };
+
+        window.renderEvents = function(events) {
+            const container = document.getElementById('events-container');
+            if (!container) return;
+            if (!events || events.length === 0) {
+                container.innerHTML = '<div class="text-slate-500 text-[11px] p-2 text-center">Fleet protection active.</div>';
+                return;
+            }
+
+            container.innerHTML = events.slice(0, 5).map(e => `
+                <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[11px] flex items-center justify-between">
+                    <div>
+                        <div class="font-bold text-white">${e.event}</div>
+                        <div class="text-slate-500 text-[10px]">${e.site_name}</div>
+                    </div>
+                    <span class="text-[10px] text-slate-400 mono">${new Date(e.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                </div>`).join('');
+        };
+
+        window.filterMonitors = function() {
+            const query = document.getElementById('fleet-search-input').value.toLowerCase();
+            const filteredSites = window.globalData.sites.filter(s => s.name.toLowerCase().includes(query) || s.url.toLowerCase().includes(query));
+            const filteredDomains = (window.globalData.domains || []).filter(d => d.name.toLowerCase().includes(query) || d.domain.toLowerCase().includes(query));
+            window.renderWebsites(filteredSites);
+            window.renderDomains(filteredDomains);
+        };
+
+        window.openDrawer = function(identifier, isBackgroundSync = false) {
             window.activeSiteUrl = identifier;
             const isWebsite = identifier.startsWith('http');
             const cleanIdentifier = identifier.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
@@ -672,9 +606,10 @@
                 drawerUrl.querySelector('span').innerText = site.url || site.domain || cleanIdentifier;
             }
 
+            // HIDE WP TABS FOR STANDALONE DOMAINS
             document.querySelectorAll('.wp-only-tab').forEach(el => {
-                if (isWebsite) el.style.display = 'flex';
-                else el.style.display = 'none';
+                if (isWebsite) el.classList.remove('hidden');
+                else el.classList.add('hidden');
             });
 
             const drawerDelBtn = document.getElementById('btn-drawer-delete-domain');
@@ -683,7 +618,9 @@
                 else drawerDelBtn.classList.add('hidden');
             }
 
-            window.currentActiveTab = isWebsite ? 'tab-overview' : 'tab-dns';
+            if (!isBackgroundSync) {
+                window.currentActiveTab = isWebsite ? 'tab-overview' : 'tab-dns';
+            }
             window.switchTab(window.currentActiveTab);
 
             window.setTxt('drawer-theme-name', site.theme ? site.theme.name : 'Active Theme');
@@ -693,28 +630,42 @@
             window.setTxt('drawer-memory', perf.memory || '18 MB');
 
             const hasSSL = site.ssl && site.ssl.valid;
-            window.setTxt('drawer-ssl-days', hasSSL ? `${site.ssl.days_left} Days Remaining` : 'No Certificate');
-            window.setTxt('drawer-ssl-issuer', `Issuer: ${site.ssl ? site.ssl.issuer : 'No SSL (Domain Only)'}`);
+            window.setTxt('drawer-ssl-days', hasSSL ? (site.ssl.days_left + ' Days Remaining') : 'No Certificate');
+            window.setTxt('drawer-ssl-issuer', 'Issuer: ' + (site.ssl ? site.ssl.issuer : 'No SSL (Domain Only)'));
+            const sslBadge = document.getElementById('drawer-ssl-badge');
+            if (sslBadge) {
+                if (hasSSL) {
+                    sslBadge.className = "px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-bold rounded-lg border border-emerald-500/20 self-start sm:self-auto flex items-center gap-1.5";
+                    sslBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> HTTPS SECURE';
+                } else {
+                    sslBadge.className = "px-2.5 py-1 bg-slate-800 text-slate-400 text-xs font-bold rounded-lg border border-slate-700 self-start sm:self-auto flex items-center gap-1.5";
+                    sslBadge.innerHTML = 'UNENCRYPTED / PARKED';
+                }
+            }
 
             // DNS Table
             const dnsRecords = site.dns_records || [];
             window.setTxt('drawer-dns-count', dnsRecords.length);
             const dnsTableBody = document.getElementById('drawer-dns-table-body');
             if (dnsTableBody) {
-                dnsTableBody.innerHTML = dnsRecords.map(r => `
-                    <tr class="hover:bg-slate-900/50">
-                        <td class="p-2.5 font-bold ${r.type === 'A' ? 'text-indigo-400' : r.type === 'CNAME' ? 'text-amber-400' : r.type === 'MX' ? 'text-emerald-400' : 'text-purple-400'}">${r.type}</td>
-                        <td class="p-2.5 text-slate-300 whitespace-nowrap">${r.host}</td>
-                        <td class="p-2.5 text-slate-200 truncate max-w-[200px] sm:max-w-sm">${r.value}</td>
-                        <td class="p-2.5 text-slate-400">${r.priority !== undefined ? r.priority : '-'}</td>
-                    </tr>
-                `).join('');
+                if (dnsRecords.length === 0) {
+                    dnsTableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">Scanning DNS zone records...</td></tr>';
+                } else {
+                    dnsTableBody.innerHTML = dnsRecords.map(r => `
+                        <tr class="hover:bg-slate-900/50">
+                            <td class="p-2.5 font-bold ${r.type === 'A' ? 'text-indigo-400' : r.type === 'CNAME' ? 'text-amber-400' : r.type === 'MX' ? 'text-emerald-400' : 'text-purple-400'}">${r.type}</td>
+                            <td class="p-2.5 text-slate-300 whitespace-nowrap">${r.host}</td>
+                            <td class="p-2.5 text-slate-200 truncate max-w-[200px] sm:max-w-sm">${r.value}</td>
+                            <td class="p-2.5 text-slate-400">${r.priority !== undefined ? r.priority : '-'}</td>
+                        </tr>
+                    `).join('');
+                }
             }
 
             // Plugins
             const plugins = site.plugins || [];
             window.setTxt('drawer-tab-plugin-count', plugins.length);
-            window.setTxt('drawer-plugins-summary', `${plugins.length} Installed Plugins`);
+            window.setTxt('drawer-plugins-summary', plugins.length + ' Installed Plugins');
             const pluginsContainer = document.getElementById('drawer-plugins-list');
             if (pluginsContainer) {
                 pluginsContainer.innerHTML = plugins.map(p => `
@@ -723,7 +674,7 @@
                             <span class="text-slate-200 font-semibold block truncate">${p.name}</span>
                             <span class="text-[10px] text-slate-500 mono">Installed: v${p.version || '1.0'}</span>
                         </div>
-                        ${p.has_update ? `<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">UPDATE: v${p.new_version || 'Latest'}</span>` : `<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">UP TO DATE</span>`}
+                        ${p.has_update ? '<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">UPDATE: v' + (p.new_version || 'Latest') + '</span>' : '<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">UP TO DATE</span>'}
                     </div>
                 `).join('');
             }
@@ -763,16 +714,17 @@
                 `).join('');
             }
 
-            // DYNAMIC SEO & ANALYTICS BINDING PER SITE
+            // DYNAMIC SEO & ANALYTICS
             const analytics = site.analytics || { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' };
             const seo = site.seo || { sitemap_status: 'Indexed (42 URLs Valid)', broken_links: 0 };
             window.setTxt('drawer-seo-visitors', (analytics.visitors_7d || 1420).toLocaleString());
             window.setTxt('drawer-seo-views', (analytics.pageviews || 4890).toLocaleString());
             window.setTxt('drawer-seo-bounce', analytics.bounce_rate || '34.2%');
             const seoStatusEl = document.getElementById('drawer-seo-sitemap');
-            if (seoStatusEl) seoStatusEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${seo.sitemap_status || 'Indexed'}`;
+            if (seoStatusEl) seoStatusEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + (seo.sitemap_status || 'Indexed');
 
-            document.getElementById('site-drawer').classList.add('active');
+            const drawer = document.getElementById('site-drawer');
+            if (drawer) drawer.classList.remove('hidden');
         };
 
         window.submitStandaloneDomain = async function() {
@@ -780,7 +732,7 @@
             if (!domain) return alert('Please enter a domain name.');
 
             const btn = document.getElementById('btn-submit-domain');
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Scanning...`;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Scanning...';
             btn.disabled = true;
 
             try {
@@ -791,23 +743,23 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert(`✅ Domain '${domain}' added permanently!`);
+                    alert('✅ Domain "' + domain + '" added permanently with ' + result.domain.dns_records.length + ' DNS records!');
                     window.closeAddDomainModal();
                     window.switchFleetCategory('domains');
                     window.refreshData();
                 } else {
-                    alert(`❌ Failed: ${result.error || 'Could not scan domain'}`);
+                    alert('❌ Failed: ' + (result.error || 'Could not scan domain'));
                 }
             } catch (e) {
-                alert(`Error: ${e.message}`);
+                alert('Error: ' + e.message);
             } finally {
-                btn.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> Scan & Add`;
+                btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Scan & Add';
                 btn.disabled = false;
             }
         };
 
         window.deleteStandaloneDomain = async function(domain) {
-            if (!confirm(`⚠️ Are you sure you want to permanently delete '${domain}'?`)) return;
+            if (!confirm('⚠️ Are you sure you want to permanently delete "' + domain + '"?')) return;
             try {
                 await fetch('/api/delete-domain', {
                     method: 'POST',
@@ -828,8 +780,8 @@
             const username = document.getElementById('new-user-name').value.trim();
             const email = document.getElementById('new-user-email').value.trim();
             const role = document.getElementById('new-user-role').value;
-            const password = prompt(`Enter password for ${username}:`, "FlotekSecurePass!2026");
-            if (!username || !email || !password) return alert("All fields are required.");
+            const password = prompt('Enter password for ' + username + ':', 'FlotekSecurePass!2026');
+            if (!username || !email || !password) return alert('All fields are required.');
 
             try {
                 const res = await fetch('/api/create-user', {
@@ -839,18 +791,18 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert(`✅ User '${username}' created!`);
+                    alert('✅ User "' + username + '" created!');
                     window.refreshData();
                 } else {
-                    alert(`❌ Failed: ${result.error || 'Server error'}`);
+                    alert('❌ Failed: ' + (result.error || 'Server error'));
                 }
             } catch (e) {
-                alert(`Error: ${e.message}`);
+                alert('Error: ' + e.message);
             }
         };
 
         window.resetUserPassword = async function(userId, username) {
-            const newPassword = prompt(`Enter NEW password for '${username}':`, "FlotekNewPass!2026");
+            const newPassword = prompt('Enter NEW password for "' + username + '":', 'FlotekNewPass!2026');
             if (!newPassword) return;
 
             try {
@@ -861,17 +813,17 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert(`✅ Password updated!`);
+                    alert('✅ Password updated!');
                 } else {
-                    alert(`❌ Failed: ${result.error || 'Error'}`);
+                    alert('❌ Failed: ' + (result.error || 'Error'));
                 }
             } catch (e) {
-                alert(`Error: ${e.message}`);
+                alert('Error: ' + e.message);
             }
         };
 
         window.deleteUser = async function(userId, username) {
-            if (!confirm(`⚠️ Are you sure you want to delete user '${username}' from ${window.activeSiteUrl}?`)) return;
+            if (!confirm('⚠️ Are you sure you want to delete user "' + username + '" from ' + window.activeSiteUrl + '?')) return;
 
             try {
                 const res = await fetch('/api/delete-user', {
@@ -881,19 +833,19 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert(`✅ User '${username}' deleted!`);
+                    alert('✅ User "' + username + '" deleted!');
                     window.refreshData();
                 } else {
-                    alert(`❌ Deletion failed: ${result.error || 'Error'}`);
+                    alert('❌ Deletion failed: ' + (result.error || 'Error'));
                 }
             } catch (e) {
-                alert(`Error: ${e.message}`);
+                alert('Error: ' + e.message);
             }
         };
 
         window.executeRemotePluginUpdate = async function() {
             const btn = document.getElementById('btn-bulk-update');
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Updating...`;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
             btn.disabled = true;
 
             try {
@@ -904,22 +856,22 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert(`✅ Updates Pushed to ${window.activeSiteUrl}!`);
+                    alert('✅ Updates Pushed to ' + window.activeSiteUrl + '!');
                     window.refreshData();
                 } else {
-                    alert(`❌ Update failed: ${result.error || 'Server error'}`);
+                    alert('❌ Update failed: ' + (result.error || 'Server error'));
                 }
             } catch (err) {
-                alert(`Error: ${err.message}`);
+                alert('Error: ' + err.message);
             } finally {
-                btn.innerHTML = `<i class="fa-solid fa-arrows-rotate"></i> 1-Click Bulk Update`;
+                btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> 1-Click Bulk Update';
                 btn.disabled = false;
             }
         };
 
         window.executeRemoteBackup = async function() {
             const btn = document.getElementById('btn-create-backup');
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Generating...`;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
             btn.disabled = true;
 
             try {
@@ -930,21 +882,21 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert(`✅ Database Backup Created on FTP!\n\nFile: ${result.filename}`);
+                    alert('✅ Database Backup Created on FTP!\n\nFile: ' + result.filename);
                     window.refreshData();
                 } else {
-                    alert(`❌ Backup failed: ${result.error || 'Server error'}`);
+                    alert('❌ Backup failed: ' + (result.error || 'Server error'));
                 }
             } catch (err) {
-                alert(`Error: ${err.message}`);
+                alert('Error: ' + err.message);
             } finally {
-                btn.innerHTML = `<i class="fa-solid fa-download"></i> Dump SQL to FTP`;
+                btn.innerHTML = '<i class="fa-solid fa-download"></i> Dump SQL to FTP';
                 btn.disabled = false;
             }
         };
 
         window.executeRollback = async function(filename) {
-            if (!confirm(`Are you sure you want to ROLLBACK ${window.activeSiteUrl} to ${filename}?`)) return;
+            if (!confirm('Are you sure you want to ROLLBACK ' + window.activeSiteUrl + ' to ' + filename + '?')) return;
 
             try {
                 const res = await fetch('/api/trigger-rollback', {
@@ -954,13 +906,13 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert(`✅ Rollback Complete! Restored to ${filename}.`);
+                    alert('✅ Rollback Complete! Restored to ' + filename + '.');
                     window.refreshData();
                 } else {
-                    alert(`❌ Rollback error: ${result.error || 'Failed'}`);
+                    alert('❌ Rollback error: ' + (result.error || 'Failed'));
                 }
             } catch (err) {
-                alert(`Error: ${err.message}`);
+                alert('Error: ' + err.message);
             }
         };
 
@@ -972,14 +924,41 @@
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(site ? site.dns_records : [], null, 2));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `dns-zone-${cleanIdentifier || 'domain'}.json`);
+            downloadAnchor.setAttribute("download", 'dns-zone-' + (cleanIdentifier || 'domain') + '.json');
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
         };
 
-        // RUN IMMEDIATELY
-        window.switchFleetCategory('websites');
+        // REAL-TIME AUTO SYNC ENGINE
+        window.refreshData = async function() {
+            try {
+                const res = await fetch('/api/dashboard-data?cb=' + Date.now());
+                const data = await res.json();
+                
+                window.globalData.sites = Array.isArray(data.sites) ? data.sites : [];
+                window.globalData.domains = Array.isArray(data.domains) ? data.domains : [];
+                window.globalData.events = Array.isArray(data.events) ? data.events : [];
+                window.globalData.audit_logs = Array.isArray(data.audit_logs) ? data.audit_logs : [];
+
+                window.setTxt('site-count-badge', window.globalData.sites.length);
+                window.setTxt('domain-count-badge', window.globalData.domains.length);
+                window.setTxt('stat-up-count', window.globalData.sites.length + window.globalData.domains.length);
+                window.setTxt('stat-down-count', '0');
+
+                window.renderWebsites(window.globalData.sites);
+                window.renderDomains(window.globalData.domains);
+                window.renderEvents([...window.globalData.events, ...window.globalData.audit_logs]);
+
+                if (window.activeSiteUrl) window.openDrawer(window.activeSiteUrl, true);
+            } catch (err) {
+                console.error('Refresh error:', err);
+            }
+        };
+
+        // Start immediately & poll every 5s
+        window.refreshData();
+        setInterval(window.refreshData, 5000);
     </script>
 </body>
 </html>
