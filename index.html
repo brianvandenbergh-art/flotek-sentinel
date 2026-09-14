@@ -7,19 +7,24 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
-        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; }
         .mono { font-family: 'JetBrains Mono', monospace; }
         .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #070a12; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+
+        /* ABSOLUTE MODAL LOCK: CANNOT BLOCK CLICKS WHEN CLOSED */
+        #add-domain-modal, #site-drawer { display: none !important; }
+        #add-domain-modal.active, #site-drawer.active { display: flex !important; }
     </style>
 </head>
 <body class="bg-[#0b101b] text-slate-100 min-h-screen custom-scrollbar flex flex-col md:flex-row">
 
     <!-- UPTIMEROBOT-STYLE LEFT SIDEBAR -->
-    <aside class="w-full md:w-64 bg-[#080d17] border-b md:border-b-0 md:border-r border-slate-800/80 p-4 flex md:flex-col justify-between shrink-0 z-20">
+    <aside class="w-full md:w-64 bg-[#080d17] border-b md:border-b-0 md:border-r border-slate-800/80 p-4 flex md:flex-col justify-between shrink-0 z-10">
         <div class="space-y-6 w-full">
             <div class="flex items-center gap-2.5 px-2">
                 <div class="h-8 w-8 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-lg flex items-center justify-center text-slate-950 font-black text-sm">
@@ -27,11 +32,10 @@
                 </div>
                 <div>
                     <h1 class="font-extrabold text-sm text-white tracking-tight">Flotek Sentinel</h1>
-                    <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">Enterprise Live</span>
+                    <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">Enterprise Fleet</span>
                 </div>
             </div>
 
-            <!-- Navigation Links -->
             <nav class="space-y-1.5 text-xs">
                 <button onclick="switchFleetCategory('websites')" id="nav-btn-websites" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition cursor-pointer">
                     <i class="fa-solid fa-gauge-high text-emerald-400 text-sm w-4"></i> Monitors
@@ -52,7 +56,7 @@
     </aside>
 
     <!-- MAIN CONTENT AREA -->
-    <div class="flex-1 flex flex-col min-w-0">
+    <div class="flex-1 flex flex-col min-w-0 z-0">
 
         <!-- Top Header Bar -->
         <div class="border-b border-slate-800/80 bg-[#080d17]/50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -76,7 +80,7 @@
         <!-- Main Body Grid -->
         <div class="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 max-w-7xl">
 
-            <!-- Center Column -->
+            <!-- Center Column: Monitor Cards -->
             <div class="lg:col-span-3 space-y-4">
                 
                 <!-- Category Switcher & Search Bar -->
@@ -96,9 +100,9 @@
                     </div>
                 </div>
 
-                <!-- PRE-RENDERED WEBSITES LIST (Guaranteed 100% Visible) -->
+                <!-- Websites List Container -->
                 <div id="websites-fleet-container" class="space-y-2.5">
-                    <!-- Grand Prix Express Card -->
+                    <!-- Grand Prix Express -->
                     <div onclick="openDrawer('https://grandprixexpress.com')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="flex items-center gap-3 min-w-0">
                             <div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0 shadow-sm shadow-emerald-400/50"></div>
@@ -120,7 +124,7 @@
                         </div>
                     </div>
 
-                    <!-- Gamlins Solicitors Card -->
+                    <!-- Gamlins Solicitors -->
                     <div onclick="openDrawer('https://gamlins.com')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="flex items-center gap-3 min-w-0">
                             <div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0 shadow-sm shadow-emerald-400/50"></div>
@@ -143,8 +147,9 @@
                     </div>
                 </div>
 
-                <!-- PRE-RENDERED STANDALONE DOMAINS LIST -->
+                <!-- Standalone Domains Container -->
                 <div id="domains-fleet-container" style="display: none;" class="space-y-2.5">
+                    <!-- gamlins.co.uk -->
                     <div onclick="openDrawer('gamlins.co.uk')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="flex items-center gap-3 min-w-0">
                             <div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0"></div>
@@ -163,6 +168,7 @@
                         </div>
                     </div>
 
+                    <!-- moolawise.co.za -->
                     <div onclick="openDrawer('moolawise.co.za')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="flex items-center gap-3 min-w-0">
                             <div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0"></div>
@@ -243,8 +249,8 @@
 
     </div>
 
-    <!-- DIRECT MODAL (NO TAILWIND HIDDEN CONFLICT) -->
-    <div id="add-domain-modal" style="display: none;" class="fixed inset-0 z-50 items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+    <!-- MODAL: ADD STANDALONE DOMAIN -->
+    <div id="add-domain-modal" class="fixed inset-0 z-50 items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
         <div class="relative bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full z-10 shadow-2xl space-y-4">
             <div class="flex justify-between items-center">
                 <h3 class="font-bold text-base text-white flex items-center gap-2">
@@ -266,8 +272,8 @@
         </div>
     </div>
 
-    <!-- DIRECT DRAWER (NO TAILWIND HIDDEN CONFLICT) -->
-    <div id="site-drawer" style="display: none;" class="fixed inset-0 z-50 justify-end bg-slate-950/80 backdrop-blur-sm">
+    <!-- DRAWER: DEEP INSPECTION -->
+    <div id="site-drawer" class="fixed inset-0 z-50 justify-end bg-slate-950/80 backdrop-blur-sm">
         <div class="w-full sm:max-w-4xl bg-[#090e18] sm:border-l border-slate-800 p-4 sm:p-6 flex flex-col justify-between shadow-2xl custom-scrollbar overflow-y-auto">
             
             <div class="space-y-4">
@@ -297,7 +303,7 @@
                     </div>
                 </div>
 
-                <!-- TABS (Dynamically Displayed) -->
+                <!-- TABS -->
                 <div class="overflow-x-auto custom-scrollbar pb-2">
                     <div id="drawer-tabs-bar" class="flex gap-2 text-xs min-w-max">
                         <button onclick="switchTab('tab-overview')" id="btn-tab-overview" class="tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5 wp-only-tab cursor-pointer">
@@ -324,12 +330,12 @@
                     </div>
                 </div>
 
-                <!-- TAB 1: THEME & OVERVIEW -->
+                <!-- TAB: THEME & OVERVIEW -->
                 <div id="tab-overview" class="tab-content space-y-4">
                     <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
                         <span class="text-[10px] text-slate-400 uppercase font-semibold block">Active WordPress Theme</span>
-                        <h4 class="text-base font-bold text-white mt-0.5" id="drawer-theme-name">ServerEast</h4>
-                        <p class="text-xs text-slate-400 mt-1">Theme Version: <span class="font-mono text-indigo-300" id="drawer-theme-ver">v1.1.4</span></p>
+                        <h4 class="text-base font-bold text-white mt-0.5" id="drawer-theme-name">--</h4>
+                        <p class="text-xs text-slate-400 mt-1">Theme Version: <span class="font-mono text-indigo-300" id="drawer-theme-ver">v1.0</span></p>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -348,7 +354,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 2: DNS ZONE & SSL (For Both Websites & Domains) -->
+                <!-- TAB: DNS & SSL -->
                 <div id="tab-dns" class="tab-content hidden space-y-4">
                     <div class="bg-gradient-to-r from-slate-900 to-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="flex items-center gap-3">
@@ -390,7 +396,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 3: PLUGINS -->
+                <!-- TAB: PLUGINS -->
                 <div id="tab-wp" class="tab-content hidden space-y-3">
                     <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-xs">
                         <span class="text-slate-400 font-semibold" id="drawer-plugins-summary">0 Installed Plugins</span>
@@ -401,7 +407,7 @@
                     <div id="drawer-plugins-list" class="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-1"></div>
                 </div>
 
-                <!-- TAB 4: FTP BACKUPS -->
+                <!-- TAB: FTP BACKUPS -->
                 <div id="tab-vault" class="tab-content hidden space-y-4">
                     <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
@@ -418,7 +424,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 5: USERS -->
+                <!-- TAB: USERS -->
                 <div id="tab-users" class="tab-content hidden space-y-4 text-xs">
                     <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
                         <h4 class="font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
@@ -444,7 +450,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 6: SEO & ANALYTICS -->
+                <!-- TAB: SEO & ANALYTICS -->
                 <div id="tab-seo" class="tab-content hidden space-y-4 text-xs">
                     <div class="grid grid-cols-3 gap-3">
                         <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl text-center">
@@ -476,7 +482,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 7: WAF -->
+                <!-- TAB: WAF -->
                 <div id="tab-sec" class="tab-content hidden space-y-3">
                     <div class="grid grid-cols-2 gap-3 text-xs">
                         <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
@@ -495,14 +501,14 @@
             </div>
 
             <div class="border-t border-slate-800 pt-3 mt-6 text-[11px] text-slate-500 flex justify-between items-center">
-                <span>Flotek Sentinel v9.8 Verified</span>
+                <span>Flotek Sentinel v10.0</span>
                 <span>Cloud Heartbeat: Active</span>
             </div>
 
         </div>
     </div>
 
-    <!-- GLOBALLY BOUND JAVASCRIPT CONTROLLERS -->
+    <!-- GLOBALLY BOUND CONTROLLERS -->
     <script>
         window.CLIENT_SITES = [
             {
@@ -621,17 +627,17 @@
         };
 
         window.openAddDomainModal = function() {
-            document.getElementById('add-domain-modal').style.display = 'flex';
+            document.getElementById('add-domain-modal').classList.add('active');
         };
 
         window.closeAddDomainModal = function() {
-            document.getElementById('add-domain-modal').style.display = 'none';
+            document.getElementById('add-domain-modal').classList.remove('active');
             const inp = document.getElementById('input-domain-name');
             if (inp) inp.value = '';
         };
 
         window.closeDrawer = function() {
-            document.getElementById('site-drawer').style.display = 'none';
+            document.getElementById('site-drawer').classList.remove('active');
             window.activeSiteUrl = '';
         };
 
@@ -649,7 +655,7 @@
             if (activeBtn) activeBtn.className = "tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5 cursor-pointer";
         };
 
-        window.openDrawer = function(identifier, isBackgroundSync = false) {
+        window.openDrawer = function(identifier) {
             window.activeSiteUrl = identifier;
             const isWebsite = identifier.startsWith('http');
             const cleanIdentifier = identifier.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
@@ -677,9 +683,7 @@
                 else drawerDelBtn.classList.add('hidden');
             }
 
-            if (!isBackgroundSync) {
-                window.currentActiveTab = isWebsite ? 'tab-overview' : 'tab-dns';
-            }
+            window.currentActiveTab = isWebsite ? 'tab-overview' : 'tab-dns';
             window.switchTab(window.currentActiveTab);
 
             window.setTxt('drawer-theme-name', site.theme ? site.theme.name : 'Active Theme');
@@ -768,7 +772,7 @@
             const seoStatusEl = document.getElementById('drawer-seo-sitemap');
             if (seoStatusEl) seoStatusEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${seo.sitemap_status || 'Indexed'}`;
 
-            document.getElementById('site-drawer').style.display = 'flex';
+            document.getElementById('site-drawer').classList.add('active');
         };
 
         window.submitStandaloneDomain = async function() {
@@ -974,118 +978,8 @@
             downloadAnchor.remove();
         };
 
-        window.filterMonitors = function() {
-            const query = document.getElementById('fleet-search-input').value.toLowerCase();
-            const filteredSites = window.globalData.sites.filter(s => s.name.toLowerCase().includes(query) || s.url.toLowerCase().includes(query));
-            const filteredDomains = (window.globalData.domains || []).filter(d => d.name.toLowerCase().includes(query) || d.domain.toLowerCase().includes(query));
-            window.renderWebsites(filteredSites);
-            window.renderDomains(filteredDomains);
-        };
-
-        window.renderWebsites = function(sites) {
-            const container = document.getElementById('websites-fleet-container');
-            if (!container) return;
-
-            container.innerHTML = sites.map(site => {
-                const updateCount = site.updates_count || 0;
-                return `
-                <div onclick="openDrawer('${site.url}')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0 shadow-sm shadow-emerald-400/50"></div>
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <h4 class="font-bold text-sm text-white group-hover:text-emerald-300 transition truncate">${site.name}</h4>
-                                <span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">${site.tag || 'wordpress site'}</span>
-                                ${updateCount > 0 ? `<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-md border border-amber-500/20">${updateCount} updates</span>` : ''}
-                            </div>
-                            <span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">${site.url}</span>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">
-                        <span class="text-[11px] text-slate-500 flex items-center gap-1"><i class="fa-solid fa-rotate text-[9px]"></i> 30s</span>
-                        <div class="flex items-center gap-0.5"><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span></div>
-                        <span class="text-xs font-bold text-emerald-400 mono">100%</span>
-                        <span class="text-xs font-mono text-slate-400">${site.latency || 45}ms</span>
-                        <div class="text-slate-600 group-hover:text-slate-300"><i class="fa-solid fa-chevron-right text-xs"></i></div>
-                    </div>
-                </div>`;
-            }).join('');
-        };
-
-        window.renderDomains = function(domains) {
-            const container = document.getElementById('domains-fleet-container');
-            if (!container) return;
-
-            container.innerHTML = domains.map(d => `
-                <div onclick="openDrawer('${d.domain}')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0"></div>
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <h4 class="font-bold text-sm text-white group-hover:text-indigo-300 transition truncate">${d.name}</h4>
-                                <span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">${d.registrar || 'Fasthosts'}</span>
-                            </div>
-                            <span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">${d.domain}</span>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">
-                        <span class="text-xs font-mono ${d.ssl && d.ssl.valid ? 'text-emerald-400' : 'text-slate-500'}">
-                            <i class="fa-solid fa-lock text-[10px]"></i> ${d.ssl && d.ssl.valid ? d.ssl.days_left + 'd SSL' : 'No SSL'}
-                        </span>
-                        <span class="text-xs font-mono text-indigo-300">${(d.dns_records || []).length} DNS Records</span>
-                        <button onclick="event.stopPropagation(); deleteStandaloneDomain('${d.domain}')" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold cursor-pointer">
-                            Delete
-                        </button>
-                    </div>
-                </div>`;
-            }).join('');
-        };
-
-        window.renderEvents = function(events) {
-            const container = document.getElementById('events-container');
-            if (!container) return;
-            if (!events || events.length === 0) {
-                container.innerHTML = `<div class="text-slate-500 text-[11px] p-2 text-center">Fleet protection active.</div>`;
-                return;
-            }
-
-            container.innerHTML = events.slice(0, 5).map(e => `
-                <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[11px] flex items-center justify-between">
-                    <div>
-                        <div class="font-bold text-white">${e.event}</div>
-                        <div class="text-slate-500 text-[10px]">${e.site_name}</div>
-                    </div>
-                    <span class="text-[10px] text-slate-400 mono">${new Date(e.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                </div>`).join('');
-        };
-
-        window.refreshData = async function() {
-            try {
-                const res = await fetch('/api/dashboard-data?cb=' + Date.now());
-                const data = await res.json();
-                
-                if (data.sites && data.sites.length > 0) window.globalData.sites = data.sites;
-                if (data.domains && data.domains.length > 0) window.globalData.domains = data.domains;
-                window.globalData.events = data.events || [];
-                window.globalData.audit_logs = data.audit_logs || [];
-            } catch (err) {}
-
-            window.setTxt('site-count-badge', window.globalData.sites.length);
-            window.setTxt('domain-count-badge', window.globalData.domains.length);
-            window.setTxt('stat-up-count', window.globalData.sites.length + window.globalData.domains.length);
-
-            window.renderWebsites(window.globalData.sites);
-            window.renderDomains(window.globalData.domains);
-            window.renderEvents([...window.globalData.events, ...window.globalData.audit_logs]);
-
-            if (window.activeSiteUrl) window.openDrawer(window.activeSiteUrl, true);
-        };
-
-        // Initialize immediately
-        window.refreshData();
-        setInterval(window.refreshData, 5000);
+        // RUN IMMEDIATELY
+        window.switchFleetCategory('websites');
     </script>
 </body>
 </html>
