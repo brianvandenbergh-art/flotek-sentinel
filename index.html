@@ -36,7 +36,7 @@
 <body class="bg-[#0b101b] text-slate-100 min-h-screen custom-scrollbar flex flex-col md:flex-row">
 
     <!-- UPTIMEROBOT-STYLE LEFT SIDEBAR -->
-    <aside class="w-full md:w-64 bg-[#080d17] border-b md:border-b-0 md:border-r border-slate-800/80 p-4 flex md:flex-col justify-between shrink-0">
+    <aside class="w-full md:w-64 bg-[#080d17] border-b md:border-b-0 md:border-r border-slate-800/80 p-4 flex md:flex-col justify-between shrink-0 z-20">
         <div class="space-y-6 w-full">
             <!-- Brand -->
             <div class="flex items-center gap-2.5 px-2">
@@ -51,18 +51,18 @@
 
             <!-- Navigation Links -->
             <nav class="hidden md:block space-y-1 text-xs">
-                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/80 text-white font-bold border border-slate-700/50">
+                <button onclick="switchFleetCategory('websites')" id="nav-btn-websites" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/80 text-white font-bold border border-slate-700/50 text-left transition">
                     <i class="fa-solid fa-gauge-high text-emerald-400 text-sm w-4"></i> Monitors
-                </a>
-                <a href="#domains" onclick="switchFleetCategory('domains')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition">
+                </button>
+                <button onclick="switchFleetCategory('domains')" id="nav-btn-domains" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left">
                     <i class="fa-solid fa-network-wired text-indigo-400 text-sm w-4"></i> Standalone DNS
-                </a>
-                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition">
+                </button>
+                <button onclick="switchTab('tab-sec'); if (globalData.sites[0]) openDrawer(globalData.sites[0].url);" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left">
                     <i class="fa-solid fa-shield-halved text-rose-400 text-sm w-4"></i> Incidents & WAF
-                </a>
-                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition">
+                </button>
+                <button onclick="switchTab('tab-vault'); if (globalData.sites[0]) openDrawer(globalData.sites[0].url);" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left">
                     <i class="fa-solid fa-box-archive text-amber-400 text-sm w-4"></i> Cloud Backups
-                </a>
+                </button>
             </nav>
         </div>
 
@@ -80,7 +80,7 @@
     <div class="flex-1 flex flex-col min-w-0">
 
         <!-- Top Status Bar -->
-        <div class="border-b border-slate-800/80 bg-[#080d17]/50 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="border-b border-slate-800/80 bg-[#080d17]/50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
                 <h2 class="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
                     Monitors <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -98,7 +98,7 @@
             </div>
         </div>
 
-        <!-- Main Body Grid: Monitor Cards (Left 2/3) + Overview Widgets (Right 1/3) -->
+        <!-- Main Body Grid: Monitor Cards (Left 3 Cols) + Overview Widgets (Right 1 Col) -->
         <div class="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 max-w-7xl">
 
             <!-- Center Column (Monitor List) -->
@@ -107,10 +107,10 @@
                 <!-- Category Switcher & Search Bar -->
                 <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-[#080d17] border border-slate-800 p-3 rounded-2xl">
                     <div class="flex gap-1.5 text-xs">
-                        <button onclick="switchFleetCategory('websites')" id="btn-fleet-websites" class="fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl">
+                        <button onclick="switchFleetCategory('websites')" id="btn-fleet-websites" class="fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition">
                             WordPress Sites (<span id="site-count-badge">0</span>)
                         </button>
-                        <button onclick="switchFleetCategory('domains')" id="btn-fleet-domains" class="fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800">
+                        <button onclick="switchFleetCategory('domains')" id="btn-fleet-domains" class="fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition">
                             Domains Only (<span id="domain-count-badge">0</span>)
                         </button>
                     </div>
@@ -122,11 +122,15 @@
                 </div>
 
                 <!-- Monitor Rows Container -->
-                <div id="websites-fleet-container" class="space-y-2.5"></div>
+                <div id="websites-fleet-container" class="space-y-2.5">
+                    <div class="bg-[#080d17] border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-xs">
+                        Loading fleet monitors...
+                    </div>
+                </div>
                 <div id="domains-fleet-container" class="hidden space-y-2.5"></div>
             </div>
 
-            <!-- Right Column (UptimeRobot-Style Summary Cards) -->
+            <!-- Right Column (UptimeRobot Summary Cards) -->
             <div class="space-y-4">
                 
                 <!-- Current Status Card -->
@@ -137,14 +141,14 @@
                             <div class="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto text-sm font-bold">
                                 <i class="fa-solid fa-circle-up"></i>
                             </div>
-                            <div class="text-lg font-extrabold text-white mt-1" id="stat-up-count">2</div>
+                            <div class="text-lg font-extrabold text-white mt-1" id="stat-up-count">0</div>
                             <span class="text-[10px] text-slate-400 font-semibold uppercase">Up</span>
                         </div>
                         <div>
                             <div class="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-sm font-bold">
                                 <i class="fa-solid fa-circle-down"></i>
                             </div>
-                            <div class="text-lg font-extrabold text-white mt-1">0</div>
+                            <div class="text-lg font-extrabold text-white mt-1" id="stat-down-count">0</div>
                             <span class="text-[10px] text-slate-400 font-semibold uppercase">Down</span>
                         </div>
                         <div>
@@ -166,11 +170,11 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-400">Average Fleet Latency:</span>
-                        <span class="font-bold text-white mono">48 ms</span>
+                        <span class="font-bold text-white mono" id="stat-avg-latency">48 ms</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-400">Active Incidents:</span>
-                        <span class="font-bold text-emerald-400">0 Incidents</span>
+                        <span class="font-bold text-emerald-400" id="stat-active-incidents">0 Incidents</span>
                     </div>
                 </div>
 
@@ -246,7 +250,7 @@
                         </div>
                     </div>
 
-                    <!-- FIXED HORIZONTAL SCROLLABLE TAB CHIPS (SMOOTH ON DESKTOP & MOBILE) -->
+                    <!-- FIXED HORIZONTAL SCROLLABLE TAB CHIPS -->
                     <div class="overflow-x-auto custom-scrollbar pb-2">
                         <div id="drawer-tabs-bar" class="flex gap-2 text-xs min-w-max">
                             <button onclick="switchTab('tab-uptime')" id="btn-tab-uptime" class="tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5">
@@ -278,7 +282,6 @@
 
                     <!-- TAB 1: UPTIMEROBOT-STYLE RESPONSE TIME & UPTIME METRICS -->
                     <div id="tab-uptime" class="tab-content space-y-4">
-                        <!-- Uptime Summary Stats -->
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
                                 <span class="text-[10px] text-slate-400 uppercase font-semibold block">Last 24 Hours</span>
@@ -302,14 +305,12 @@
                             </div>
                         </div>
 
-                        <!-- LIVE RESPONSE TIME LINE CHART (CHART.JS) -->
+                        <!-- LIVE RESPONSE TIME LINE CHART -->
                         <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3">
                             <div class="flex justify-between items-center">
                                 <h4 class="text-xs font-bold uppercase text-white">Response Time History (ms)</h4>
                                 <div class="flex items-center gap-3 text-xs mono">
                                     <span>Avg: <strong class="text-emerald-400" id="drawer-chart-avg">48ms</strong></span>
-                                    <span>Min: <strong class="text-indigo-400">42ms</strong></span>
-                                    <span>Max: <strong class="text-amber-400">56ms</strong></span>
                                 </div>
                             </div>
                             <div class="h-44 w-full">
@@ -496,7 +497,7 @@
                         </div>
                     </div>
 
-                    <!-- TAB 8: WAF & ATTACKS (STRICTLY DOMAIN-SPECIFIC) -->
+                    <!-- TAB 8: WAF & ATTACKS -->
                     <div id="tab-sec" class="tab-content hidden space-y-3">
                         <div class="grid grid-cols-2 gap-3 text-xs">
                             <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
@@ -524,12 +525,18 @@
         </div>
     </div>
 
-    <!-- Script Logic with UptimeRobot Bar Graph & Response Time Chart -->
+    <!-- Defensive Script Engine (No Breaking Errors) -->
     <script>
         let globalData = { sites: [], domains: [], events: [], audit_logs: [] };
         let activeSiteUrl = '';
         let currentActiveTab = 'tab-uptime';
         let responseChartInstance = null;
+
+        // Defensive DOM text setter
+        function setTxt(id, val) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+        }
 
         function recoverDomainsFromLocalStorage() {
             try {
@@ -555,12 +562,11 @@
 
                 recoverDomainsFromLocalStorage();
 
-                document.getElementById('stat-health').innerText = `${data.fleet_health || 98}/100`;
-                document.getElementById('site-count-badge').innerText = data.sites.length;
-                document.getElementById('domain-count-badge').innerText = (data.domains || []).length;
-                document.getElementById('stat-up-count').innerText = data.sites.length + (data.domains || []).length;
-                document.getElementById('stat-threats').innerText = `${data.events.length}`;
-                document.getElementById('stat-updates').innerText = `${data.total_updates || 0}`;
+                // Safe updates to counters
+                setTxt('site-count-badge', data.sites.length);
+                setTxt('domain-count-badge', (data.domains || []).length);
+                setTxt('stat-up-count', data.sites.length + (data.domains || []).length);
+                setTxt('stat-down-count', '0');
 
                 renderWebsites(data.sites);
                 renderDomains(data.domains || []);
@@ -568,11 +574,10 @@
 
                 if (activeSiteUrl) openDrawer(activeSiteUrl, true);
             } catch (err) {
-                console.error(err);
+                console.error('Refresh error:', err);
             }
         }
 
-        // GENERATE UPTIMEROBOT 24-HOUR SEGMENTED GREEN BARS
         function generateUptimeBars() {
             let bars = '';
             for (let i = 0; i < 20; i++) {
@@ -587,20 +592,26 @@
                 btn.classList.add('text-slate-400', 'bg-slate-900', 'font-semibold');
             });
 
+            const navWebsites = document.getElementById('nav-btn-websites');
+            const navDomains = document.getElementById('nav-btn-domains');
+
             if (category === 'websites') {
                 document.getElementById('websites-fleet-container').classList.remove('hidden');
                 document.getElementById('domains-fleet-container').classList.add('hidden');
                 document.getElementById('btn-fleet-websites').classList.add('text-white', 'bg-indigo-600', 'font-bold');
                 document.getElementById('btn-fleet-websites').classList.remove('text-slate-400', 'bg-slate-900');
+                if (navWebsites) navWebsites.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/80 text-white font-bold border border-slate-700/50 text-left transition";
+                if (navDomains) navDomains.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left";
             } else {
                 document.getElementById('websites-fleet-container').classList.add('hidden');
                 document.getElementById('domains-fleet-container').classList.remove('hidden');
                 document.getElementById('btn-fleet-domains').classList.add('text-white', 'bg-indigo-600', 'font-bold');
                 document.getElementById('btn-fleet-domains').classList.remove('text-slate-400', 'bg-slate-900');
+                if (navDomains) navDomains.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/80 text-white font-bold border border-slate-700/50 text-left transition";
+                if (navWebsites) navWebsites.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left";
             }
         }
 
-        // RENDER UPTIMEROBOT-STYLE ROWS FOR WEBSITES
         function renderWebsites(sites) {
             const container = document.getElementById('websites-fleet-container');
             if (sites.length === 0) {
@@ -635,7 +646,6 @@
             }).join('');
         }
 
-        // RENDER UPTIMEROBOT-STYLE ROWS FOR STANDALONE DOMAINS
         function renderDomains(domains) {
             const container = document.getElementById('domains-fleet-container');
             if (domains.length === 0) {
@@ -692,7 +702,6 @@
             renderDomains(filteredDomains);
         }
 
-        // INITIALIZE CHART.JS RESPONSE TIME GRAPH
         function initResponseChart(latencyHistory) {
             const ctx = document.getElementById('responseTimeChart');
             if (!ctx) return;
@@ -736,9 +745,12 @@
             const site = globalData.sites.find(s => s.url === identifier) || (globalData.domains || []).find(d => d.domain === identifier);
             if (!site) return;
 
-            document.getElementById('drawer-title').innerText = site.name;
-            document.getElementById('drawer-url').href = site.url || `https://${site.domain}`;
-            document.getElementById('drawer-url').querySelector('span').innerText = site.url || site.domain;
+            setTxt('drawer-title', site.name);
+            const drawerUrl = document.getElementById('drawer-url');
+            if (drawerUrl) {
+                drawerUrl.href = site.url || `https://${site.domain}`;
+                drawerUrl.querySelector('span').innerText = site.url || site.domain;
+            }
 
             const drawerDelBtn = document.getElementById('btn-drawer-delete-domain');
             if (drawerDelBtn) {
@@ -756,112 +768,123 @@
             }
             switchTab(currentActiveTab);
 
-            // Response Time Chart
             setTimeout(() => {
                 const history = site.latency_history || [{time:'12:00', ms:site.latency||48}];
                 initResponseChart(history);
-                document.getElementById('drawer-chart-avg').innerText = `${site.latency || 48}ms`;
+                setTxt('drawer-chart-avg', `${site.latency || 48}ms`);
             }, 50);
 
-            document.getElementById('drawer-theme-name').innerText = site.theme ? site.theme.name : 'Active Theme';
-            document.getElementById('drawer-theme-ver').innerText = site.theme ? `v${site.theme.version}` : 'v1.0';
+            setTxt('drawer-theme-name', site.theme ? site.theme.name : 'Active Theme');
+            setTxt('drawer-theme-ver', site.theme ? `v${site.theme.version}` : 'v1.0');
 
             const perf = site.performance || { queries: 28, load_time: '0.28s', memory: '18 MB' };
-            document.getElementById('drawer-load-time').innerText = perf.load_time || '0.28s';
-            document.getElementById('drawer-memory').innerText = perf.memory || '18 MB';
+            setTxt('drawer-load-time', perf.load_time || '0.28s');
+            setTxt('drawer-memory', perf.memory || '18 MB');
 
             const sslDaysText = `${site.ssl ? (site.ssl.days_left || 84) : 84} Days Remaining`;
             const sslIssuerText = `Issuer: ${site.ssl ? (site.ssl.issuer || "Cloudflare / Let's Encrypt") : "Cloudflare / Let's Encrypt"}`;
-            document.getElementById('drawer-ssl-days').innerText = sslDaysText;
-            document.getElementById('drawer-ssl-issuer').innerText = sslIssuerText;
+            setTxt('drawer-ssl-days', sslDaysText);
+            setTxt('drawer-ssl-issuer', sslIssuerText);
 
             // DNS Table
             const dnsRecords = site.dns_records || [];
-            document.getElementById('drawer-dns-count').innerText = dnsRecords.length;
+            setTxt('drawer-dns-count', dnsRecords.length);
             const dnsTableBody = document.getElementById('drawer-dns-table-body');
-            dnsTableBody.innerHTML = dnsRecords.map(r => `
-                <tr class="hover:bg-slate-900/50">
-                    <td class="p-2.5 font-bold ${r.type === 'A' ? 'text-indigo-400' : r.type === 'CNAME' ? 'text-amber-400' : r.type === 'MX' ? 'text-emerald-400' : 'text-purple-400'}">${r.type}</td>
-                    <td class="p-2.5 text-slate-300 whitespace-nowrap">${r.host}</td>
-                    <td class="p-2.5 text-slate-200 truncate max-w-[200px] sm:max-w-sm">${r.value}</td>
-                    <td class="p-2.5 text-slate-400">${r.priority !== undefined ? r.priority : '-'}</td>
-                </tr>
-            `).join('');
+            if (dnsTableBody) {
+                dnsTableBody.innerHTML = dnsRecords.map(r => `
+                    <tr class="hover:bg-slate-900/50">
+                        <td class="p-2.5 font-bold ${r.type === 'A' ? 'text-indigo-400' : r.type === 'CNAME' ? 'text-amber-400' : r.type === 'MX' ? 'text-emerald-400' : 'text-purple-400'}">${r.type}</td>
+                        <td class="p-2.5 text-slate-300 whitespace-nowrap">${r.host}</td>
+                        <td class="p-2.5 text-slate-200 truncate max-w-[200px] sm:max-w-sm">${r.value}</td>
+                        <td class="p-2.5 text-slate-400">${r.priority !== undefined ? r.priority : '-'}</td>
+                    </tr>
+                `).join('');
+            }
 
             // Plugins
             const plugins = site.plugins || [];
-            document.getElementById('drawer-tab-plugin-count').innerText = plugins.length;
-            document.getElementById('drawer-plugins-summary').innerText = `${plugins.length} Installed Plugins`;
+            setTxt('drawer-tab-plugin-count', plugins.length);
+            setTxt('drawer-plugins-summary', `${plugins.length} Installed Plugins`);
             const pluginsContainer = document.getElementById('drawer-plugins-list');
-            pluginsContainer.innerHTML = plugins.map(p => `
-                <div class="bg-slate-950 border border-slate-800 px-3.5 py-2.5 rounded-xl flex items-center justify-between text-xs gap-2">
-                    <div class="min-w-0">
-                        <span class="text-slate-200 font-semibold block truncate">${p.name}</span>
-                        <span class="text-[10px] text-slate-500 mono">Installed: v${p.version || '1.0'}</span>
-                    </div>
-                    ${p.has_update ? `<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">UPDATE: v${p.new_version || 'Latest'}</span>` : `<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">UP TO DATE</span>`}
-                </div>
-            `).join('');
-
-            // Users
-            const users = site.users || [];
-            document.getElementById('drawer-tab-user-count').innerText = users.length;
-            const usersContainer = document.getElementById('drawer-users-list');
-            usersContainer.innerHTML = users.map(u => `
-                <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-3">
-                    <div>
-                        <strong class="text-white text-sm">${u.user_login}</strong>
-                        <span class="text-slate-400 ml-1 sm:ml-2">(${u.user_email})</span>
-                        <div class="text-[10px] text-slate-500 mt-0.5">Role: <span class="text-indigo-400 font-bold uppercase">${(u.roles || ['user']).join(', ')}</span></div>
-                    </div>
-                    <div class="flex items-center gap-2 self-start sm:self-auto">
-                        <button onclick="resetUserPassword('${u.id}', '${u.user_login}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/20 rounded-xl font-semibold text-[11px] flex items-center gap-1.5"><i class="fa-solid fa-key"></i> Reset Password</button>
-                        <button onclick="deleteUser('${u.id}', '${u.user_login}')" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-[11px] flex items-center gap-1.5 shadow-md shadow-red-600/30"><i class="fa-solid fa-trash"></i> Delete User</button>
-                    </div>
-                </div>
-            `).join('');
-
-            // Backups
-            const backups = site.backups || [];
-            const backupsContainer = document.getElementById('drawer-backups-list');
-            backupsContainer.innerHTML = backups.map(b => `
-                <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">
-                    <div>
-                        <div class="font-bold text-white truncate">${b.filename || 'Database Snapshot'}</div>
-                        <div class="text-[10px] text-slate-500 mono mt-0.5">Location: ${b.location || '/wp-content/flotek-backups/'} • ${b.filesize || '48.2 MB'}</div>
-                    </div>
-                    <button onclick="executeRollback('${b.filename}')" class="self-start sm:self-auto px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded font-semibold text-[11px] flex items-center gap-1"><i class="fa-solid fa-rotate-left"></i> Rollback DB</button>
-                </div>
-            `).join('');
-
-            // SEO & Analytics
-            const analytics = site.analytics || { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%', channel: 'Google Organic Search', mobile_share: '72.1%' };
-            const seo = site.seo || { sitemap_status: 'Indexed (42 URLs Valid)', broken_links: 0 };
-            document.getElementById('drawer-seo-visitors').innerText = (analytics.visitors_7d || 1420).toLocaleString();
-            document.getElementById('drawer-seo-views').innerText = (analytics.pageviews || 4890).toLocaleString();
-            document.getElementById('drawer-seo-bounce').innerText = analytics.bounce_rate || '34.2%';
-            document.getElementById('drawer-seo-sitemap').innerHTML = `<i class="fa-solid fa-circle-check"></i> ${seo.sitemap_status || 'Indexed'}`;
-            document.getElementById('drawer-seo-channel').innerText = analytics.channel || 'Google Organic Search';
-            document.getElementById('drawer-seo-mobile').innerText = `${analytics.mobile_share || '68%'} Smartphone Traffic`;
-
-            // DOMAIN-SPECIFIC WAF LOGS ONLY
-            const siteEvents = [...globalData.events, ...(globalData.audit_logs || [])].filter(e => e.site_url === identifier);
-            const eventsContainer = document.getElementById('drawer-site-events');
-            if (siteEvents.length === 0) {
-                eventsContainer.innerHTML = `<div class="text-xs text-slate-500 p-4 bg-slate-950 rounded-xl text-center">No security incidents recorded for this website.</div>`;
-            } else {
-                eventsContainer.innerHTML = siteEvents.map(e => `
-                    <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs">
-                        <div class="flex justify-between font-bold ${e.type === 'AUDIT' ? 'text-indigo-400' : 'text-rose-400'}">
-                            <span>${e.event}</span>
-                            <span class="text-[10px] text-slate-500 mono">${new Date(e.timestamp).toLocaleTimeString()}</span>
+            if (pluginsContainer) {
+                pluginsContainer.innerHTML = plugins.map(p => `
+                    <div class="bg-slate-950 border border-slate-800 px-3.5 py-2.5 rounded-xl flex items-center justify-between text-xs gap-2">
+                        <div class="min-w-0">
+                            <span class="text-slate-200 font-semibold block truncate">${p.name}</span>
+                            <span class="text-[10px] text-slate-500 mono">Installed: v${p.version || '1.0'}</span>
                         </div>
-                        <pre class="mt-1 text-[10px] text-slate-400 font-mono">${JSON.stringify(e.details, null, 2)}</pre>
+                        ${p.has_update ? `<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">UPDATE: v${p.new_version || 'Latest'}</span>` : `<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">UP TO DATE</span>`}
                     </div>
                 `).join('');
             }
 
-            document.getElementById('site-drawer').classList.remove('hidden');
+            // Users
+            const users = site.users || [];
+            setTxt('drawer-tab-user-count', users.length);
+            const usersContainer = document.getElementById('drawer-users-list');
+            if (usersContainer) {
+                usersContainer.innerHTML = users.map(u => `
+                    <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-3">
+                        <div>
+                            <strong class="text-white text-sm">${u.user_login}</strong>
+                            <span class="text-slate-400 ml-1 sm:ml-2">(${u.user_email})</span>
+                            <div class="text-[10px] text-slate-500 mt-0.5">Role: <span class="text-indigo-400 font-bold uppercase">${(u.roles || ['user']).join(', ')}</span></div>
+                        </div>
+                        <div class="flex items-center gap-2 self-start sm:self-auto">
+                            <button onclick="resetUserPassword('${u.id}', '${u.user_login}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/20 rounded-xl font-semibold text-[11px] flex items-center gap-1.5"><i class="fa-solid fa-key"></i> Reset Password</button>
+                            <button onclick="deleteUser('${u.id}', '${u.user_login}')" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-[11px] flex items-center gap-1.5 shadow-md shadow-red-600/30"><i class="fa-solid fa-trash"></i> Delete User</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Backups
+            const backups = site.backups || [];
+            const backupsContainer = document.getElementById('drawer-backups-list');
+            if (backupsContainer) {
+                backupsContainer.innerHTML = backups.map(b => `
+                    <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">
+                        <div>
+                            <div class="font-bold text-white truncate">${b.filename || 'Database Snapshot'}</div>
+                            <div class="text-[10px] text-slate-500 mono mt-0.5">Location: ${b.location || '/wp-content/flotek-backups/'} • ${b.filesize || '48.2 MB'}</div>
+                        </div>
+                        <button onclick="executeRollback('${b.filename}')" class="self-start sm:self-auto px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded font-semibold text-[11px] flex items-center gap-1"><i class="fa-solid fa-rotate-left"></i> Rollback DB</button>
+                    </div>
+                `).join('');
+            }
+
+            // SEO & Analytics
+            const analytics = site.analytics || { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%', channel: 'Google Organic Search', mobile_share: '72.1%' };
+            const seo = site.seo || { sitemap_status: 'Indexed (42 URLs Valid)', broken_links: 0 };
+            setTxt('drawer-seo-visitors', (analytics.visitors_7d || 1420).toLocaleString());
+            setTxt('drawer-seo-views', (analytics.pageviews || 4890).toLocaleString());
+            setTxt('drawer-seo-bounce', analytics.bounce_rate || '34.2%');
+            const seoStatusEl = document.getElementById('drawer-seo-sitemap');
+            if (seoStatusEl) seoStatusEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${seo.sitemap_status || 'Indexed'}`;
+            setTxt('drawer-seo-channel', analytics.channel || 'Google Organic Search');
+            setTxt('drawer-seo-mobile', `${analytics.mobile_share || '68%'} Smartphone Traffic`);
+
+            // DOMAIN-SPECIFIC WAF LOGS ONLY
+            const siteEvents = [...globalData.events, ...(globalData.audit_logs || [])].filter(e => e.site_url === identifier);
+            const eventsContainer = document.getElementById('drawer-site-events');
+            if (eventsContainer) {
+                if (siteEvents.length === 0) {
+                    eventsContainer.innerHTML = `<div class="text-xs text-slate-500 p-4 bg-slate-950 rounded-xl text-center">No security incidents recorded for this website.</div>`;
+                } else {
+                    eventsContainer.innerHTML = siteEvents.map(e => `
+                        <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs">
+                            <div class="flex justify-between font-bold ${e.type === 'AUDIT' ? 'text-indigo-400' : 'text-rose-400'}">
+                                <span>${e.event}</span>
+                                <span class="text-[10px] text-slate-500 mono">${new Date(e.timestamp).toLocaleTimeString()}</span>
+                            </div>
+                            <pre class="mt-1 text-[10px] text-slate-400 font-mono">${JSON.stringify(e.details, null, 2)}</pre>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            const drawerEl = document.getElementById('site-drawer');
+            if (drawerEl) drawerEl.classList.remove('hidden');
         }
 
         function switchTab(tabId) {
@@ -883,14 +906,20 @@
         }
 
         function closeDrawer() {
-            document.getElementById('site-drawer').classList.add('hidden');
+            const drawerEl = document.getElementById('site-drawer');
+            if (drawerEl) drawerEl.classList.add('hidden');
             activeSiteUrl = '';
         }
 
-        function openAddDomainModal() { document.getElementById('add-domain-modal').classList.remove('hidden'); }
+        function openAddDomainModal() { 
+            const m = document.getElementById('add-domain-modal');
+            if (m) m.classList.remove('hidden'); 
+        }
         function closeAddDomainModal() { 
-            document.getElementById('add-domain-modal').classList.add('hidden'); 
-            document.getElementById('input-domain-name').value = ''; 
+            const m = document.getElementById('add-domain-modal');
+            if (m) m.classList.add('hidden'); 
+            const inp = document.getElementById('input-domain-name');
+            if (inp) inp.value = ''; 
         }
 
         async function submitStandaloneDomain() {
