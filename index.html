@@ -20,7 +20,7 @@
 <body class="bg-[#0b101b] text-slate-100 min-h-screen custom-scrollbar flex flex-col md:flex-row">
 
     <!-- UPTIMEROBOT-STYLE LEFT SIDEBAR -->
-    <aside class="w-full md:w-64 bg-[#080d17] border-b md:border-b-0 md:border-r border-slate-800/80 p-4 flex md:flex-col justify-between shrink-0 z-20">
+    <aside class="w-full md:w-64 bg-[#080d17] border-b md:border-b-0 md:border-r border-slate-800/80 p-4 flex md:flex-col justify-between shrink-0">
         <div class="space-y-6 w-full">
             <div class="flex items-center gap-2.5 px-2">
                 <div class="h-8 w-8 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-lg flex items-center justify-center text-slate-950 font-black text-sm">
@@ -32,6 +32,7 @@
                 </div>
             </div>
 
+            <!-- Navigation Links -->
             <nav class="space-y-1.5 text-xs">
                 <button onclick="switchFleetCategory('websites')" id="nav-btn-websites" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition cursor-pointer">
                     <i class="fa-solid fa-gauge-high text-emerald-400 text-sm w-4"></i> Monitors
@@ -54,7 +55,7 @@
     <!-- MAIN CONTENT AREA -->
     <div class="flex-1 flex flex-col min-w-0">
 
-        <!-- Top Status Bar -->
+        <!-- Top Header Bar -->
         <div class="border-b border-slate-800/80 bg-[#080d17]/50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
                 <h2 class="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
@@ -76,9 +77,10 @@
         <!-- Main Body Grid -->
         <div class="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 max-w-7xl">
 
-            <!-- Center Column -->
+            <!-- Center Column: Monitor Cards -->
             <div class="lg:col-span-3 space-y-4">
                 
+                <!-- Category Switcher & Search Bar -->
                 <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-[#080d17] border border-slate-800 p-3 rounded-2xl">
                     <div class="flex gap-1.5 text-xs">
                         <button onclick="switchFleetCategory('websites')" id="btn-fleet-websites" class="fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer">
@@ -95,11 +97,14 @@
                     </div>
                 </div>
 
+                <!-- Websites List Container -->
                 <div id="websites-fleet-container" class="space-y-2.5"></div>
+
+                <!-- Standalone Domains Container -->
                 <div id="domains-fleet-container" class="hidden space-y-2.5"></div>
             </div>
 
-            <!-- Right Column -->
+            <!-- Right Column: Status Summary Cards -->
             <div class="space-y-4">
                 <div class="bg-[#080d17] border border-slate-800 p-5 rounded-2xl space-y-4">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Current Status</h3>
@@ -158,8 +163,9 @@
 
     </div>
 
-    <!-- ADD DOMAIN MODAL -->
-    <div id="add-domain-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+    <!-- ADD DOMAIN MODAL (Clean Tailwind Hidden Wrapper) -->
+    <div id="add-domain-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="closeAddDomainModal()"></div>
         <div class="relative bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 max-w-md w-full z-10 shadow-2xl space-y-4">
             <div class="flex justify-between items-center">
                 <h3 class="font-bold text-sm sm:text-base text-white flex items-center gap-2">
@@ -181,9 +187,11 @@
         </div>
     </div>
 
-    <!-- DRAWER -->
-    <div id="site-drawer" class="fixed inset-0 z-50 hidden flex justify-end bg-slate-950/80 backdrop-blur-sm">
-        <div class="w-full sm:max-w-4xl bg-[#090e18] sm:border-l border-slate-800 p-4 sm:p-6 flex flex-col justify-between shadow-2xl custom-scrollbar overflow-y-auto">
+    <!-- DRAWER (Clean Hidden Wrapper with Strict Z-Index) -->
+    <div id="site-drawer" class="fixed inset-0 z-50 hidden flex justify-end">
+        <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="closeDrawer()"></div>
+
+        <div class="relative w-full sm:max-w-4xl bg-[#090e18] sm:border-l border-slate-800 p-4 sm:p-6 flex flex-col justify-between shadow-2xl z-10 custom-scrollbar overflow-y-auto">
             
             <div class="space-y-4">
                 <!-- Header -->
@@ -212,7 +220,7 @@
                     </div>
                 </div>
 
-                <!-- TABS (Filtered for Domains vs Websites) -->
+                <!-- TABS -->
                 <div class="overflow-x-auto custom-scrollbar pb-2">
                     <div id="drawer-tabs-bar" class="flex gap-2 text-xs min-w-max">
                         <button onclick="switchTab('tab-uptime')" id="btn-tab-uptime" class="tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5 wp-only-tab cursor-pointer">
@@ -460,7 +468,7 @@
 
     <!-- CLIENT ENGINE -->
     <script>
-        // CLIENT FALLBACK (Rendered immediately on load)
+        // CLIENT FALLBACK DATA
         const CLIENT_SITES = [
             {
                 name: 'Grand Prix Express',
@@ -544,7 +552,7 @@
         ];
 
         let globalData = { sites: CLIENT_SITES, domains: CLIENT_DOMAINS, events: [], audit_logs: [] };
-        let activeSiteUrl = '';
+        let activeSiteUrl = ''; // CRITICAL: NEVER PRESET TO A STRING, MUST BE EMPTY INITIALLY
         let currentActiveTab = 'tab-uptime';
         let responseChartInstance = null;
 
@@ -562,9 +570,7 @@
                 if (data.domains && data.domains.length > 0) globalData.domains = data.domains;
                 globalData.events = data.events || [];
                 globalData.audit_logs = data.audit_logs || [];
-            } catch (err) {
-                console.log('Using local client fleet cache.');
-            }
+            } catch (err) {}
 
             setTxt('site-count-badge', globalData.sites.length);
             setTxt('domain-count-badge', globalData.domains.length);
@@ -596,15 +602,15 @@
                 document.getElementById('domains-fleet-container').classList.add('hidden');
                 if (btnWebsites) btnWebsites.className = "fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer";
                 if (btnDomains) btnDomains.className = "fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition cursor-pointer";
-                if (navWebsites) navWebsites.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition";
-                if (navDomains) navDomains.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left";
+                if (navWebsites) navWebsites.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition cursor-pointer";
+                if (navDomains) navDomains.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left cursor-pointer";
             } else {
                 document.getElementById('websites-fleet-container').classList.add('hidden');
                 document.getElementById('domains-fleet-container').classList.remove('hidden');
                 if (btnDomains) btnDomains.className = "fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer";
                 if (btnWebsites) btnWebsites.className = "fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition cursor-pointer";
-                if (navDomains) navDomains.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition";
-                if (navWebsites) navWebsites.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left";
+                if (navDomains) navDomains.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition cursor-pointer";
+                if (navWebsites) navWebsites.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left cursor-pointer";
             }
         }
 
@@ -733,7 +739,6 @@
             const isWebsite = identifier.startsWith('http');
             const cleanIdentifier = identifier.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
 
-            // PRECISE ISOLATED LOOKUP
             const site = (globalData.sites || []).find(s => s.url === identifier || s.domain === cleanIdentifier) || 
                          (globalData.domains || []).find(d => d.domain === cleanIdentifier || d.domain === identifier);
             
@@ -746,7 +751,6 @@
                 drawerUrl.querySelector('span').innerText = site.url || site.domain || cleanIdentifier;
             }
 
-            // HIDE WP TABS FOR STANDALONE DOMAINS
             document.querySelectorAll('.wp-only-tab').forEach(el => {
                 if (isWebsite) el.classList.remove('hidden');
                 else el.classList.add('hidden');
@@ -763,7 +767,6 @@
             }
             switchTab(currentActiveTab);
 
-            // Response Time
             if (isWebsite) {
                 setTimeout(() => {
                     initResponseChart(site.latency || 45);
@@ -777,7 +780,6 @@
             setTxt('drawer-load-time', perf.load_time || '0.28s');
             setTxt('drawer-memory', perf.memory || '18 MB');
 
-            // SSL Card
             const hasSSL = site.ssl && site.ssl.valid;
             setTxt('drawer-ssl-days', hasSSL ? `${site.ssl.days_left} Days Remaining` : 'No Certificate');
             setTxt('drawer-ssl-issuer', `Issuer: ${site.ssl ? site.ssl.issuer : 'No SSL (Domain Only)'}`);
@@ -792,7 +794,6 @@
                 }
             }
 
-            // DNS Table
             const dnsRecords = site.dns_records || [];
             setTxt('drawer-dns-count', dnsRecords.length);
             const dnsTableBody = document.getElementById('drawer-dns-table-body');
@@ -811,7 +812,6 @@
                 }
             }
 
-            // Plugins
             const plugins = site.plugins || [];
             setTxt('drawer-tab-plugin-count', plugins.length);
             setTxt('drawer-plugins-summary', `${plugins.length} Installed Plugins`);
@@ -828,7 +828,6 @@
                 `).join('');
             }
 
-            // Users
             const users = site.users || [];
             setTxt('drawer-tab-user-count', users.length);
             const usersContainer = document.getElementById('drawer-users-list');
@@ -848,7 +847,6 @@
                 `).join('');
             }
 
-            // Backups
             const backups = site.backups || [];
             const backupsContainer = document.getElementById('drawer-backups-list');
             if (backupsContainer) {
@@ -863,16 +861,15 @@
                 `).join('');
             }
 
-            // SEO & Analytics
+            // DYNAMIC SEO BINDING PER SITE
             const analytics = site.analytics || { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' };
-            const seo = site.seo || { sitemap_status: 'Indexed', broken_links: 0 };
+            const seo = site.seo || { sitemap_status: 'Indexed (42 URLs Valid)', broken_links: 0 };
             setTxt('drawer-seo-visitors', (analytics.visitors_7d || 1420).toLocaleString());
             setTxt('drawer-seo-views', (analytics.pageviews || 4890).toLocaleString());
             setTxt('drawer-seo-bounce', analytics.bounce_rate || '34.2%');
             const seoStatusEl = document.getElementById('drawer-seo-sitemap');
             if (seoStatusEl) seoStatusEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${seo.sitemap_status || 'Indexed'}`;
 
-            // Domain-Specific Incident Log
             const siteEvents = [...globalData.events, ...(globalData.audit_logs || [])].filter(e => e.site_url === identifier);
             const eventsContainer = document.getElementById('drawer-site-events');
             if (eventsContainer) {
@@ -891,7 +888,8 @@
                 }
             }
 
-            document.getElementById('site-drawer').classList.remove('hidden');
+            const drawer = document.getElementById('site-drawer');
+            if (drawer) drawer.classList.remove('hidden');
         }
 
         function switchTab(tabId) {
@@ -909,17 +907,18 @@
         }
 
         function closeDrawer() {
-            document.getElementById('site-drawer').classList.add('hidden');
+            const drawer = document.getElementById('site-drawer');
+            if (drawer) drawer.classList.add('hidden');
             activeSiteUrl = '';
         }
 
         function openAddDomainModal() { 
             const m = document.getElementById('add-domain-modal');
-            if (m) m.classList.remove('hidden');
+            if (m) m.classList.remove('hidden'); 
         }
         function closeAddDomainModal() { 
             const m = document.getElementById('add-domain-modal');
-            if (m) m.classList.add('hidden');
+            if (m) m.classList.add('hidden'); 
             const inp = document.getElementById('input-domain-name');
             if (inp) inp.value = ''; 
         }
@@ -963,7 +962,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ domain_name: domain })
                 });
-                // Remove from local memory
                 globalData.domains = globalData.domains.filter(d => d.domain !== domain);
                 refreshData();
             } catch (e) {}
@@ -1128,7 +1126,7 @@
             downloadAnchor.remove();
         }
 
-        // Render immediately on load
+        // Initialize immediately
         renderWebsites(globalData.sites);
         renderDomains(globalData.domains);
         refreshData();
