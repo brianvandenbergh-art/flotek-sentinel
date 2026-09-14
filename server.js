@@ -1,6 +1,6 @@
 /**
- * Flotek Sentinel - Enterprise Fleet Command Hub (UptimeRobot Edition)
- * Zero-Empty Boot Engine with Real DNS & Telemetry Handlers
+ * Flotek Sentinel - Enterprise Fleet Command Hub
+ * Multi-Domain Isolated Telemetry, Live DNS Scanner & State-Isolated Drawer
  */
 
 const express = require('express');
@@ -21,11 +21,12 @@ const SENDER_EMAIL = 'monitor@flotek.io';
 const SHARED_SECRET = 'flotek-super-secret-key-2026';
 const DB_FILE = path.join(__dirname, 'data.json');
 
-// REAL SEED WEBSITES (Ensures Screen is NEVER Blank on Boot)
-const initialSeedSites = {
+// REAL INITIAL DATA
+const initialSites = {
     'https://grandprixexpress.com': {
         name: 'Grand Prix Express',
         url: 'https://grandprixexpress.com',
+        domain: 'grandprixexpress.com',
         tag: 'flotek website',
         wp_version: '7.0.4',
         php_version: '8.3.30',
@@ -39,8 +40,7 @@ const initialSeedSites = {
         ],
         users: [
             { id: 1, user_login: 'garry', user_email: 'garry.whitney@grandprixexpress.com', roles: ['editor'], registered: '2025-01-10' },
-            { id: 2, user_login: 'oes-admin', user_email: 'paul.hesketh@oes-uk.com', roles: ['administrator'], registered: '2024-11-20' },
-            { id: 3, user_login: 'Testing', user_email: 'testing@local.co.uk', roles: ['administrator'], registered: '2026-09-12' }
+            { id: 2, user_login: 'oes-admin', user_email: 'paul.hesketh@oes-uk.com', roles: ['administrator'], registered: '2024-11-20' }
         ],
         updates_count: 12,
         security_engine: 'AIOS + Wordfence',
@@ -60,11 +60,12 @@ const initialSeedSites = {
         health_score: 64,
         status: 'ONLINE',
         latency: 45,
-        latency_history: [{ time: '12:00', ms: 45 }, { time: '12:30', ms: 48 }, { time: '13:00', ms: 44 }]
+        type: 'WEBSITE'
     },
     'https://gamlins.com': {
         name: 'Gamlins Solicitors',
         url: 'https://gamlins.com',
+        domain: 'gamlins.com',
         tag: 'flotek client',
         wp_version: '7.0.4',
         php_version: '8.3.30',
@@ -85,49 +86,34 @@ const initialSeedSites = {
             { type: 'A', host: '@ (Apex)', value: '88.208.252.9', priority: '-' },
             { type: 'MX', host: '@', value: 'mailserver.livemail.co.uk', priority: 10 }
         ],
-        seo: { sitemap_status: 'Indexed (128 URLs Valid)', broken_links: 0 },
-        analytics: { visitors_7d: 2840, pageviews: 9120, bounce_rate: '28.4%', channel: 'Google Organic Search', mobile_share: '64%' },
+        seo: { sitemap_status: 'Indexed (184 URLs Valid)', broken_links: 0 },
+        analytics: { visitors_7d: 3920, pageviews: 11480, bounce_rate: '24.1%', channel: 'Google Organic Search', mobile_share: '64%' },
         backups: [{ id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '62.4 MB', date: new Date().toLocaleDateString() }],
         health_score: 34,
         status: 'ONLINE',
         latency: 48,
-        latency_history: [{ time: '12:00', ms: 48 }, { time: '12:30', ms: 51 }, { time: '13:00', ms: 47 }]
+        type: 'WEBSITE'
     }
 };
 
-const initialSeedDomains = {
+const initialDomains = {
     'gamlins.co.uk': {
         name: 'gamlins.co.uk',
         domain: 'gamlins.co.uk',
         registrar: 'Fasthosts',
         nameservers: ['ns1.livedns.co.uk', 'ns2.livedns.co.uk'],
-        ssl_days: 56,
+        ssl: { valid: false, days_left: 0, issuer: 'No Certificate (Forward / Parked)' },
         dns_records: [
             { type: 'A', host: '@', value: '88.208.252.9', priority: '-' },
             { type: 'MX', host: '@', value: 'mailserver.livemail.co.uk', priority: 10 }
         ],
         type: 'DOMAIN_ONLY',
         status: 'ONLINE'
-    },
-    'moolawise.co.za': {
-        name: 'moolawise.co.za',
-        domain: 'moolawise.co.za',
-        registrar: 'ZADNS / Absolute Hosting',
-        nameservers: ['ns21.zadns.co.za', 'ns22.zadns.co.za'],
-        ssl_days: 89,
-        dns_records: [
-            { type: 'A', host: '@ (Apex)', value: '102.214.8.65', priority: '-' },
-            { type: 'NS', host: '@', value: 'ns21.zadns.co.za', priority: '-' },
-            { type: 'MX', host: '@', value: 'mail.moolawise.co.za', priority: 10 },
-            { type: 'TXT', host: '@', value: 'v=spf1 a mx include:_spf.absolutehosting.joburg ~all', priority: '-' }
-        ],
-        type: 'DOMAIN_ONLY',
-        status: 'ONLINE'
     }
 };
 
-let monitoredSites = { ...initialSeedSites };
-let standaloneDomains = { ...initialSeedDomains };
+let monitoredSites = { ...initialSites };
+let standaloneDomains = { ...initialDomains };
 let securityEvents = [];
 let auditLogs = [];
 
@@ -137,7 +123,7 @@ function loadDatabase() {
             const raw = fs.readFileSync(DB_FILE, 'utf8');
             const data = JSON.parse(raw);
             if (data.sites && Object.keys(data.sites).length > 0) monitoredSites = data.sites;
-            if (data.domains && Object.keys(data.domains).length > 0) standaloneDomains = data.domains;
+            if (data.domains) standaloneDomains = data.domains;
             securityEvents = data.events || [];
             auditLogs = data.audit_logs || [];
         }
@@ -156,9 +142,8 @@ function saveDatabase() {
 }
 
 loadDatabase();
-saveDatabase(); // Guarantee file exists with seed data
 
-// DNS SCANNER
+// COMPREHENSIVE DNS SCANNER
 async function scanFullDNSZone(domain) {
     const cleanHost = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
     let records = [];
@@ -166,6 +151,9 @@ async function scanFullDNSZone(domain) {
     try {
         const a = await dns.resolve4(cleanHost).catch(() => []);
         a.forEach(ip => records.push({ type: 'A', host: '@ (Apex)', value: ip, priority: '-' }));
+
+        const aaaa = await dns.resolve6(cleanHost).catch(() => []);
+        aaaa.forEach(ip => records.push({ type: 'AAAA', host: '@ (Apex)', value: ip, priority: '-' }));
 
         const ns = await dns.resolveNs(cleanHost).catch(() => []);
         ns.forEach(val => records.push({ type: 'NS', host: '@', value: val, priority: '-' }));
@@ -194,16 +182,19 @@ async function scanFullDNSZone(domain) {
 
             const txts = await dns.resolveTxt(subFqdn).catch(() => []);
             txts.forEach(t => records.push({ type: 'TXT', host: sub, value: t.join(' '), priority: '-' }));
+
+            const mxs = await dns.resolveMx(subFqdn).catch(() => []);
+            mxs.forEach(m => records.push({ type: 'MX', host: sub, value: m.exchange, priority: m.priority }));
         } catch (e) {}
     }));
 
-    return records.length > 0 ? records : [{ type: 'A', host: '@', value: '77.68.64.20', priority: '-' }];
+    return records;
 }
 
 function inspectLiveSSL(domain) {
     return new Promise((resolve) => {
         const cleanHost = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
-        const socket = tls.connect(443, cleanHost, { servername: cleanHost, timeout: 4000 }, () => {
+        const socket = tls.connect(443, cleanHost, { servername: cleanHost, timeout: 3500 }, () => {
             const cert = socket.getPeerCertificate();
             socket.destroy();
 
@@ -213,12 +204,12 @@ function inspectLiveSSL(domain) {
                 const issuerName = cert.issuer ? (cert.issuer.O || cert.issuer.CN || "Let's Encrypt") : "Active SSL";
                 resolve({ valid: true, days_left: daysLeft, issuer: issuerName, expires: expiryDate.toLocaleDateString() });
             } else {
-                resolve({ valid: true, days_left: 84, issuer: "Cloudflare / Let's Encrypt", expires: 'Auto-Renew' });
+                resolve({ valid: false, days_left: 0, issuer: "No Certificate (Domain Only / Parked)", expires: 'N/A' });
             }
         });
 
-        socket.on('error', () => resolve({ valid: true, days_left: 84, issuer: "Cloudflare / Let's Encrypt", expires: 'Auto-Renew' }));
-        socket.on('timeout', () => { socket.destroy(); resolve({ valid: true, days_left: 84, issuer: "Cloudflare / Let's Encrypt", expires: 'Auto-Renew' }); });
+        socket.on('error', () => resolve({ valid: false, days_left: 0, issuer: "No Certificate (Domain Only / Parked)", expires: 'N/A' }));
+        socket.on('timeout', () => { socket.destroy(); resolve({ valid: false, days_left: 0, issuer: "No Certificate (Domain Only / Parked)", expires: 'N/A' }); });
     });
 }
 
@@ -238,13 +229,10 @@ app.post('/api/register', async (req, res) => {
         scanFullDNSZone(data.site_url)
     ]);
 
-    const hostHash = cleanHost.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const uniqueVisitors = data.analytics?.visitors_7d || (650 + (hostHash % 900));
-    const uniqueViews = data.analytics?.pageviews || (uniqueVisitors * 3 + (hostHash % 500));
-
     monitoredSites[data.site_url] = {
         name: data.site_name || data.site_url,
         url: data.site_url,
+        domain: cleanHost,
         tag: cleanHost.includes('flotek') ? 'flotek website' : cleanHost.split('.')[0],
         wp_version: data.wp_version || '7.0.4',
         php_version: data.php_version || '8.3.30',
@@ -255,29 +243,23 @@ app.post('/api/register', async (req, res) => {
         security_engine: 'Multi-Layer Defense',
         performance: data.performance || { queries: 28, load_time: '0.28s', memory: '18 MB' },
         ssl: liveSSL,
-        dns_records: liveDNS,
-        seo: data.seo || { sitemap_status: `Indexed (${25 + (hostHash % 60)} URLs Valid)`, broken_links: 0 },
-        analytics: {
-            visitors_7d: uniqueVisitors,
-            pageviews: uniqueViews,
-            bounce_rate: data.analytics?.bounce_rate || `${25 + (hostHash % 15)}.2%`,
-            channel: 'Google Organic Search',
-            mobile_share: `${55 + (hostHash % 25)}%`
-        },
+        dns_records: liveDNS.length > 0 ? liveDNS : (monitoredSites[data.site_url]?.dns_records || []),
+        seo: data.seo || { sitemap_status: 'Indexed (42 URLs Valid)', broken_links: 0 },
+        analytics: data.analytics || { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' },
         backups: monitoredSites[data.site_url]?.backups || [
             { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '48.2 MB', date: new Date().toLocaleDateString() }
         ],
         health_score: Math.max(30, 100 - (data.pending_updates || 0) * 3),
         status: 'ONLINE',
-        latency: Math.floor(Math.random() * 20 + 45),
-        latency_history: [{ time: '12:00', ms: 45 }, { time: '12:30', ms: 48 }, { time: '13:00', ms: 44 }]
+        latency: Math.floor(Math.random() * 15 + 40),
+        type: 'WEBSITE'
     };
 
     saveDatabase();
     res.json({ success: true });
 });
 
-// STANDALONE DOMAINS
+// STANDALONE DOMAINS: ADD
 app.post('/api/add-domain', async (req, res) => {
     const { domain_name } = req.body;
     if (!domain_name) return res.status(400).json({ error: 'Domain is required' });
@@ -296,9 +278,9 @@ app.post('/api/add-domain', async (req, res) => {
     standaloneDomains[cleanHost] = {
         name: cleanHost,
         domain: cleanHost,
-        registrar: nameservers[0] ? (nameservers[0].includes('livedns') ? 'Fasthosts' : 'Custom NS') : 'Fasthosts',
+        registrar: nameservers[0] ? (nameservers[0].includes('livedns') ? 'Fasthosts' : nameservers[0].includes('zadns') ? 'ZADNS' : 'Custom NS') : 'Fasthosts',
         nameservers: nameservers,
-        ssl_days: liveSSL.days_left || 84,
+        ssl: liveSSL,
         dns_records: liveDNS,
         type: 'DOMAIN_ONLY',
         status: 'ONLINE'
@@ -308,6 +290,7 @@ app.post('/api/add-domain', async (req, res) => {
     res.json({ success: true, domain: standaloneDomains[cleanHost] });
 });
 
+// STANDALONE DOMAINS: DELETE
 app.post('/api/delete-domain', (req, res) => {
     const { domain_name } = req.body;
     if (domain_name) {
@@ -315,6 +298,7 @@ app.post('/api/delete-domain', (req, res) => {
         delete standaloneDomains[cleanHost];
         delete standaloneDomains[domain_name];
         saveDatabase();
+        console.log(`🗑️ [DELETED DOMAIN] ${cleanHost}`);
     }
     res.json({ success: true });
 });
