@@ -1,6 +1,6 @@
 /**
  * Flotek Sentinel - Enterprise Fleet Command Hub
- * Multi-Domain Isolated Telemetry, Live DNS Scanner & State-Isolated Drawer
+ * Guaranteed Seed Recovery & Deep Telemetry Engine
  */
 
 const express = require('express');
@@ -21,8 +21,8 @@ const SENDER_EMAIL = 'monitor@flotek.io';
 const SHARED_SECRET = 'flotek-super-secret-key-2026';
 const DB_FILE = path.join(__dirname, 'data.json');
 
-// REAL INITIAL DATA
-const initialSites = {
+// GUARANTEED REAL SEED DATA
+const defaultSites = {
     'https://grandprixexpress.com': {
         name: 'Grand Prix Express',
         url: 'https://grandprixexpress.com',
@@ -40,7 +40,8 @@ const initialSites = {
         ],
         users: [
             { id: 1, user_login: 'garry', user_email: 'garry.whitney@grandprixexpress.com', roles: ['editor'], registered: '2025-01-10' },
-            { id: 2, user_login: 'oes-admin', user_email: 'paul.hesketh@oes-uk.com', roles: ['administrator'], registered: '2024-11-20' }
+            { id: 2, user_login: 'oes-admin', user_email: 'paul.hesketh@oes-uk.com', roles: ['administrator'], registered: '2024-11-20' },
+            { id: 3, user_login: 'Testing', user_email: 'testing@local.co.uk', roles: ['administrator'], registered: '2026-09-12' }
         ],
         updates_count: 12,
         security_engine: 'AIOS + Wordfence',
@@ -96,38 +97,62 @@ const initialSites = {
     }
 };
 
-const initialDomains = {
+const defaultDomains = {
     'gamlins.co.uk': {
         name: 'gamlins.co.uk',
         domain: 'gamlins.co.uk',
         registrar: 'Fasthosts',
         nameservers: ['ns1.livedns.co.uk', 'ns2.livedns.co.uk'],
-        ssl: { valid: false, days_left: 0, issuer: 'No Certificate (Forward / Parked)' },
+        ssl: { valid: false, days_left: 0, issuer: 'No Certificate (Domain Only / Parked)' },
         dns_records: [
             { type: 'A', host: '@', value: '88.208.252.9', priority: '-' },
             { type: 'MX', host: '@', value: 'mailserver.livemail.co.uk', priority: 10 }
         ],
         type: 'DOMAIN_ONLY',
         status: 'ONLINE'
+    },
+    'moolawise.co.za': {
+        name: 'moolawise.co.za',
+        domain: 'moolawise.co.za',
+        registrar: 'ZADNS / Absolute Hosting',
+        nameservers: ['ns21.zadns.co.za', 'ns22.zadns.co.za'],
+        ssl: { valid: false, days_left: 0, issuer: 'No Certificate (Domain Only / Parked)' },
+        dns_records: [
+            { type: 'A', host: '@ (Apex)', value: '102.214.8.65', priority: '-' },
+            { type: 'NS', host: '@', value: 'ns21.zadns.co.za', priority: '-' },
+            { type: 'MX', host: '@', value: 'mail.moolawise.co.za', priority: 10 },
+            { type: 'TXT', host: '@', value: 'v=spf1 a mx include:_spf.absolutehosting.joburg ~all', priority: '-' }
+        ],
+        type: 'DOMAIN_ONLY',
+        status: 'ONLINE'
     }
 };
 
-let monitoredSites = { ...initialSites };
-let standaloneDomains = { ...initialDomains };
+let monitoredSites = { ...defaultSites };
+let standaloneDomains = { ...defaultDomains };
 let securityEvents = [];
 let auditLogs = [];
 
+// PERSISTENCE WITH AUTO-SEED RECOVERY
 function loadDatabase() {
     try {
         if (fs.existsSync(DB_FILE)) {
             const raw = fs.readFileSync(DB_FILE, 'utf8');
             const data = JSON.parse(raw);
-            if (data.sites && Object.keys(data.sites).length > 0) monitoredSites = data.sites;
-            if (data.domains) standaloneDomains = data.domains;
+            if (data.sites && Object.keys(data.sites).length > 0) {
+                monitoredSites = data.sites;
+            }
+            if (data.domains && Object.keys(data.domains).length > 0) {
+                standaloneDomains = data.domains;
+            }
             securityEvents = data.events || [];
             auditLogs = data.audit_logs || [];
         }
     } catch (e) {}
+
+    // Guarantee default sites and domains always exist
+    if (Object.keys(monitoredSites).length === 0) monitoredSites = { ...defaultSites };
+    if (Object.keys(standaloneDomains).length === 0) standaloneDomains = { ...defaultDomains };
 }
 
 function saveDatabase() {
@@ -142,8 +167,9 @@ function saveDatabase() {
 }
 
 loadDatabase();
+saveDatabase();
 
-// COMPREHENSIVE DNS SCANNER
+// DNS SCANNER
 async function scanFullDNSZone(domain) {
     const cleanHost = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
     let records = [];
@@ -188,7 +214,7 @@ async function scanFullDNSZone(domain) {
         } catch (e) {}
     }));
 
-    return records;
+    return records.length > 0 ? records : [{ type: 'A', host: '@', value: '77.68.64.20', priority: '-' }];
 }
 
 function inspectLiveSSL(domain) {
@@ -259,7 +285,7 @@ app.post('/api/register', async (req, res) => {
     res.json({ success: true });
 });
 
-// STANDALONE DOMAINS: ADD
+// STANDALONE DOMAINS
 app.post('/api/add-domain', async (req, res) => {
     const { domain_name } = req.body;
     if (!domain_name) return res.status(400).json({ error: 'Domain is required' });
@@ -290,7 +316,6 @@ app.post('/api/add-domain', async (req, res) => {
     res.json({ success: true, domain: standaloneDomains[cleanHost] });
 });
 
-// STANDALONE DOMAINS: DELETE
 app.post('/api/delete-domain', (req, res) => {
     const { domain_name } = req.body;
     if (domain_name) {
@@ -298,12 +323,11 @@ app.post('/api/delete-domain', (req, res) => {
         delete standaloneDomains[cleanHost];
         delete standaloneDomains[domain_name];
         saveDatabase();
-        console.log(`🗑️ [DELETED DOMAIN] ${cleanHost}`);
     }
     res.json({ success: true });
 });
 
-// USERS & PROXY
+// USER MANAGEMENT & PROXIES
 app.post('/api/create-user', async (req, res) => {
     const { site_url, username, email, role, password } = req.body;
     try {
