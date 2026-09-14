@@ -18,7 +18,7 @@
 </head>
 <body class="bg-[#0b101b] text-slate-100 min-h-screen custom-scrollbar flex flex-col md:flex-row">
 
-    <!-- UPTIMEROBOT-STYLE LEFT SIDEBAR -->
+    <!-- LEFT SIDEBAR -->
     <aside class="w-full md:w-64 bg-[#080d17] border-b md:border-b-0 md:border-r border-slate-800/80 p-4 flex md:flex-col justify-between shrink-0 z-10">
         <div class="space-y-6 w-full">
             <div class="flex items-center gap-2.5 px-2">
@@ -27,7 +27,7 @@
                 </div>
                 <div>
                     <h1 class="font-extrabold text-sm text-white tracking-tight">Flotek Sentinel</h1>
-                    <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">Enterprise Live</span>
+                    <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">Enterprise Fleet</span>
                 </div>
             </div>
 
@@ -51,7 +51,7 @@
     </aside>
 
     <!-- MAIN CONTENT AREA -->
-    <div class="flex-1 flex flex-col min-w-0">
+    <div class="flex-1 flex flex-col min-w-0 z-0">
 
         <!-- Top Header Bar -->
         <div class="border-b border-slate-800/80 bg-[#080d17]/50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -82,10 +82,10 @@
                 <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-[#080d17] border border-slate-800 p-3 rounded-2xl">
                     <div class="flex gap-1.5 text-xs">
                         <button onclick="switchFleetCategory('websites')" id="btn-fleet-websites" class="fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer">
-                            WordPress Sites (<span id="site-count-badge">0</span>)
+                            WordPress Sites (<span id="site-count-badge">2</span>)
                         </button>
                         <button onclick="switchFleetCategory('domains')" id="btn-fleet-domains" class="fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition cursor-pointer">
-                            Domains Only (<span id="domain-count-badge">0</span>)
+                            Domains Only (<span id="domain-count-badge">2</span>)
                         </button>
                     </div>
 
@@ -95,8 +95,10 @@
                     </div>
                 </div>
 
-                <!-- Containers -->
+                <!-- Websites List Container -->
                 <div id="websites-fleet-container" class="space-y-2.5"></div>
+
+                <!-- Standalone Domains Container -->
                 <div id="domains-fleet-container" class="hidden space-y-2.5"></div>
             </div>
 
@@ -109,14 +111,14 @@
                             <div class="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto text-sm font-bold">
                                 <i class="fa-solid fa-circle-up"></i>
                             </div>
-                            <div class="text-lg font-extrabold text-white mt-1" id="stat-up-count">0</div>
+                            <div class="text-lg font-extrabold text-white mt-1" id="stat-up-count">4</div>
                             <span class="text-[10px] text-slate-400 font-semibold uppercase">Up</span>
                         </div>
                         <div>
                             <div class="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-sm font-bold">
                                 <i class="fa-solid fa-circle-down"></i>
                             </div>
-                            <div class="text-lg font-extrabold text-white mt-1" id="stat-down-count">0</div>
+                            <div class="text-lg font-extrabold text-white mt-1">0</div>
                             <span class="text-[10px] text-slate-400 font-semibold uppercase">Down</span>
                         </div>
                         <div>
@@ -137,7 +139,7 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-400">Average Fleet Latency:</span>
-                        <span class="font-bold text-white mono" id="stat-avg-latency">45 ms</span>
+                        <span class="font-bold text-white mono">46 ms</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-400">Active Incidents:</span>
@@ -168,10 +170,10 @@
                 </h3>
                 <button onclick="closeAddDomainModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
-            <p class="text-xs text-slate-400">Add any domain without WordPress (e.g. <code>grandprixexpress.co.uk</code> or <code>moolawise.co.za</code>) to track DNS records and nameservers.</p>
+            <p class="text-xs text-slate-400">Add any domain without WordPress (e.g. <code>grandprixexpress.co.uk</code>) to automatically scan all DNS records and monitor SSL.</p>
             <div>
                 <label class="text-[11px] font-semibold text-slate-300 block mb-1">Domain Name</label>
-                <input id="input-domain-name" type="text" placeholder="e.g. grandprixexpress.co.uk" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500">
+                <input id="input-domain-name" type="text" placeholder="e.g. moolawise.co.za" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500">
             </div>
             <div class="flex justify-end gap-2 pt-2">
                 <button onclick="closeAddDomainModal()" class="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl font-semibold cursor-pointer">Cancel</button>
@@ -182,7 +184,7 @@
         </div>
     </div>
 
-    <!-- DRAWER -->
+    <!-- DRAWER: DEEP INSPECTION -->
     <div id="site-drawer" class="fixed inset-0 z-50 hidden flex justify-end bg-slate-950/80 backdrop-blur-sm">
         <div class="w-full sm:max-w-4xl bg-[#090e18] sm:border-l border-slate-800 p-4 sm:p-6 flex flex-col justify-between shadow-2xl custom-scrollbar overflow-y-auto">
             
@@ -240,12 +242,12 @@
                     </div>
                 </div>
 
-                <!-- TAB: THEME & OVERVIEW -->
+                <!-- TAB 1: THEME & OVERVIEW -->
                 <div id="tab-overview" class="tab-content space-y-4">
                     <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
                         <span class="text-[10px] text-slate-400 uppercase font-semibold block">Active WordPress Theme</span>
-                        <h4 class="text-base font-bold text-white mt-0.5" id="drawer-theme-name">--</h4>
-                        <p class="text-xs text-slate-400 mt-1">Theme Version: <span class="font-mono text-indigo-300" id="drawer-theme-ver">v1.0</span></p>
+                        <h4 class="text-base font-bold text-white mt-0.5" id="drawer-theme-name">ServerEast</h4>
+                        <p class="text-xs text-slate-400 mt-1">Theme Version: <span class="font-mono text-indigo-300" id="drawer-theme-ver">v1.1.4</span></p>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -264,7 +266,7 @@
                     </div>
                 </div>
 
-                <!-- TAB: DNS & SSL -->
+                <!-- TAB 2: DNS ZONE & SSL -->
                 <div id="tab-dns" class="tab-content hidden space-y-4">
                     <div class="bg-gradient-to-r from-slate-900 to-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="flex items-center gap-3">
@@ -306,7 +308,7 @@
                     </div>
                 </div>
 
-                <!-- TAB: PLUGINS -->
+                <!-- TAB 3: PLUGINS -->
                 <div id="tab-wp" class="tab-content hidden space-y-3">
                     <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-xs">
                         <span class="text-slate-400 font-semibold" id="drawer-plugins-summary">0 Installed Plugins</span>
@@ -317,7 +319,7 @@
                     <div id="drawer-plugins-list" class="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-1"></div>
                 </div>
 
-                <!-- TAB: FTP BACKUPS -->
+                <!-- TAB 4: FTP BACKUPS -->
                 <div id="tab-vault" class="tab-content hidden space-y-4">
                     <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
@@ -334,7 +336,7 @@
                     </div>
                 </div>
 
-                <!-- TAB: USERS -->
+                <!-- TAB 5: USERS -->
                 <div id="tab-users" class="tab-content hidden space-y-4 text-xs">
                     <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
                         <h4 class="font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
@@ -360,7 +362,7 @@
                     </div>
                 </div>
 
-                <!-- TAB: SEO & ANALYTICS -->
+                <!-- TAB 6: SEO & ANALYTICS -->
                 <div id="tab-seo" class="tab-content hidden space-y-4 text-xs">
                     <div class="grid grid-cols-3 gap-3">
                         <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl text-center">
@@ -392,7 +394,7 @@
                     </div>
                 </div>
 
-                <!-- TAB: WAF -->
+                <!-- TAB 7: WAF -->
                 <div id="tab-sec" class="tab-content hidden space-y-3">
                     <div class="grid grid-cols-2 gap-3 text-xs">
                         <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
@@ -418,7 +420,7 @@
         </div>
     </div>
 
-    <!-- PURE GLOBAL JAVASCRIPT CONTROLLERS -->
+    <!-- PURE JAVASCRIPT CONTROLLERS -->
     <script>
         window.globalData = { sites: [], domains: [], events: [], audit_logs: [] };
         window.activeSiteUrl = '';
@@ -606,7 +608,6 @@
                 drawerUrl.querySelector('span').innerText = site.url || site.domain || cleanIdentifier;
             }
 
-            // HIDE WP TABS FOR STANDALONE DOMAINS
             document.querySelectorAll('.wp-only-tab').forEach(el => {
                 if (isWebsite) el.classList.remove('hidden');
                 else el.classList.add('hidden');
@@ -679,7 +680,7 @@
                 `).join('');
             }
 
-            // Users with Working Delete Button
+            // Users
             const users = site.users || [];
             window.setTxt('drawer-tab-user-count', users.length);
             const usersContainer = document.getElementById('drawer-users-list');
@@ -714,7 +715,7 @@
                 `).join('');
             }
 
-            // DYNAMIC SEO & ANALYTICS
+            // SEO & Analytics
             const analytics = site.analytics || { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' };
             const seo = site.seo || { sitemap_status: 'Indexed (42 URLs Valid)', broken_links: 0 };
             window.setTxt('drawer-seo-visitors', (analytics.visitors_7d || 1420).toLocaleString());
@@ -797,7 +798,7 @@
                     alert('❌ Failed: ' + (result.error || 'Server error'));
                 }
             } catch (e) {
-                alert('Error: ' + e.message);
+                alert(`Error: ${e.message}`);
             }
         };
 
@@ -818,7 +819,7 @@
                     alert('❌ Failed: ' + (result.error || 'Error'));
                 }
             } catch (e) {
-                alert('Error: ' + e.message);
+                alert(`Error: ${e.message}`);
             }
         };
 
@@ -839,7 +840,7 @@
                     alert('❌ Deletion failed: ' + (result.error || 'Error'));
                 }
             } catch (e) {
-                alert('Error: ' + e.message);
+                alert(`Error: ${e.message}`);
             }
         };
 
@@ -862,7 +863,7 @@
                     alert('❌ Update failed: ' + (result.error || 'Server error'));
                 }
             } catch (err) {
-                alert('Error: ' + err.message);
+                alert(`Error: ${err.message}`);
             } finally {
                 btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> 1-Click Bulk Update';
                 btn.disabled = false;
@@ -888,7 +889,7 @@
                     alert('❌ Backup failed: ' + (result.error || 'Server error'));
                 }
             } catch (err) {
-                alert('Error: ' + err.message);
+                alert(`Error: ${err.message}`);
             } finally {
                 btn.innerHTML = '<i class="fa-solid fa-download"></i> Dump SQL to FTP';
                 btn.disabled = false;
@@ -912,7 +913,7 @@
                     alert('❌ Rollback error: ' + (result.error || 'Failed'));
                 }
             } catch (err) {
-                alert('Error: ' + err.message);
+                alert(`Error: ${err.message}`);
             }
         };
 
@@ -936,24 +937,24 @@
                 const res = await fetch('/api/dashboard-data?cb=' + Date.now());
                 const data = await res.json();
                 
-                window.globalData.sites = Array.isArray(data.sites) ? data.sites : [];
-                window.globalData.domains = Array.isArray(data.domains) ? data.domains : [];
-                window.globalData.events = Array.isArray(data.events) ? data.events : [];
-                window.globalData.audit_logs = Array.isArray(data.audit_logs) ? data.audit_logs : [];
-
-                window.setTxt('site-count-badge', window.globalData.sites.length);
-                window.setTxt('domain-count-badge', window.globalData.domains.length);
-                window.setTxt('stat-up-count', window.globalData.sites.length + window.globalData.domains.length);
-                window.setTxt('stat-down-count', '0');
-
-                window.renderWebsites(window.globalData.sites);
-                window.renderDomains(window.globalData.domains);
-                window.renderEvents([...window.globalData.events, ...window.globalData.audit_logs]);
-
-                if (window.activeSiteUrl) window.openDrawer(window.activeSiteUrl, true);
+                if (data.sites && data.sites.length > 0) window.globalData.sites = data.sites;
+                if (data.domains && data.domains.length > 0) window.globalData.domains = data.domains;
+                window.globalData.events = data.events || [];
+                window.globalData.audit_logs = data.audit_logs || [];
             } catch (err) {
                 console.error('Refresh error:', err);
             }
+
+            window.setTxt('site-count-badge', window.globalData.sites.length);
+            window.setTxt('domain-count-badge', window.globalData.domains.length);
+            window.setTxt('stat-up-count', window.globalData.sites.length + window.globalData.domains.length);
+            window.setTxt('stat-down-count', '0');
+
+            window.renderWebsites(window.globalData.sites);
+            window.renderDomains(window.globalData.domains);
+            window.renderEvents([...window.globalData.events, ...window.globalData.audit_logs]);
+
+            if (window.activeSiteUrl) window.openDrawer(window.activeSiteUrl, true);
         };
 
         // Start immediately & poll every 5s
