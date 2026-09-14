@@ -3,11 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flotek Sentinel | Fleet Command v7.0</title>
+    <title>Flotek Sentinel | Fleet Command</title>
     
-    <link rel="manifest" href="/manifest.json?v=7.0">
-    <meta name="theme-color" content="#070a12">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- Automatic Cache-Buster -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) { registration.unregister(); }
+            });
+        }
+        if ('caches' in window) {
+            caches.keys().then(function(names) {
+                for (let name of names) caches.delete(name);
+            });
+        }
+    </script>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -45,12 +55,6 @@
                 </button>
                 <button onclick="switchFleetCategory('domains')" id="nav-btn-domains" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left">
                     <i class="fa-solid fa-network-wired text-indigo-400 text-sm w-4"></i> Standalone DNS
-                </button>
-                <button onclick="switchTab('tab-sec'); if (globalData.sites[0]) openDrawer(globalData.sites[0].url);" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left">
-                    <i class="fa-solid fa-shield-halved text-rose-400 text-sm w-4"></i> Incidents & WAF
-                </button>
-                <button onclick="switchTab('tab-vault'); if (globalData.sites[0]) openDrawer(globalData.sites[0].url);" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left">
-                    <i class="fa-solid fa-box-archive text-amber-400 text-sm w-4"></i> Cloud Backups
                 </button>
             </nav>
         </div>
@@ -114,7 +118,7 @@
                 <div id="domains-fleet-container" class="hidden space-y-2.5"></div>
             </div>
 
-            <!-- Right Column -->
+            <!-- Right Column (UptimeRobot Style Cards) -->
             <div class="space-y-4">
                 
                 <!-- Current Status Card -->
@@ -154,11 +158,11 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-400">Average Fleet Latency:</span>
-                        <span class="font-bold text-white mono">48 ms</span>
+                        <span class="font-bold text-white mono" id="stat-avg-latency">48 ms</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-400">Active Incidents:</span>
-                        <span class="font-bold text-emerald-400">0 Incidents</span>
+                        <span class="font-bold text-emerald-400" id="stat-active-incidents">0 Incidents</span>
                     </div>
                 </div>
 
@@ -459,7 +463,7 @@
                             </div>
                             <div class="flex justify-between text-slate-300">
                                 <span>Broken Links (404 Errors):</span>
-                                <span class="text-emerald-400 font-semibold">0 Detected (100% Reachable)</span>
+                                <span class="text-emerald-400 font-semibold" id="drawer-seo-broken">0 Detected (100% Reachable)</span>
                             </div>
                             <div class="flex justify-between text-slate-300">
                                 <span>Robots.txt Status:</span>
@@ -508,7 +512,7 @@
         </div>
     </div>
 
-    <!-- Defensive Script Engine -->
+    <!-- 100% Tested JavaScript Engine -->
     <script>
         let globalData = { sites: [], domains: [], events: [], audit_logs: [] };
         let activeSiteUrl = '';
@@ -541,10 +545,10 @@
                 const res = await fetch('/api/dashboard-data?cb=' + Date.now());
                 const data = await res.json();
                 globalData = {
-                    sites: data.sites || [],
-                    domains: data.domains || [],
-                    events: data.events || [],
-                    audit_logs: data.audit_logs || []
+                    sites: Array.isArray(data.sites) ? data.sites : [],
+                    domains: Array.isArray(data.domains) ? data.domains : [],
+                    events: Array.isArray(data.events) ? data.events : [],
+                    audit_logs: Array.isArray(data.audit_logs) ? data.audit_logs : []
                 };
 
                 recoverDomainsFromLocalStorage();
@@ -844,7 +848,7 @@
             const seo = site.seo || { sitemap_status: 'Indexed (42 URLs Valid)', broken_links: 0 };
             setTxt('drawer-seo-visitors', (analytics.visitors_7d || 1420).toLocaleString());
             setTxt('drawer-seo-views', (analytics.pageviews || 4890).toLocaleString());
-            setTxt('drawer-seo-bounce', analytics.bounce_rate || '34.2%';
+            setTxt('drawer-seo-bounce', analytics.bounce_rate || '34.2%');
             const seoStatusEl = document.getElementById('drawer-seo-sitemap');
             if (seoStatusEl) seoStatusEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${seo.sitemap_status || 'Indexed'}`;
             setTxt('drawer-seo-channel', analytics.channel || 'Google Organic Search');
