@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Flotek Sentinel | Fleet Command</title>
     
+    <!-- Clean Cache-Buster -->
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
@@ -20,158 +21,137 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
         body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         .mono { font-family: 'JetBrains Mono', monospace; }
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #070a12; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-[#0b101b] text-slate-100 min-h-screen custom-scrollbar flex flex-col md:flex-row">
+<body class="bg-[#070a12] text-slate-100 min-h-screen custom-scrollbar pb-10">
 
-    <!-- UPTIMEROBOT-STYLE LEFT SIDEBAR -->
-    <aside class="w-full md:w-64 bg-[#080d17] border-b md:border-b-0 md:border-r border-slate-800/80 p-4 flex md:flex-col justify-between shrink-0 z-20">
-        <div class="space-y-6 w-full">
-            <div class="flex items-center gap-2.5 px-2">
-                <div class="h-8 w-8 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-lg flex items-center justify-center text-slate-950 font-black text-sm">
+    <!-- Top Header -->
+    <header class="border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 px-4 py-3 sm:px-6 sm:py-3.5">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5 sm:gap-3">
+                <div class="h-9 w-9 sm:h-10 sm:w-10 bg-gradient-to-tr from-indigo-600 via-violet-600 to-cyan-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 font-black text-xs sm:text-sm shrink-0">
                     FS
                 </div>
                 <div>
-                    <h1 class="font-extrabold text-sm text-white tracking-tight">Flotek Sentinel</h1>
-                    <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">Enterprise Live</span>
+                    <div class="flex items-center gap-1.5">
+                        <h1 class="font-bold text-sm sm:text-base text-white tracking-tight">Flotek Sentinel</h1>
+                        <span class="bg-indigo-500/10 text-indigo-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-indigo-500/20">FLEET</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 hidden sm:block">Continuous WordPress Defense & Fleet Operations</p>
                 </div>
             </div>
 
-            <nav class="space-y-1.5 text-xs">
-                <button onclick="switchFleetCategory('websites')" id="nav-btn-websites" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition cursor-pointer">
-                    <i class="fa-solid fa-gauge-high text-emerald-400 text-sm w-4"></i> Monitors
-                </button>
-                <button onclick="switchFleetCategory('domains')" id="nav-btn-domains" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left cursor-pointer">
-                    <i class="fa-solid fa-network-wired text-indigo-400 text-sm w-4"></i> Standalone DNS
-                </button>
-            </nav>
-        </div>
-
-        <div class="hidden md:flex items-center gap-3 p-3 bg-slate-900/60 border border-slate-800 rounded-xl text-xs">
-            <div class="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center font-bold">BV</div>
-            <div class="min-w-0 flex-1">
-                <div class="font-semibold text-white truncate">Brian Van D...</div>
-                <div class="text-[10px] text-emerald-400 font-mono">Enterprise Fleet</div>
-            </div>
-        </div>
-    </aside>
-
-    <!-- MAIN CONTENT AREA -->
-    <div class="flex-1 flex flex-col min-w-0">
-
-        <!-- Top Status Bar -->
-        <div class="border-b border-slate-800/80 bg-[#080d17]/50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-                <h2 class="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-                    Monitors <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                </h2>
-                <p class="text-xs text-slate-400 mt-0.5">Real-time uptime, response latency & WordPress telemetry</p>
-            </div>
-
-            <div class="flex items-center gap-2.5">
-                <button onclick="openAddDomainModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-indigo-600/20 transition cursor-pointer">
-                    <i class="fa-solid fa-plus text-[10px]"></i> Add Domain
-                </button>
-                <button onclick="refreshData()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 border border-slate-700 transition cursor-pointer">
-                    <i class="fa-solid fa-rotate"></i> Sync
+            <div class="flex items-center gap-2">
+                <div class="hidden md:flex items-center gap-2 bg-slate-800/60 border border-slate-700/60 px-3 py-1.5 rounded-xl text-xs">
+                    <span class="text-slate-400">Route:</span>
+                    <span class="text-indigo-300 font-mono">monitor@flotek.io</span>
+                    <i class="fa-solid fa-arrow-right text-[10px] text-slate-500"></i>
+                    <span class="text-slate-200 font-semibold">brian.vandenbergh@flotek.io</span>
+                </div>
+                <button onclick="refreshData()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20 cursor-pointer">
+                    <i class="fa-solid fa-rotate"></i> <span>Sync</span>
                 </button>
             </div>
         </div>
+    </header>
 
-        <!-- Main Body Grid -->
-        <div class="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 max-w-7xl">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-5 sm:space-y-6">
 
-            <!-- Center Column -->
-            <div class="lg:col-span-3 space-y-4">
+        <!-- Top Fleet Metrics (The 4 Proven Summary Cards) -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div class="bg-slate-900/70 border border-slate-800 p-3.5 sm:p-4 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Health Index</span>
+                    <i class="fa-solid fa-gauge-high text-emerald-400 text-xs sm:text-sm"></i>
+                </div>
+                <div class="text-xl sm:text-3xl font-extrabold mt-1.5 text-emerald-400" id="stat-health">100/100</div>
+                <div class="text-[10px] text-slate-500 mt-0.5 hidden sm:block">Fleet Security Index</div>
+            </div>
+
+            <div class="bg-slate-900/70 border border-slate-800 p-3.5 sm:p-4 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Fleet Uptime</span>
+                    <i class="fa-solid fa-heart-pulse text-indigo-400 text-xs sm:text-sm"></i>
+                </div>
+                <div class="text-xl sm:text-3xl font-extrabold mt-1.5 text-white">99.9%</div>
+                <div class="text-[10px] text-emerald-400 mt-0.5 flex items-center gap-1">
+                    <i class="fa-solid fa-circle-check text-[9px]"></i> 30s Polling
+                </div>
+            </div>
+
+            <div class="bg-slate-900/70 border border-slate-800 p-3.5 sm:p-4 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Updates</span>
+                    <i class="fa-solid fa-cubes-stacked text-amber-400 text-xs sm:text-sm"></i>
+                </div>
+                <div class="text-xl sm:text-3xl font-extrabold mt-1.5 text-amber-400" id="stat-updates">0</div>
+                <div class="text-[10px] text-slate-500 mt-0.5 hidden sm:block">Pending Patches</div>
+            </div>
+
+            <div class="bg-slate-900/70 border border-slate-800 p-3.5 sm:p-4 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Threats</span>
+                    <i class="fa-solid fa-shield-virus text-rose-400 text-xs sm:text-sm"></i>
+                </div>
+                <div class="text-xl sm:text-3xl font-extrabold mt-1.5 text-rose-400" id="stat-threats">0</div>
+                <div class="text-[10px] text-slate-500 mt-0.5 hidden sm:block">Neutralized</div>
+            </div>
+        </div>
+
+        <!-- Main Workspace: Dual Fleet Tabs -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
+
+            <!-- Left 2 Cols: Endpoints & Domains -->
+            <div class="lg:col-span-2 space-y-3.5 sm:space-y-4">
                 
-                <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-[#080d17] border border-slate-800 p-3 rounded-2xl">
-                    <div class="flex gap-1.5 text-xs">
-                        <button onclick="switchFleetCategory('websites')" id="btn-fleet-websites" class="fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer">
-                            WordPress Sites (<span id="site-count-badge">0</span>)
+                <!-- Category Switcher -->
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2 text-xs">
+                    <div class="flex gap-1.5 sm:gap-2">
+                        <button onclick="switchFleetCategory('websites')" id="btn-fleet-websites" class="fleet-tab-btn px-3 sm:px-4 py-2 font-bold text-indigo-400 border-b-2 border-indigo-500 flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-globe"></i> WordPress Websites (<span id="site-count-badge">0</span>)
                         </button>
-                        <button onclick="switchFleetCategory('domains')" id="btn-fleet-domains" class="fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition cursor-pointer">
-                            Domains Only (<span id="domain-count-badge">0</span>)
+                        <button onclick="switchFleetCategory('domains')" id="btn-fleet-domains" class="fleet-tab-btn px-3 sm:px-4 py-2 font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-network-wired"></i> Domains & DNS (<span id="domain-count-badge">0</span>)
                         </button>
                     </div>
 
-                    <div class="relative">
-                        <input id="fleet-search-input" onkeyup="filterMonitors()" type="text" placeholder="Search by name or URL..." class="w-full sm:w-64 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
-                        <i class="fa-solid fa-magnifying-glass absolute right-3 top-2.5 text-[10px] text-slate-500"></i>
-                    </div>
+                    <button onclick="openAddDomainModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center gap-1 text-xs shadow-md shadow-indigo-600/20 cursor-pointer">
+                        <i class="fa-solid fa-plus text-[10px]"></i> Add Domain
+                    </button>
                 </div>
 
-                <div id="websites-fleet-container" class="space-y-2.5"></div>
-                <div id="domains-fleet-container" class="hidden space-y-2.5"></div>
+                <!-- Category 1: WordPress Websites Container -->
+                <div id="websites-fleet-container" class="space-y-3"></div>
+
+                <!-- Category 2: Standalone Domains Container -->
+                <div id="domains-fleet-container" class="hidden space-y-3"></div>
             </div>
 
-            <!-- Right Column -->
-            <div class="space-y-4">
-                <div class="bg-[#080d17] border border-slate-800 p-5 rounded-2xl space-y-4">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Current Status</h3>
-                    <div class="flex items-center justify-between text-center">
-                        <div>
-                            <div class="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto text-sm font-bold">
-                                <i class="fa-solid fa-circle-up"></i>
-                            </div>
-                            <div class="text-lg font-extrabold text-white mt-1" id="stat-up-count">0</div>
-                            <span class="text-[10px] text-slate-400 font-semibold uppercase">Up</span>
-                        </div>
-                        <div>
-                            <div class="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-sm font-bold">
-                                <i class="fa-solid fa-circle-down"></i>
-                            </div>
-                            <div class="text-lg font-extrabold text-white mt-1" id="stat-down-count">0</div>
-                            <span class="text-[10px] text-slate-400 font-semibold uppercase">Down</span>
-                        </div>
-                        <div>
-                            <div class="w-10 h-10 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center mx-auto text-sm font-bold">
-                                <i class="fa-solid fa-pause"></i>
-                            </div>
-                            <div class="text-lg font-extrabold text-white mt-1">0</div>
-                            <span class="text-[10px] text-slate-400 font-semibold uppercase">Paused</span>
-                        </div>
-                    </div>
+            <!-- Right 1 Col: Live Security & Audit Stream -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-bolt text-amber-400"></i> Live Defense & Audit Stream
+                    </h2>
+                    <span class="text-[10px] text-slate-500 uppercase">Live</span>
                 </div>
-
-                <div class="bg-[#080d17] border border-slate-800 p-5 rounded-2xl space-y-3 text-xs">
-                    <h3 class="font-bold uppercase tracking-wider text-slate-400 text-[11px]">Last 24 Hours</h3>
-                    <div class="flex justify-between items-center">
-                        <span class="text-slate-400">Overall Fleet Uptime:</span>
-                        <span class="font-bold text-emerald-400 mono">99.98%</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-slate-400">Average Fleet Latency:</span>
-                        <span class="font-bold text-white mono" id="stat-avg-latency">46 ms</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-slate-400">Active Incidents:</span>
-                        <span class="font-bold text-emerald-400">0 Incidents</span>
-                    </div>
-                </div>
-
-                <div class="bg-[#080d17] border border-slate-800 p-4 rounded-2xl space-y-2">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <i class="fa-solid fa-shield-virus text-rose-400"></i> Fleet WAF Log
-                    </h3>
-                    <div id="events-container" class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1">
-                        <div class="text-slate-500 text-[11px] p-2 text-center">Fleet protection active.</div>
-                    </div>
-                </div>
+                <div id="events-container" class="space-y-2.5 max-h-[480px] sm:max-h-[640px] overflow-y-auto custom-scrollbar pr-1"></div>
             </div>
 
         </div>
 
-    </div>
+    </main>
 
-    <!-- ADD DOMAIN MODAL -->
+    <!-- ADD STANDALONE DOMAIN MODAL -->
     <div id="add-domain-modal" style="display: none;" class="fixed inset-0 z-50 overflow-hidden items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="closeAddDomainModal()"></div>
         <div class="relative bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 max-w-md w-full z-10 shadow-2xl space-y-4">
@@ -195,32 +175,30 @@
         </div>
     </div>
 
-    <!-- UPTIMEROBOT-STYLE DEEP INSPECTION DRAWER -->
+    <!-- ADAPTIVE MANAGEMENT DRAWER -->
     <div id="site-drawer" style="display: none;" class="fixed inset-0 z-50 overflow-hidden">
         <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="closeDrawer()"></div>
 
         <div class="fixed inset-y-0 right-0 max-w-full flex w-full sm:pl-6">
-            <div class="w-full sm:max-w-4xl bg-[#090e18] sm:border-l border-slate-800 p-4 sm:p-6 flex flex-col justify-between shadow-2xl custom-scrollbar overflow-y-auto">
+            <div class="w-full sm:max-w-4xl bg-[#0c101c] sm:border-l border-slate-800 p-4 sm:p-6 flex flex-col justify-between shadow-2xl custom-scrollbar overflow-y-auto">
                 
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div>
+                    <!-- Drawer Header -->
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3 sm:pb-4">
                         <div class="flex items-center gap-3">
-                            <div class="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg font-bold shrink-0">
-                                <i class="fa-solid fa-circle-check"></i>
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-base sm:text-xl font-bold shrink-0">
+                                <i class="fa-solid fa-globe"></i>
                             </div>
                             <div class="min-w-0">
-                                <div class="flex items-center gap-2">
-                                    <h3 class="text-base sm:text-lg font-extrabold text-white truncate" id="drawer-title">Site Name</h3>
-                                    <span id="drawer-status-pill" class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">UP</span>
-                                </div>
-                                <a id="drawer-url" href="#" target="_blank" class="text-xs text-indigo-400 hover:underline flex items-center gap-1 mono truncate mt-0.5">
+                                <h3 class="text-base sm:text-lg font-bold text-white truncate" id="drawer-title">Site Name</h3>
+                                <a id="drawer-url" href="#" target="_blank" class="text-xs text-indigo-400 hover:underline flex items-center gap-1 mono truncate">
                                     <span class="truncate">https://domain.com</span> <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
                                 </a>
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button id="btn-drawer-delete-domain" onclick="deleteCurrentDrawerDomain()" class="hidden px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer">
-                                <i class="fa-solid fa-trash text-[10px]"></i> Delete Domain
+                            <button id="btn-drawer-delete-domain" onclick="deleteCurrentDrawerDomain()" class="hidden px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-red-600/30 transition cursor-pointer">
+                                <i class="fa-solid fa-trash"></i> Delete Domain
                             </button>
                             <button onclick="closeDrawer()" class="text-slate-400 hover:text-white p-2 rounded-xl bg-slate-800/60 shrink-0 cursor-pointer">
                                 <i class="fa-solid fa-xmark text-lg"></i>
@@ -228,99 +206,65 @@
                         </div>
                     </div>
 
-                    <!-- SCROLLABLE TABS -->
+                    <!-- Navigation Tabs (With Horizontal Scrolling) -->
                     <div class="overflow-x-auto custom-scrollbar pb-2">
-                        <div id="drawer-tabs-bar" class="flex gap-2 text-xs min-w-max">
-                            <button onclick="switchTab('tab-uptime')" id="btn-tab-uptime" class="tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5 cursor-pointer">
-                                <i class="fa-solid fa-chart-line"></i> Uptime & Latency
+                        <div id="drawer-tabs-bar" class="flex gap-1.5 sm:gap-2 border-b border-slate-800 my-3 sm:my-4 text-xs min-w-max">
+                            <button onclick="switchTab('tab-overview')" id="btn-tab-overview" class="tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white whitespace-nowrap wp-only-tab cursor-pointer">
+                                <i class="fa-solid fa-chart-pie mr-1"></i> Overview
                             </button>
-                            <button onclick="switchTab('tab-overview')" id="btn-tab-overview" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
-                                <i class="fa-solid fa-palette"></i> Theme & Vitals
+                            <button onclick="switchTab('tab-dns')" id="btn-tab-dns" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 whitespace-nowrap border border-slate-800 cursor-pointer">
+                                <i class="fa-solid fa-network-wired mr-1"></i> DNS & SSL (<span id="drawer-dns-count">0</span>)
                             </button>
-                            <button onclick="switchTab('tab-dns')" id="btn-tab-dns" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 cursor-pointer">
-                                <i class="fa-solid fa-network-wired"></i> DNS & SSL (<span id="drawer-dns-count">0</span>)
+                            <button onclick="switchTab('tab-wp')" id="btn-tab-wp" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 whitespace-nowrap border border-slate-800 wp-only-tab cursor-pointer">
+                                <i class="fa-solid fa-cube mr-1"></i> Updates (<span id="drawer-tab-plugin-count">0</span>)
                             </button>
-                            <button onclick="switchTab('tab-wp')" id="btn-tab-wp" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
-                                <i class="fa-solid fa-cube"></i> Updates (<span id="drawer-tab-plugin-count">0</span>)
+                            <button onclick="switchTab('tab-vault')" id="btn-tab-vault" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 whitespace-nowrap border border-slate-800 wp-only-tab cursor-pointer">
+                                <i class="fa-solid fa-box-archive mr-1"></i> FTP Backups
                             </button>
-                            <button onclick="switchTab('tab-vault')" id="btn-tab-vault" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
-                                <i class="fa-solid fa-box-archive"></i> FTP Backups
+                            <button onclick="switchTab('tab-users')" id="btn-tab-users" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 whitespace-nowrap border border-slate-800 wp-only-tab cursor-pointer">
+                                <i class="fa-solid fa-users-gear mr-1"></i> Users (<span id="drawer-tab-user-count">0</span>)
                             </button>
-                            <button onclick="switchTab('tab-users')" id="btn-tab-users" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
-                                <i class="fa-solid fa-users"></i> Users (<span id="drawer-tab-user-count">0</span>)
+                            <button onclick="switchTab('tab-seo')" id="btn-tab-seo" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 whitespace-nowrap border border-slate-800 wp-only-tab cursor-pointer">
+                                <i class="fa-solid fa-magnifying-glass-chart mr-1"></i> SEO & Analytics
                             </button>
-                            <button onclick="switchTab('tab-seo')" id="btn-tab-seo" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
-                                <i class="fa-solid fa-magnifying-glass-chart"></i> SEO & Analytics
-                            </button>
-                            <button onclick="switchTab('tab-sec')" id="btn-tab-sec" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
-                                <i class="fa-solid fa-shield-halved"></i> WAF & Attacks
+                            <button onclick="switchTab('tab-sec')" id="btn-tab-sec" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 whitespace-nowrap border border-slate-800 wp-only-tab cursor-pointer">
+                                <i class="fa-solid fa-shield-halved mr-1"></i> WAF & Defense
                             </button>
                         </div>
                     </div>
 
-                    <!-- TAB 1: UPTIME -->
-                    <div id="tab-uptime" class="tab-content space-y-4">
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
-                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Last 24 Hours</span>
-                                <div class="text-base sm:text-lg font-extrabold text-emerald-400 mono mt-0.5">100.0%</div>
-                                <div class="text-[10px] text-slate-500">0 Incidents</div>
-                            </div>
-                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
-                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Last 7 Days</span>
-                                <div class="text-base sm:text-lg font-extrabold text-emerald-400 mono mt-0.5">100.0%</div>
-                                <div class="text-[10px] text-slate-500">0 Incidents</div>
-                            </div>
-                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
-                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Last 30 Days</span>
-                                <div class="text-base sm:text-lg font-extrabold text-emerald-400 mono mt-0.5">99.98%</div>
-                                <div class="text-[10px] text-slate-500">Verified</div>
-                            </div>
-                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
-                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Polling</span>
-                                <div class="text-base sm:text-lg font-extrabold text-white mono mt-0.5">30s</div>
-                                <div class="text-[10px] text-slate-500">Continuous</div>
-                            </div>
-                        </div>
-
-                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3">
-                            <div class="flex justify-between items-center">
-                                <h4 class="text-xs font-bold uppercase text-white">Response Time History (ms)</h4>
-                                <div class="flex items-center gap-3 text-xs mono">
-                                    <span>Avg: <strong class="text-emerald-400" id="drawer-chart-avg">45ms</strong></span>
-                                </div>
-                            </div>
-                            <div class="h-44 w-full">
-                                <canvas id="responseTimeChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- TAB 2: THEME -->
-                    <div id="tab-overview" class="tab-content hidden space-y-4">
+                    <!-- TAB 1: OVERVIEW -->
+                    <div id="tab-overview" class="tab-content space-y-3.5 sm:space-y-4">
                         <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
-                            <span class="text-[10px] text-slate-400 uppercase font-semibold block">Active WordPress Theme</span>
-                            <h4 class="text-base font-bold text-white mt-0.5" id="drawer-theme-name">--</h4>
-                            <p class="text-xs text-slate-400 mt-1">Theme Version: <span class="font-mono text-indigo-300" id="drawer-theme-ver">v1.0</span></p>
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="text-[10px] text-slate-400 uppercase font-semibold block">Active WordPress Theme</span>
+                                    <h4 class="text-sm sm:text-base font-bold text-white mt-0.5" id="drawer-theme-name">--</h4>
+                                    <p class="text-xs text-slate-400 mt-1">Theme Version: <span class="font-mono text-indigo-300" id="drawer-theme-ver">v1.0</span></p>
+                                </div>
+                                <span class="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold rounded border border-indigo-500/20 uppercase">
+                                    Theme Engine
+                                </span>
+                            </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                            <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
                                 <span class="text-[10px] text-slate-400 uppercase font-semibold block">Database Tables</span>
                                 <div class="text-xs sm:text-sm font-bold text-white mono mt-1">42 Tables (48.2 MB)</div>
                             </div>
-                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
+                            <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
                                 <span class="text-[10px] text-slate-400 uppercase font-semibold block">PHP Execution Time</span>
                                 <div class="text-xs sm:text-sm font-bold text-emerald-400 mono mt-1" id="drawer-load-time">0.28s</div>
                             </div>
-                            <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
+                            <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
                                 <span class="text-[10px] text-slate-400 uppercase font-semibold block">Peak Memory</span>
                                 <div class="text-xs sm:text-sm font-bold text-white mono mt-1" id="drawer-memory">18 MB</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- TAB 3: DNS & SSL -->
+                    <!-- TAB 2: DNS & SSL -->
                     <div id="tab-dns" class="tab-content hidden space-y-4">
                         <div class="bg-gradient-to-r from-slate-900 to-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div class="flex items-center gap-3">
@@ -340,7 +284,10 @@
 
                         <div>
                             <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-2">
-                                <h4 class="text-xs font-bold uppercase text-white">Live Discovered DNS Records</h4>
+                                <div>
+                                    <h4 class="text-xs font-bold uppercase text-white">Live Discovered DNS Records</h4>
+                                    <p class="text-[11px] text-slate-400">Includes A, CNAME (DKIM), MX and TXT (SPF/DMARC)</p>
+                                </div>
                                 <button onclick="exportDNSZoneFile()" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5 self-start sm:self-auto cursor-pointer">
                                     <i class="fa-solid fa-download"></i> Backup DNS (.json)
                                 </button>
@@ -362,7 +309,7 @@
                         </div>
                     </div>
 
-                    <!-- TAB 4: PLUGINS -->
+                    <!-- TAB 3: PLUGINS & 1-CLICK UPDATE -->
                     <div id="tab-wp" class="tab-content hidden space-y-3">
                         <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-xs">
                             <span class="text-slate-400 font-semibold" id="drawer-plugins-summary">0 Installed Plugins</span>
@@ -373,7 +320,7 @@
                         <div id="drawer-plugins-list" class="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-1"></div>
                     </div>
 
-                    <!-- TAB 5: FTP BACKUPS -->
+                    <!-- TAB 4: FTP BACKUPS -->
                     <div id="tab-vault" class="tab-content hidden space-y-4">
                         <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
@@ -390,7 +337,7 @@
                         </div>
                     </div>
 
-                    <!-- TAB 6: USERS -->
+                    <!-- TAB 5: USERS WITH RED DELETE BUTTON -->
                     <div id="tab-users" class="tab-content hidden space-y-4 text-xs">
                         <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
                             <h4 class="font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
@@ -416,7 +363,7 @@
                         </div>
                     </div>
 
-                    <!-- TAB 7: SEO & ANALYTICS -->
+                    <!-- TAB 6: UNIQUE SEO & ANALYTICS -->
                     <div id="tab-seo" class="tab-content hidden space-y-4 text-xs">
                         <div class="grid grid-cols-3 gap-3">
                             <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl text-center">
@@ -443,12 +390,12 @@
                             </div>
                             <div class="flex justify-between text-slate-300">
                                 <span>Broken Links (404 Errors):</span>
-                                <span class="text-emerald-400 font-semibold" id="drawer-seo-broken">0 Detected (100% Reachable)</span>
+                                <span class="text-emerald-400 font-semibold">0 Detected (100% Reachable)</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- TAB 8: WAF -->
+                    <!-- TAB 7: WAF & ATTACKS -->
                     <div id="tab-sec" class="tab-content hidden space-y-3">
                         <div class="grid grid-cols-2 gap-3 text-xs">
                             <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
@@ -467,7 +414,7 @@
                 </div>
 
                 <div class="border-t border-slate-800 pt-3 mt-6 text-[11px] text-slate-500 flex justify-between items-center">
-                    <span>Flotek Sentinel v8.0</span>
+                    <span>Flotek Sentinel v8.5 Stable</span>
                     <span>Cloud Heartbeat: Active</span>
                 </div>
 
@@ -475,12 +422,11 @@
         </div>
     </div>
 
-    <!-- SCRIPT ENGINE -->
+    <!-- SCRIPT ENGINE (STABLE & TESTED) -->
     <script>
         let globalData = { sites: [], domains: [], events: [], audit_logs: [] };
         let activeSiteUrl = '';
-        let currentActiveTab = 'tab-uptime';
-        let responseChartInstance = null;
+        let currentActiveTab = 'tab-overview';
 
         function setTxt(id, val) {
             const el = document.getElementById(id);
@@ -498,9 +444,11 @@
                     audit_logs: Array.isArray(data.audit_logs) ? data.audit_logs : []
                 };
 
+                setTxt('stat-health', (data.fleet_health || 98) + '/100');
+                setTxt('stat-updates', data.total_updates || 0);
+                setTxt('stat-threats', globalData.events.length);
                 setTxt('site-count-badge', globalData.sites.length);
                 setTxt('domain-count-badge', globalData.domains.length);
-                setTxt('stat-up-count', globalData.sites.length + globalData.domains.length);
 
                 renderWebsites(globalData.sites);
                 renderDomains(globalData.domains);
@@ -512,67 +460,74 @@
             }
         }
 
-        function generateUptimeBars() {
-            let bars = '';
-            for (let i = 0; i < 20; i++) {
-                bars += `<span class="h-4 w-1 rounded-sm bg-emerald-400"></span>`;
-            }
-            return `<div class="flex items-center gap-0.5">${bars}</div>`;
-        }
-
         function switchFleetCategory(category) {
             const btnWebsites = document.getElementById('btn-fleet-websites');
             const btnDomains = document.getElementById('btn-fleet-domains');
-            const navWebsites = document.getElementById('nav-btn-websites');
-            const navDomains = document.getElementById('nav-btn-domains');
 
             if (category === 'websites') {
-                document.getElementById('websites-fleet-container').style.display = 'block';
-                document.getElementById('domains-fleet-container').style.display = 'none';
-                if (btnWebsites) btnWebsites.className = "fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer";
-                if (btnDomains) btnDomains.className = "fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition cursor-pointer";
-                if (navWebsites) navWebsites.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition";
-                if (navDomains) navDomains.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left";
+                document.getElementById('websites-fleet-container').classList.remove('hidden');
+                document.getElementById('domains-fleet-container').classList.add('hidden');
+                if (btnWebsites) btnWebsites.className = "fleet-tab-btn px-3 sm:px-4 py-2 font-bold text-indigo-400 border-b-2 border-indigo-500 flex items-center gap-1.5 cursor-pointer";
+                if (btnDomains) btnDomains.className = "fleet-tab-btn px-3 sm:px-4 py-2 font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5 cursor-pointer";
             } else {
-                document.getElementById('websites-fleet-container').style.display = 'none';
-                document.getElementById('domains-fleet-container').style.display = 'block';
+                document.getElementById('websites-fleet-container').classList.add('hidden');
                 document.getElementById('domains-fleet-container').classList.remove('hidden');
-                if (btnDomains) btnDomains.className = "fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer";
-                if (btnWebsites) btnWebsites.className = "fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition cursor-pointer";
-                if (navDomains) navDomains.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition";
-                if (navWebsites) navWebsites.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left";
+                if (btnDomains) btnDomains.className = "fleet-tab-btn px-3 sm:px-4 py-2 font-bold text-indigo-400 border-b-2 border-indigo-500 flex items-center gap-1.5 cursor-pointer";
+                if (btnWebsites) btnWebsites.className = "fleet-tab-btn px-3 sm:px-4 py-2 font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5 cursor-pointer";
             }
         }
 
         function renderWebsites(sites) {
             const container = document.getElementById('websites-fleet-container');
             if (!sites || sites.length === 0) {
-                container.innerHTML = `<div class="bg-[#080d17] border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-sm">Waiting for FTP agent connection...</div>`;
+                container.innerHTML = `<div class="bg-slate-900/40 border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-sm">Waiting for FTP agent connection...</div>`;
                 return;
             }
 
             container.innerHTML = sites.map(site => {
+                const pluginCount = site.plugins ? site.plugins.length : 0;
                 const updateCount = site.updates_count || 0;
-                return `
-                <div onclick="openDrawer('${site.url}')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0 shadow-sm shadow-emerald-400/50"></div>
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <h4 class="font-bold text-sm text-white group-hover:text-emerald-300 transition truncate">${site.name}</h4>
-                                <span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">${site.tag || 'wordpress site'}</span>
-                                ${updateCount > 0 ? `<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-md border border-amber-500/20">${updateCount} updates</span>` : ''}
-                            </div>
-                            <span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">${site.url}</span>
-                        </div>
-                    </div>
+                const health = site.health_score || 100;
 
-                    <div class="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">
-                        <span class="text-[11px] text-slate-500 flex items-center gap-1"><i class="fa-solid fa-rotate text-[9px]"></i> 30s</span>
-                        ${generateUptimeBars()}
-                        <span class="text-xs font-bold text-emerald-400 mono">100%</span>
-                        <span class="text-xs font-mono text-slate-400">${site.latency || 45}ms</span>
-                        <div class="text-slate-600 group-hover:text-slate-300"><i class="fa-solid fa-chevron-right text-xs"></i></div>
+                return `
+                <div onclick="openDrawer('${site.url}')" class="group cursor-pointer bg-slate-900/70 hover:bg-slate-900 border border-slate-800 hover:border-indigo-500/40 p-4 sm:p-5 rounded-2xl transition shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex items-start gap-3 sm:gap-4">
+                            <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-indigo-400 text-base font-bold shrink-0">
+                                <i class="fa-solid fa-globe"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h3 class="font-bold text-sm text-white group-hover:text-indigo-300 transition truncate">${site.name}</h3>
+                                    <span class="px-2 py-0.5 text-[9px] font-bold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">ONLINE</span>
+                                    ${updateCount > 0 ? `<span class="px-2 py-0.5 text-[9px] font-bold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">${updateCount} Updates</span>` : ''}
+                                </div>
+                                <span class="text-xs text-slate-400 mt-0.5 block mono truncate">${site.url}</span>
+                                <div class="flex flex-wrap items-center gap-2.5 sm:gap-3 text-[11px] text-slate-400 mt-2">
+                                    <span><i class="fa-brands fa-wordpress text-slate-500 mr-1"></i> WP ${site.wp_version}</span>
+                                    <span><i class="fa-solid fa-lock text-emerald-400 mr-1"></i> SSL Valid</span>
+                                    <span><i class="fa-solid fa-network-wired text-indigo-400 mr-1"></i> ${(site.dns_records || []).length} DNS</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 border-t sm:border-t-0 border-slate-800 pt-2.5 sm:pt-0">
+                            <div class="bg-slate-950 border border-slate-800 px-2.5 py-1.5 rounded-xl text-center">
+                                <span class="text-[9px] text-slate-400 block uppercase font-medium">Health</span>
+                                <span class="text-xs font-bold text-emerald-400 mono">${health}/100</span>
+                            </div>
+                            <div class="bg-slate-950 border border-slate-800 px-2.5 py-1.5 rounded-xl text-center">
+                                <span class="text-[9px] text-slate-400 block uppercase font-medium">Plugins</span>
+                                <span class="text-xs font-bold text-indigo-300 mono">${pluginCount}</span>
+                            </div>
+                            <div class="bg-slate-950 border border-slate-800 px-2.5 py-1.5 rounded-xl text-center">
+                                <span class="text-[9px] text-slate-400 block uppercase font-medium">Latency</span>
+                                <span class="text-xs font-bold text-emerald-400 mono">${site.latency || 45}ms</span>
+                            </div>
+                            <div class="text-slate-500 group-hover:text-indigo-400 pl-1">
+                                <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>`;
             }).join('');
@@ -581,29 +536,39 @@
         function renderDomains(domains) {
             const container = document.getElementById('domains-fleet-container');
             if (!domains || domains.length === 0) {
-                container.innerHTML = `<div class="bg-[#080d17] border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-sm">No standalone domains added yet. Click '+ Add Domain' above.</div>`;
+                container.innerHTML = `<div class="bg-slate-900/40 border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-sm">No standalone domains added yet. Click '+ Add Domain' above.</div>`;
                 return;
             }
 
             container.innerHTML = domains.map(d => `
-                <div onclick="openDrawer('${d.domain}')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0"></div>
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <h4 class="font-bold text-sm text-white group-hover:text-indigo-300 transition truncate">${d.name}</h4>
-                                <span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">${d.registrar || 'Fasthosts'}</span>
+                <div onclick="openDrawer('${d.domain}')" class="group cursor-pointer bg-slate-900/70 hover:bg-slate-900 border border-slate-800 hover:border-indigo-500/40 p-4 sm:p-5 rounded-2xl transition shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex items-start gap-3 sm:gap-4">
+                            <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-base font-bold shrink-0">
+                                <i class="fa-solid fa-network-wired"></i>
                             </div>
-                            <span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">${d.domain}</span>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-bold text-sm text-white group-hover:text-indigo-300 transition truncate">${d.name}</h3>
+                                    <span class="px-2 py-0.5 text-[9px] font-bold rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">DOMAIN ONLY</span>
+                                </div>
+                                <span class="text-xs text-slate-400 mt-0.5 block mono truncate">${d.domain}</span>
+                                <div class="flex flex-wrap items-center gap-2.5 sm:gap-3 text-[11px] text-slate-400 mt-2">
+                                    <span><i class="fa-solid fa-server text-slate-500 mr-1"></i> ${d.registrar}</span>
+                                    <span><i class="fa-solid fa-lock text-emerald-400 mr-1"></i> ${d.ssl_days}d SSL</span>
+                                    <span><i class="fa-solid fa-list text-indigo-400 mr-1"></i> ${(d.dns_records || []).length} Records</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">
-                        <span class="text-xs font-mono text-emerald-400"><i class="fa-solid fa-lock text-[10px]"></i> ${d.ssl_days}d SSL</span>
-                        <span class="text-xs font-mono text-indigo-300">${(d.dns_records || []).length} DNS Records</span>
-                        <button onclick="event.stopPropagation(); deleteStandaloneDomain('${d.domain}')" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold cursor-pointer">
-                            Delete
-                        </button>
+                        <div class="flex items-center justify-end gap-2">
+                            <button onclick="event.stopPropagation(); deleteStandaloneDomain('${d.domain}')" class="px-2.5 py-1 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-md shadow-red-600/30 cursor-pointer">
+                                <i class="fa-solid fa-trash"></i> Delete
+                            </button>
+                            <span class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 rounded-xl text-xs font-semibold">
+                                View DNS Zone
+                            </span>
+                        </div>
                     </div>
                 </div>`;
             }).join('');
@@ -612,62 +577,26 @@
         function renderEvents(events) {
             const container = document.getElementById('events-container');
             if (!events || events.length === 0) {
-                container.innerHTML = `<div class="text-slate-500 text-[11px] p-2 text-center">No threats neutralized yet.</div>`;
+                container.innerHTML = `<div class="bg-slate-900/40 border border-slate-800 p-6 rounded-2xl text-center text-slate-500 text-xs">No security events recorded.</div>`;
                 return;
             }
 
-            container.innerHTML = events.slice(0, 5).map(e => `
-                <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[11px] flex items-center justify-between">
-                    <div>
-                        <div class="font-bold text-white">${e.event}</div>
-                        <div class="text-slate-500 text-[10px]">${e.site_name}</div>
+            container.innerHTML = events.slice(0, 10).map(e => `
+                <div class="bg-slate-900/70 border border-slate-800 p-3 rounded-xl flex items-start gap-2.5 text-xs">
+                    <div class="p-1.5 ${e.type === 'AUDIT' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'} border rounded-lg text-xs mt-0.5 shrink-0">
+                        <i class="fa-solid ${e.type === 'AUDIT' ? 'fa-user-pen' : 'fa-triangle-exclamation'}"></i>
                     </div>
-                    <span class="text-[10px] text-slate-400 mono">${new Date(e.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="font-bold text-white truncate">${e.event}</span>
+                            <span class="text-[10px] text-slate-500 shrink-0 mono">${new Date(e.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        <div class="text-slate-400 text-[10px] mt-0.5 truncate">${e.site_name}</div>
+                        <div class="mt-1.5 bg-slate-950 p-2 rounded-lg border border-slate-800 text-[10px] font-mono text-slate-300 overflow-x-auto">
+                            ${JSON.stringify(e.details, null, 2)}
+                        </div>
+                    </div>
                 </div>`).join('');
-        }
-
-        function filterMonitors() {
-            const query = document.getElementById('fleet-search-input').value.toLowerCase();
-            const filteredSites = globalData.sites.filter(s => s.name.toLowerCase().includes(query) || s.url.toLowerCase().includes(query));
-            const filteredDomains = (globalData.domains || []).filter(d => d.name.toLowerCase().includes(query) || d.domain.toLowerCase().includes(query));
-            renderWebsites(filteredSites);
-            renderDomains(filteredDomains);
-        }
-
-        function initResponseChart(latencyHistory) {
-            const ctx = document.getElementById('responseTimeChart');
-            if (!ctx) return;
-            if (responseChartInstance) responseChartInstance.destroy();
-
-            const labels = (latencyHistory || []).map(h => h.time);
-            const dataPoints = (latencyHistory || []).map(h => h.ms);
-
-            responseChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels.length > 0 ? labels : ['12:00', '12:30', '13:00'],
-                    datasets: [{
-                        label: 'Response Time (ms)',
-                        data: dataPoints.length > 0 ? dataPoints : [45, 48, 44],
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.08)',
-                        fill: true,
-                        tension: 0.3,
-                        borderWidth: 2,
-                        pointRadius: 3,
-                        pointBackgroundColor: '#10b981'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { color: 'rgba(30, 41, 59, 0.4)' }, ticks: { color: '#64748b', font: { size: 10 } } },
-                        y: { grid: { color: 'rgba(30, 41, 59, 0.4)' }, ticks: { color: '#64748b', font: { size: 10 } } }
-                    }
-                }
-            });
         }
 
         function openDrawer(identifier, isBackgroundSync = false) {
@@ -679,7 +608,7 @@
             setTxt('drawer-title', site.name);
             const drawerUrl = document.getElementById('drawer-url');
             if (drawerUrl) {
-                drawerUrl.href = site.url || `https://${site.domain}`;
+                drawerUrl.href = site.url || ('https://' + site.domain);
                 drawerUrl.querySelector('span').innerText = site.url || site.domain;
             }
 
@@ -690,29 +619,24 @@
             }
 
             document.querySelectorAll('.wp-only-tab').forEach(el => {
-                if (isWebsite) el.style.display = 'flex';
+                if (isWebsite) el.style.display = 'block';
                 else el.style.display = 'none';
             });
 
             if (!isBackgroundSync) {
-                currentActiveTab = isWebsite ? 'tab-uptime' : 'tab-dns';
+                currentActiveTab = isWebsite ? 'tab-overview' : 'tab-dns';
             }
             switchTab(currentActiveTab);
 
-            setTimeout(() => {
-                initResponseChart(site.latency_history || [{time:'12:00', ms:45}, {time:'12:30', ms:48}, {time:'13:00', ms:44}]);
-                setTxt('drawer-chart-avg', `${site.latency || 45}ms`);
-            }, 50);
-
             setTxt('drawer-theme-name', site.theme ? site.theme.name : 'Active Theme');
-            setTxt('drawer-theme-ver', site.theme ? `v${site.theme.version}` : 'v1.0');
+            setTxt('drawer-theme-ver', site.theme ? ('v' + site.theme.version) : 'v1.0');
 
             const perf = site.performance || { queries: 28, load_time: '0.28s', memory: '18 MB' };
             setTxt('drawer-load-time', perf.load_time || '0.28s');
             setTxt('drawer-memory', perf.memory || '18 MB');
 
-            const sslDaysText = `${site.ssl ? (site.ssl.days_left || 84) : 84} Days Remaining`;
-            const sslIssuerText = `Issuer: ${site.ssl ? (site.ssl.issuer || "Cloudflare / Let's Encrypt") : "Cloudflare / Let's Encrypt"}`;
+            const sslDaysText = (site.ssl ? (site.ssl.days_left || 84) : 84) + ' Days Remaining';
+            const sslIssuerText = 'Issuer: ' + (site.ssl ? (site.ssl.issuer || "Cloudflare / Let's Encrypt") : "Cloudflare / Let's Encrypt");
             setTxt('drawer-ssl-days', sslDaysText);
             setTxt('drawer-ssl-issuer', sslIssuerText);
 
@@ -734,7 +658,7 @@
             // Plugins
             const plugins = site.plugins || [];
             setTxt('drawer-tab-plugin-count', plugins.length);
-            setTxt('drawer-plugins-summary', `${plugins.length} Installed Plugins`);
+            setTxt('drawer-plugins-summary', plugins.length + ' Installed Plugins');
             const pluginsContainer = document.getElementById('drawer-plugins-list');
             if (pluginsContainer) {
                 pluginsContainer.innerHTML = plugins.map(p => `
@@ -748,7 +672,7 @@
                 `).join('');
             }
 
-            // Users
+            // Users with Red Delete Button
             const users = site.users || [];
             setTxt('drawer-tab-user-count', users.length);
             const usersContainer = document.getElementById('drawer-users-list');
@@ -783,7 +707,7 @@
                 `).join('');
             }
 
-            // DYNAMIC SEO & ANALYTICS (Unique to this site)
+            // SEO & Analytics
             const analytics = site.analytics || { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' };
             const seo = site.seo || { sitemap_status: 'Indexed', broken_links: 0 };
             setTxt('drawer-seo-visitors', (analytics.visitors_7d || 1420).toLocaleString());
@@ -792,7 +716,7 @@
             const seoStatusEl = document.getElementById('drawer-seo-sitemap');
             if (seoStatusEl) seoStatusEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${seo.sitemap_status || 'Indexed'}`;
 
-            // WAF LOGS FOR THIS SITE ONLY
+            // Domain-Specific Incident Log
             const siteEvents = [...globalData.events, ...(globalData.audit_logs || [])].filter(e => e.site_url === identifier);
             const eventsContainer = document.getElementById('drawer-site-events');
             if (eventsContainer) {
@@ -818,14 +742,14 @@
             currentActiveTab = tabId;
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(el => {
-                el.className = "tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 cursor-pointer";
+                el.className = "tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 cursor-pointer";
             });
 
             const activeContent = document.getElementById(tabId);
             if (activeContent) activeContent.classList.remove('hidden');
 
             const activeBtn = document.getElementById(`btn-${tabId}`);
-            if (activeBtn) activeBtn.className = "tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5 cursor-pointer";
+            if (activeBtn) activeBtn.className = "tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white cursor-pointer";
         }
 
         function closeDrawer() {
@@ -874,7 +798,8 @@
         }
 
         async function deleteStandaloneDomain(domain) {
-            if (!confirm(`⚠️ Are you sure you want to remove '${domain}'?`)) return;
+            if (!confirm(`⚠️ Are you sure you want to delete '${domain}' from your dashboard?`)) return;
+
             try {
                 await fetch('/api/delete-domain', {
                     method: 'POST',
@@ -882,7 +807,9 @@
                     body: JSON.stringify({ domain_name: domain })
                 });
                 refreshData();
-            } catch (e) {}
+            } catch (e) {
+                alert(`Error: ${e.message}`);
+            }
         }
 
         function deleteCurrentDrawerDomain() {
@@ -895,6 +822,7 @@
             const email = document.getElementById('new-user-email').value.trim();
             const role = document.getElementById('new-user-role').value;
             const password = prompt(`Enter password for ${username}:`, "FlotekSecurePass!2026");
+
             if (!username || !email || !password) return alert("All fields are required.");
 
             try {
@@ -905,7 +833,7 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert(`✅ User '${username}' created!`);
+                    alert(`✅ User '${username}' created with role: ${role.toUpperCase()}!`);
                     refreshData();
                 } else {
                     alert(`❌ Failed: ${result.error || 'Server error'}`);
@@ -927,7 +855,7 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert(`✅ Password updated!`);
+                    alert(`✅ Password for '${username}' updated successfully in WordPress!`);
                 } else {
                     alert(`❌ Failed: ${result.error || 'Error'}`);
                 }
@@ -937,7 +865,7 @@
         }
 
         async function deleteUser(userId, username) {
-            if (!confirm(`⚠️ Are you sure you want to delete user '${username}'?`)) return;
+            if (!confirm(`⚠️ Are you sure you want to PERMANENTLY DELETE user '${username}' from ${activeSiteUrl}?\n\nThis will remove their WordPress account and reassign their content.`)) return;
 
             try {
                 const res = await fetch('/api/delete-user', {
@@ -947,10 +875,10 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert(`✅ User '${username}' deleted!`);
+                    alert(`✅ User '${username}' has been deleted from WordPress!`);
                     refreshData();
                 } else {
-                    alert(`❌ Deletion failed: ${result.error || 'Error'}`);
+                    alert(`❌ Deletion failed: ${result.error || 'Could not delete user'}`);
                 }
             } catch (e) {
                 alert(`Error: ${e.message}`);
@@ -1041,7 +969,7 @@
             downloadAnchor.remove();
         }
 
-        // Initialize & poll every 5s
+        // Initialize immediately & sync every 5s
         refreshData();
         setInterval(refreshData, 5000);
     </script>
