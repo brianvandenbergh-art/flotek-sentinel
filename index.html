@@ -32,10 +32,10 @@
             </div>
 
             <nav class="space-y-1.5 text-xs">
-                <button onclick="switchFleetCategory('websites')" id="nav-btn-websites" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition cursor-pointer">
+                <button type="button" onclick="switchFleetCategory('websites')" id="nav-btn-websites" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition cursor-pointer">
                     <i class="fa-solid fa-gauge-high text-emerald-400 text-sm w-4"></i> Monitors
                 </button>
-                <button onclick="switchFleetCategory('domains')" id="nav-btn-domains" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left cursor-pointer">
+                <button type="button" onclick="switchFleetCategory('domains')" id="nav-btn-domains" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left cursor-pointer">
                     <i class="fa-solid fa-network-wired text-indigo-400 text-sm w-4"></i> Standalone DNS
                 </button>
             </nav>
@@ -63,10 +63,10 @@
             </div>
 
             <div class="flex items-center gap-2.5">
-                <button onclick="openAddDomainModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-indigo-600/20 transition cursor-pointer">
+                <button type="button" onclick="openAddDomainModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-indigo-600/20 transition cursor-pointer">
                     <i class="fa-solid fa-plus text-[10px]"></i> Add Domain
                 </button>
-                <button onclick="refreshData()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 border border-slate-700 transition cursor-pointer">
+                <button type="button" onclick="refreshData()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 border border-slate-700 transition cursor-pointer">
                     <i class="fa-solid fa-rotate"></i> Sync
                 </button>
             </div>
@@ -80,10 +80,10 @@
                 
                 <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-[#080d17] border border-slate-800 p-3 rounded-2xl">
                     <div class="flex gap-1.5 text-xs">
-                        <button onclick="switchFleetCategory('websites')" id="btn-fleet-websites" class="fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer">
+                        <button type="button" onclick="switchFleetCategory('websites')" id="btn-fleet-websites" class="fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer">
                             WordPress Sites (<span id="site-count-badge">3</span>)
                         </button>
-                        <button onclick="switchFleetCategory('domains')" id="btn-fleet-domains" class="fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition cursor-pointer">
+                        <button type="button" onclick="switchFleetCategory('domains')" id="btn-fleet-domains" class="fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition cursor-pointer">
                             Domains Only (<span id="domain-count-badge">2</span>)
                         </button>
                     </div>
@@ -163,7 +163,7 @@
                 <h3 class="font-bold text-base text-white flex items-center gap-2">
                     <i class="fa-solid fa-plus text-indigo-400"></i> Monitor Standalone Domain
                 </h3>
-                <button onclick="closeAddDomainModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
+                <button type="button" onclick="closeAddDomainModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
             <p class="text-xs text-slate-400">Add any domain without WordPress (e.g. <code>customdomain.co.uk</code>) to automatically scan all DNS records and monitor SSL.</p>
             <div>
@@ -171,8 +171,8 @@
                 <input id="input-domain-name" type="text" placeholder="e.g. yourdomain.co.uk" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500">
             </div>
             <div class="flex justify-end gap-2 pt-2">
-                <button onclick="closeAddDomainModal()" class="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl font-semibold cursor-pointer">Cancel</button>
-                <button id="btn-submit-domain" onclick="submitStandaloneDomain()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-xl font-bold flex items-center gap-1.5 cursor-pointer">
+                <button type="button" onclick="closeAddDomainModal()" class="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl font-semibold cursor-pointer">Cancel</button>
+                <button type="button" id="btn-submit-domain" onclick="submitStandaloneDomain()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-xl font-bold flex items-center gap-1.5 cursor-pointer">
                     <i class="fa-solid fa-magnifying-glass"></i> Scan &amp; Add
                 </button>
             </div>
@@ -201,10 +201,10 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button id="btn-drawer-delete-domain" style="display: none;" onclick="deleteCurrentDrawerDomain()" class="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer">
+                        <button type="button" id="btn-drawer-delete-domain" style="display: none;" onclick="deleteCurrentDrawerDomain()" class="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer">
                             <i class="fa-solid fa-trash text-[10px]"></i> Delete Domain
                         </button>
-                        <button onclick="closeDrawer()" class="text-slate-400 hover:text-white p-2 rounded-xl bg-slate-800/60 shrink-0 cursor-pointer">
+                        <button type="button" onclick="closeDrawer()" class="text-slate-400 hover:text-white p-2 rounded-xl bg-slate-800/60 shrink-0 cursor-pointer">
                             <i class="fa-solid fa-xmark text-lg"></i>
                         </button>
                     </div>
@@ -213,25 +213,25 @@
                 <!-- TABS -->
                 <div class="overflow-x-auto custom-scrollbar pb-2">
                     <div id="drawer-tabs-bar" class="flex gap-2 text-xs min-w-max">
-                        <button onclick="switchTab('tab-overview')" id="btn-tab-overview" class="tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5 wp-only-tab cursor-pointer">
+                        <button type="button" onclick="switchTab('tab-overview')" id="btn-tab-overview" class="tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5 wp-only-tab cursor-pointer">
                             <i class="fa-solid fa-palette"></i> Theme &amp; Vitals
                         </button>
-                        <button onclick="switchTab('tab-dns')" id="btn-tab-dns" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 cursor-pointer">
+                        <button type="button" onclick="switchTab('tab-dns')" id="btn-tab-dns" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 cursor-pointer">
                             <i class="fa-solid fa-network-wired"></i> DNS &amp; SSL (<span id="drawer-dns-count">0</span>)
                         </button>
-                        <button onclick="switchTab('tab-wp')" id="btn-tab-wp" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
+                        <button type="button" onclick="switchTab('tab-wp')" id="btn-tab-wp" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
                             <i class="fa-solid fa-cube"></i> Updates (<span id="drawer-tab-plugin-count">0</span>)
                         </button>
-                        <button onclick="switchTab('tab-vault')" id="btn-tab-vault" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
+                        <button type="button" onclick="switchTab('tab-vault')" id="btn-tab-vault" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
                             <i class="fa-solid fa-box-archive"></i> FTP Backups
                         </button>
-                        <button onclick="switchTab('tab-users')" id="btn-tab-users" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
+                        <button type="button" onclick="switchTab('tab-users')" id="btn-tab-users" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
                             <i class="fa-solid fa-users"></i> Users (<span id="drawer-tab-user-count">0</span>)
                         </button>
-                        <button onclick="switchTab('tab-seo')" id="btn-tab-seo" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
+                        <button type="button" onclick="switchTab('tab-seo')" id="btn-tab-seo" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
                             <i class="fa-solid fa-magnifying-glass-chart"></i> SEO &amp; Analytics
                         </button>
-                        <button onclick="switchTab('tab-sec')" id="btn-tab-sec" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
+                        <button type="button" onclick="switchTab('tab-sec')" id="btn-tab-sec" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
                             <i class="fa-solid fa-shield-halved"></i> WAF &amp; Attacks (<span id="drawer-tab-sec-count">0</span>)
                         </button>
                     </div>
@@ -282,7 +282,7 @@
                     <div>
                         <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-2">
                             <h4 class="text-xs font-bold uppercase text-white">Discovered DNS Zone Records</h4>
-                            <button onclick="exportDNSZoneFile()" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5 self-start sm:self-auto cursor-pointer">
+                            <button type="button" onclick="exportDNSZoneFile()" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5 self-start sm:self-auto cursor-pointer">
                                 <i class="fa-solid fa-download"></i> Backup DNS (.json)
                             </button>
                         </div>
@@ -297,7 +297,7 @@
                                         <th class="p-2.5">Priority</th>
                                     </tr>
                                 </thead>
-                                <tbody id="drawer-dns-table-body" class="divide-y divide-slate-800/60 font-mono text-[11px]"></tbody>
+                                <tbody id="drawer-dns-table-body" class="divide-y border-slate-800/60 font-mono text-[11px]"></tbody>
                             </table>
                         </div>
                     </div>
@@ -307,7 +307,7 @@
                 <div id="tab-wp" style="display: none;" class="tab-content space-y-3">
                     <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-xs">
                         <span class="text-slate-400 font-semibold" id="drawer-plugins-summary">0 Installed Plugins</span>
-                        <button id="btn-bulk-update" onclick="executeRemotePluginUpdate()" class="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-xl font-semibold hover:bg-amber-500/20 flex items-center justify-center gap-1.5 cursor-pointer">
+                        <button type="button" id="btn-bulk-update" onclick="executeRemotePluginUpdate()" class="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-xl font-semibold hover:bg-amber-500/20 flex items-center justify-center gap-1.5 cursor-pointer">
                             <i class="fa-solid fa-arrows-rotate"></i> 1-Click Bulk Update
                         </button>
                     </div>
@@ -321,7 +321,7 @@
                             <h4 class="text-xs font-bold text-white">Generate Real Database Backup on FTP</h4>
                             <p class="text-[11px] text-slate-400 mt-0.5">Saves to <code>/wp-content/flotek-backups/</code></p>
                         </div>
-                        <button id="btn-create-backup" onclick="executeRemoteBackup()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shrink-0 cursor-pointer">
+                        <button type="button" id="btn-create-backup" onclick="executeRemoteBackup()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shrink-0 cursor-pointer">
                             <i class="fa-solid fa-download"></i> Dump SQL to FTP
                         </button>
                     </div>
@@ -346,7 +346,7 @@
                                 <option value="author">Author</option>
                                 <option value="contributor">Contributor</option>
                             </select>
-                            <button onclick="provisionNewUser()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-xl cursor-pointer">
+                            <button type="button" onclick="provisionNewUser()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-xl cursor-pointer">
                                 + Add User
                             </button>
                         </div>
@@ -420,7 +420,16 @@
 
     <!-- JAVASCRIPT ENGINE -->
     <script>
-        const DEFAULT_SITES = [
+        // Unregister any rogue service workers from previous builds
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+                for (var i = 0; i < regs.length; i++) {
+                    regs[i].unregister();
+                }
+            });
+        }
+
+        var DEFAULT_SITES = [
             {
                 name: 'Grand Prix Express',
                 url: 'https://grandprixexpress.com',
@@ -455,7 +464,7 @@
                 seo: { sitemap_status: 'Indexed (42 URLs Valid)', broken_links: 0 },
                 analytics: { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' },
                 backups: [
-                    { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '48.2 MB', date: new Date().toLocaleDateString() }
+                    { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '48.2 MB', date: '2026-03-01' }
                 ],
                 health_score: 94,
                 status: 'ONLINE',
@@ -494,7 +503,7 @@
                 seo: { sitemap_status: 'Indexed (184 URLs Valid)', broken_links: 0 },
                 analytics: { visitors_7d: 3920, pageviews: 11480, bounce_rate: '24.1%' },
                 backups: [
-                    { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '62.4 MB', date: new Date().toLocaleDateString() }
+                    { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '62.4 MB', date: '2026-03-01' }
                 ],
                 health_score: 91,
                 status: 'ONLINE',
@@ -529,7 +538,7 @@
                 seo: { sitemap_status: 'Indexed (88 URLs Valid)', broken_links: 0 },
                 analytics: { visitors_7d: 5240, pageviews: 18200, bounce_rate: '19.4%' },
                 backups: [
-                    { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '38.0 MB', date: new Date().toLocaleDateString() }
+                    { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '38.0 MB', date: '2026-03-01' }
                 ],
                 health_score: 99,
                 status: 'ONLINE',
@@ -538,7 +547,7 @@
             }
         ];
 
-        const DEFAULT_DOMAINS = [
+        var DEFAULT_DOMAINS = [
             {
                 name: 'gamlins.co.uk',
                 domain: 'gamlins.co.uk',
@@ -569,7 +578,7 @@
             }
         ];
 
-        const DEFAULT_EVENTS = [
+        var DEFAULT_EVENTS = [
             {
                 id: 1,
                 site_url: 'https://gamlins.com',
@@ -578,7 +587,7 @@
                 event: 'FAILED_LOGIN_ATTEMPT',
                 type: 'SECURITY',
                 details: { target_user: 'admin_master', ip_address: '185.220.101.32', alert: 'Brute-force throttle triggered' },
-                timestamp: new Date(Date.now() - 1000 * 60 * 14).toISOString()
+                timestamp: new Date().toISOString()
             },
             {
                 id: 2,
@@ -588,7 +597,7 @@
                 event: 'MALICIOUS_PROBE_BLOCKED',
                 type: 'SECURITY',
                 details: { pattern: '/wp-config.php.bak', ip_address: '45.154.255.89', action: '403 Forbidden' },
-                timestamp: new Date(Date.now() - 1000 * 60 * 38).toISOString()
+                timestamp: new Date().toISOString()
             }
         ];
 
@@ -602,13 +611,13 @@
         window.currentActiveTab = 'tab-overview';
 
         window.setTxt = function(id, val) {
-            const el = document.getElementById(id);
+            var el = document.getElementById(id);
             if (el) el.innerText = val;
         };
 
         window.normalizeDomain = function(str) {
             if (!str) return '';
-            return str.toLowerCase()
+            return String(str).toLowerCase()
                 .replace(/^https?:\/\//, '')
                 .replace(/^www\./, '')
                 .replace(/\/.*$/, '')
@@ -616,20 +625,20 @@
         };
 
         window.generateUptimeBars = function() {
-            let bars = '';
-            for (let i = 0; i < 20; i++) {
+            var bars = '';
+            for (var i = 0; i < 20; i++) {
                 bars += '<span class="h-4 w-1 rounded-sm bg-emerald-400"></span>';
             }
             return '<div class="flex items-center gap-0.5">' + bars + '</div>';
         };
 
         window.switchFleetCategory = function(category) {
-            const webContainer = document.getElementById('websites-fleet-container');
-            const domContainer = document.getElementById('domains-fleet-container');
-            const btnWebsites = document.getElementById('btn-fleet-websites');
-            const btnDomains = document.getElementById('btn-fleet-domains');
-            const navWebsites = document.getElementById('nav-btn-websites');
-            const navDomains = document.getElementById('nav-btn-domains');
+            var webContainer = document.getElementById('websites-fleet-container');
+            var domContainer = document.getElementById('domains-fleet-container');
+            var btnWebsites = document.getElementById('btn-fleet-websites');
+            var btnDomains = document.getElementById('btn-fleet-domains');
+            var navWebsites = document.getElementById('nav-btn-websites');
+            var navDomains = document.getElementById('nav-btn-domains');
 
             if (category === 'websites') {
                 if (webContainer) webContainer.style.display = 'block';
@@ -649,52 +658,56 @@
         };
 
         window.openAddDomainModal = function() {
-            const m = document.getElementById('add-domain-modal');
+            var m = document.getElementById('add-domain-modal');
             if (m) m.style.display = 'flex';
         };
 
         window.closeAddDomainModal = function() {
-            const m = document.getElementById('add-domain-modal');
+            var m = document.getElementById('add-domain-modal');
             if (m) m.style.display = 'none';
-            const inp = document.getElementById('input-domain-name');
+            var inp = document.getElementById('input-domain-name');
             if (inp) inp.value = '';
         };
 
         window.closeDrawer = function() {
-            const drawer = document.getElementById('site-drawer');
+            var drawer = document.getElementById('site-drawer');
             if (drawer) drawer.style.display = 'none';
             window.activeSiteUrl = '';
         };
 
         window.switchTab = function(tabId) {
             window.currentActiveTab = tabId;
-            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-            document.querySelectorAll('.tab-btn').forEach(el => {
-                el.className = "tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 cursor-pointer";
-            });
+            var tabs = document.querySelectorAll('.tab-content');
+            for (var i = 0; i < tabs.length; i++) {
+                tabs[i].style.display = 'none';
+            }
+            var tabBtns = document.querySelectorAll('.tab-btn');
+            for (var j = 0; j < tabBtns.length; j++) {
+                tabBtns[j].className = "tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 cursor-pointer";
+            }
 
-            const activeContent = document.getElementById(tabId);
+            var activeContent = document.getElementById(tabId);
             if (activeContent) activeContent.style.display = 'block';
 
-            const activeBtn = document.getElementById('btn-' + tabId);
+            var activeBtn = document.getElementById('btn-' + tabId);
             if (activeBtn) activeBtn.className = "tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5 cursor-pointer";
         };
 
         window.getSiteSecurityEvents = function(targetSite) {
             if (!targetSite) return [];
-            const cleanTarget = window.normalizeDomain(targetSite.url || targetSite.domain || '');
-            const targetName = (targetSite.name || '').toLowerCase().trim();
+            var cleanTarget = window.normalizeDomain(targetSite.url || targetSite.domain || '');
+            var targetName = (targetSite.name || '').toLowerCase().trim();
 
-            const allEvents = [...(window.globalData.events || []), ...(window.globalData.audit_logs || [])];
-            return allEvents.filter(e => {
-                const eventCleanDomain = window.normalizeDomain(e.domain || e.site_url || '');
-                const eventName = (e.site_name || '').toLowerCase().trim();
+            var allEvents = [].concat(window.globalData.events || [], window.globalData.audit_logs || []);
+            return allEvents.filter(function(e) {
+                var eventCleanDomain = window.normalizeDomain(e.domain || e.site_url || '');
+                var eventName = (e.site_name || '').toLowerCase().trim();
                 return (cleanTarget && eventCleanDomain === cleanTarget) || (targetName && eventName === targetName);
             });
         };
 
         window.renderWebsites = function(sites) {
-            const container = document.getElementById('websites-fleet-container');
+            var container = document.getElementById('websites-fleet-container');
             if (!container) return;
 
             if (!sites || sites.length === 0) {
@@ -702,39 +715,45 @@
                 return;
             }
 
-            container.innerHTML = sites.map(site => {
-                const updateCount = site.updates_count || 0;
-                const siteEvents = window.getSiteSecurityEvents(site);
-                const eventCount = siteEvents.length;
+            var html = '';
+            for (var i = 0; i < sites.length; i++) {
+                var site = sites[i];
+                var updateCount = site.updates_count || 0;
+                var siteEvents = window.getSiteSecurityEvents(site);
+                var eventCount = siteEvents.length;
 
-                return `
-                <div onclick="openDrawer('${site.url || site.domain}')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-3 h-3 rounded-full ${eventCount > 0 ? 'bg-rose-400 shadow-rose-400/50' : 'bg-emerald-400 shadow-emerald-400/50'} shrink-0 shadow-sm"></div>
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <h4 class="font-bold text-sm text-white group-hover:text-emerald-300 transition truncate">${site.name}</h4>
-                                <span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">${site.tag || 'wordpress site'}</span>
-                                ${updateCount > 0 ? `<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-md border border-amber-500/20">${updateCount} updates</span>` : ''}
-                                ${eventCount > 0 ? `<span class="px-2 py-0.5 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-md border border-rose-500/20 flex items-center gap-1"><i class="fa-solid fa-shield-virus text-[9px]"></i> ${eventCount} alerts</span>` : ''}
-                            </div>
-                            <span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">${site.url}</span>
-                        </div>
-                    </div>
+                var dotColor = eventCount > 0 ? 'bg-rose-400 shadow-rose-400/50' : 'bg-emerald-400 shadow-emerald-400/50';
+                var updateBadge = updateCount > 0 ? '<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-md border border-amber-500/20">' + updateCount + ' updates</span>' : '';
+                var alertBadge = eventCount > 0 ? '<span class="px-2 py-0.5 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-md border border-rose-500/20 flex items-center gap-1"><i class="fa-solid fa-shield-virus text-[9px]"></i> ' + eventCount + ' alerts</span>' : '';
+                var targetStr = site.url || site.domain;
 
-                    <div class="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">
-                        <span class="text-[11px] text-slate-500 flex items-center gap-1"><i class="fa-solid fa-rotate text-[9px]"></i> 30s</span>
-                        ${window.generateUptimeBars()}
-                        <span class="text-xs font-bold text-emerald-400 mono">100%</span>
-                        <span class="text-xs font-mono text-slate-400">${site.latency || 42}ms</span>
-                        <div class="text-slate-600 group-hover:text-slate-300"><i class="fa-solid fa-chevron-right text-xs"></i></div>
-                    </div>
-                </div>`;
-            }).join('');
+                html += '<div onclick="openDrawer(\'' + targetStr + '\')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">' +
+                    '<div class="flex items-center gap-3 min-w-0">' +
+                        '<div class="w-3 h-3 rounded-full ' + dotColor + ' shrink-0 shadow-sm"></div>' +
+                        '<div class="min-w-0">' +
+                            '<div class="flex items-center gap-2 flex-wrap">' +
+                                '<h4 class="font-bold text-sm text-white group-hover:text-emerald-300 transition truncate">' + site.name + '</h4>' +
+                                '<span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">' + (site.tag || 'wordpress site') + '</span>' +
+                                updateBadge +
+                                alertBadge +
+                            '</div>' +
+                            '<span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">' + site.url + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">' +
+                        '<span class="text-[11px] text-slate-500 flex items-center gap-1"><i class="fa-solid fa-rotate text-[9px]"></i> 30s</span>' +
+                        window.generateUptimeBars() +
+                        '<span class="text-xs font-bold text-emerald-400 mono">100%</span>' +
+                        '<span class="text-xs font-mono text-slate-400">' + (site.latency || 42) + 'ms</span>' +
+                        '<div class="text-slate-600 group-hover:text-slate-300"><i class="fa-solid fa-chevron-right text-xs"></i></div>' +
+                    '</div>' +
+                '</div>';
+            }
+            container.innerHTML = html;
         };
 
         window.renderDomains = function(domains) {
-            const container = document.getElementById('domains-fleet-container');
+            var container = document.getElementById('domains-fleet-container');
             if (!container) return;
 
             if (!domains || domains.length === 0) {
@@ -742,85 +761,118 @@
                 return;
             }
 
-            container.innerHTML = domains.map(d => `
-                <div onclick="openDrawer('${d.domain}')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0"></div>
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <h4 class="font-bold text-sm text-white group-hover:text-indigo-300 transition truncate">${d.name}</h4>
-                                <span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">${d.registrar || 'Authoritative DNS'}</span>
-                            </div>
-                            <span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">${d.domain}</span>
-                        </div>
-                    </div>
+            var html = '';
+            for (var i = 0; i < domains.length; i++) {
+                var d = domains[i];
+                var hasSsl = d.ssl && d.ssl.valid;
+                var sslText = hasSsl ? (d.ssl.days_left + 'd SSL') : 'No SSL';
+                var sslClass = hasSsl ? 'text-emerald-400' : 'text-slate-500';
+                var dnsCount = (d.dns_records || []).length;
 
-                    <div class="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">
-                        <span class="text-xs font-mono ${d.ssl && d.ssl.valid ? 'text-emerald-400' : 'text-slate-500'}">
-                            <i class="fa-solid fa-lock text-[10px]"></i> ${d.ssl && d.ssl.valid ? d.ssl.days_left + 'd SSL' : 'No SSL'}
-                        </span>
-                        <span class="text-xs font-mono text-indigo-300">${(d.dns_records || []).length} DNS Records</span>
-                        <button onclick="event.stopPropagation(); deleteStandaloneDomain('${d.domain}')" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold cursor-pointer">
-                            Delete
-                        </button>
-                    </div>
-                </div>`;
-            }).join('');
+                html += '<div onclick="openDrawer(\'' + d.domain + '\')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">' +
+                    '<div class="flex items-center gap-3 min-w-0">' +
+                        '<div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0"></div>' +
+                        '<div class="min-w-0">' +
+                            '<div class="flex items-center gap-2 flex-wrap">' +
+                                '<h4 class="font-bold text-sm text-white group-hover:text-indigo-300 transition truncate">' + d.name + '</h4>' +
+                                '<span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">' + (d.registrar || 'Authoritative DNS') + '</span>' +
+                            '</div>' +
+                            '<span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">' + d.domain + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">' +
+                        '<span class="text-xs font-mono ' + sslClass + '"><i class="fa-solid fa-lock text-[10px]"></i> ' + sslText + '</span>' +
+                        '<span class="text-xs font-mono text-indigo-300">' + dnsCount + ' DNS Records</span>' +
+                        '<button type="button" onclick="event.stopPropagation(); deleteStandaloneDomain(\'' + d.domain + '\')" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold cursor-pointer">Delete</button>' +
+                    '</div>' +
+                '</div>';
+            }
+            container.innerHTML = html;
         };
 
         window.renderEvents = function(events) {
-            const container = document.getElementById('events-container');
+            var container = document.getElementById('events-container');
             if (!container) return;
+
             if (!events || events.length === 0) {
                 container.innerHTML = '<div class="text-slate-500 text-[11px] p-2 text-center">Fleet protection active.</div>';
                 return;
             }
 
-            container.innerHTML = events.slice(0, 10).map(e => `
-                <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[11px] flex items-center justify-between">
-                    <div>
-                        <div class="font-bold ${e.type === 'AUDIT' ? 'text-indigo-300' : 'text-rose-400'}">${e.event}</div>
-                        <div class="text-slate-500 text-[10px]">${e.site_name || e.domain}</div>
-                    </div>
-                    <span class="text-[10px] text-slate-400 mono">${new Date(e.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                </div>`).join('');
+            var html = '';
+            var list = events.slice(0, 10);
+            for (var i = 0; i < list.length; i++) {
+                var e = list[i];
+                var color = e.type === 'AUDIT' ? 'text-indigo-300' : 'text-rose-400';
+                var timeStr = 'Recent';
+                try {
+                    timeStr = new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                } catch (err) {}
+
+                html += '<div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[11px] flex items-center justify-between">' +
+                    '<div>' +
+                        '<div class="font-bold ' + color + '">' + (e.event || 'SECURITY_ALERT') + '</div>' +
+                        '<div class="text-slate-500 text-[10px]">' + (e.site_name || e.domain || '') + '</div>' +
+                    '</div>' +
+                    '<span class="text-[10px] text-slate-400 mono">' + timeStr + '</span>' +
+                '</div>';
+            }
+            container.innerHTML = html;
         };
 
         window.filterMonitors = function() {
-            const query = (document.getElementById('fleet-search-input').value || '').toLowerCase().trim();
-            const filteredSites = (window.globalData.sites || []).filter(s => (s.name || '').toLowerCase().includes(query) || (s.url || '').toLowerCase().includes(query) || (s.domain || '').toLowerCase().includes(query));
-            const filteredDomains = (window.globalData.domains || []).filter(d => (d.name || '').toLowerCase().includes(query) || (d.domain || '').toLowerCase().includes(query));
+            var query = (document.getElementById('fleet-search-input').value || '').toLowerCase().trim();
+            var filteredSites = (window.globalData.sites || []).filter(function(s) {
+                return (s.name || '').toLowerCase().includes(query) || (s.url || '').toLowerCase().includes(query) || (s.domain || '').toLowerCase().includes(query);
+            });
+            var filteredDomains = (window.globalData.domains || []).filter(function(d) {
+                return (d.name || '').toLowerCase().includes(query) || (d.domain || '').toLowerCase().includes(query);
+            });
             window.renderWebsites(filteredSites);
             window.renderDomains(filteredDomains);
         };
 
-        window.openDrawer = function(identifier, isBackgroundSync = false) {
+        window.openDrawer = function(identifier, isBackgroundSync) {
             window.activeSiteUrl = identifier;
-            const cleanIdentifier = window.normalizeDomain(identifier);
+            var cleanIdentifier = window.normalizeDomain(identifier);
 
-            const site = (window.globalData.sites || []).find(s => window.normalizeDomain(s.url) === cleanIdentifier || window.normalizeDomain(s.domain) === cleanIdentifier) || 
-                         (window.globalData.domains || []).find(d => window.normalizeDomain(d.domain) === cleanIdentifier);
-            
+            var site = null;
+            var sites = window.globalData.sites || [];
+            for (var i = 0; i < sites.length; i++) {
+                if (window.normalizeDomain(sites[i].url) === cleanIdentifier || window.normalizeDomain(sites[i].domain) === cleanIdentifier) {
+                    site = sites[i];
+                    break;
+                }
+            }
+            if (!site) {
+                var domains = window.globalData.domains || [];
+                for (var j = 0; j < domains.length; j++) {
+                    if (window.normalizeDomain(domains[j].domain) === cleanIdentifier) {
+                        site = domains[j];
+                        break;
+                    }
+                }
+            }
+
             if (!site) return;
 
-            const isWebsite = site.type === 'WEBSITE' || !!site.url;
+            var isWebsite = site.type === 'WEBSITE' || !!site.url;
 
             window.setTxt('drawer-title', site.name || cleanIdentifier);
-            const drawerUrl = document.getElementById('drawer-url');
+            var drawerUrl = document.getElementById('drawer-url');
             if (drawerUrl) {
                 drawerUrl.href = site.url || ('https://' + (site.domain || cleanIdentifier));
                 drawerUrl.querySelector('span').innerText = site.url || site.domain || cleanIdentifier;
             }
 
-            document.querySelectorAll('.wp-only-tab').forEach(el => {
-                if (isWebsite) el.style.display = 'flex';
-                else el.style.display = 'none';
-            });
+            var wpTabs = document.querySelectorAll('.wp-only-tab');
+            for (var k = 0; k < wpTabs.length; k++) {
+                wpTabs[k].style.display = isWebsite ? 'flex' : 'none';
+            }
 
-            const drawerDelBtn = document.getElementById('btn-drawer-delete-domain');
+            var drawerDelBtn = document.getElementById('btn-drawer-delete-domain');
             if (drawerDelBtn) {
-                if (!isWebsite) drawerDelBtn.style.display = 'flex';
-                else drawerDelBtn.style.display = 'none';
+                drawerDelBtn.style.display = isWebsite ? 'none' : 'flex';
             }
 
             if (!isBackgroundSync) {
@@ -830,14 +882,14 @@
 
             window.setTxt('drawer-theme-name', site.theme ? site.theme.name : 'Active Theme');
             window.setTxt('drawer-theme-ver', site.theme ? ('v' + site.theme.version) : 'v1.0');
-            const perf = site.performance || { queries: 28, load_time: '0.28s', memory: '18 MB' };
+            var perf = site.performance || { queries: 28, load_time: '0.28s', memory: '18 MB' };
             window.setTxt('drawer-load-time', perf.load_time || '0.28s');
             window.setTxt('drawer-memory', perf.memory || '18 MB');
 
-            const hasSSL = site.ssl && site.ssl.valid;
+            var hasSSL = site.ssl && site.ssl.valid;
             window.setTxt('drawer-ssl-days', hasSSL ? (site.ssl.days_left + ' Days Remaining') : 'No Certificate');
             window.setTxt('drawer-ssl-issuer', 'Issuer: ' + (site.ssl ? site.ssl.issuer : 'No SSL (Domain Only)'));
-            const sslBadge = document.getElementById('drawer-ssl-badge');
+            var sslBadge = document.getElementById('drawer-ssl-badge');
             if (sslBadge) {
                 if (hasSSL) {
                     sslBadge.className = "px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-bold rounded-lg border border-emerald-500/20 self-start sm:self-auto flex items-center gap-1.5";
@@ -849,136 +901,168 @@
             }
 
             // DNS Table
-            const dnsRecords = site.dns_records || [];
+            var dnsRecords = site.dns_records || [];
             window.setTxt('drawer-dns-count', dnsRecords.length);
-            const dnsTableBody = document.getElementById('drawer-dns-table-body');
+            var dnsTableBody = document.getElementById('drawer-dns-table-body');
             if (dnsTableBody) {
                 if (dnsRecords.length === 0) {
                     dnsTableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">Scanning DNS zone records...</td></tr>';
                 } else {
-                    dnsTableBody.innerHTML = dnsRecords.map(r => `
-                        <tr class="hover:bg-slate-900/50">
-                            <td class="p-2.5 font-bold ${r.type === 'A' ? 'text-indigo-400' : r.type === 'CNAME' ? 'text-amber-400' : r.type === 'MX' ? 'text-emerald-400' : 'text-purple-400'}">${r.type}</td>
-                            <td class="p-2.5 text-slate-300 whitespace-nowrap">${r.host}</td>
-                            <td class="p-2.5 text-slate-200 truncate max-w-[200px] sm:max-w-sm">${r.value}</td>
-                            <td class="p-2.5 text-slate-400">${r.priority !== undefined ? r.priority : '-'}</td>
-                        </tr>
-                    `).join('');
+                    var dnsHtml = '';
+                    for (var rIdx = 0; rIdx < dnsRecords.length; rIdx++) {
+                        var r = dnsRecords[rIdx];
+                        var typeColor = r.type === 'A' ? 'text-indigo-400' : r.type === 'CNAME' ? 'text-amber-400' : r.type === 'MX' ? 'text-emerald-400' : 'text-purple-400';
+                        dnsHtml += '<tr class="hover:bg-slate-900/50">' +
+                            '<td class="p-2.5 font-bold ' + typeColor + '">' + r.type + '</td>' +
+                            '<td class="p-2.5 text-slate-300 whitespace-nowrap">' + r.host + '</td>' +
+                            '<td class="p-2.5 text-slate-200 truncate max-w-[200px] sm:max-w-sm">' + r.value + '</td>' +
+                            '<td class="p-2.5 text-slate-400">' + (r.priority !== undefined ? r.priority : '-') + '</td>' +
+                        '</tr>';
+                    }
+                    dnsTableBody.innerHTML = dnsHtml;
                 }
             }
 
             // Plugins
-            const plugins = site.plugins || [];
+            var plugins = site.plugins || [];
             window.setTxt('drawer-tab-plugin-count', plugins.length);
             window.setTxt('drawer-plugins-summary', plugins.length + ' Installed Plugins');
-            const pluginsContainer = document.getElementById('drawer-plugins-list');
+            var pluginsContainer = document.getElementById('drawer-plugins-list');
             if (pluginsContainer) {
-                pluginsContainer.innerHTML = plugins.map(p => `
-                    <div class="bg-slate-950 border border-slate-800 px-3.5 py-2.5 rounded-xl flex items-center justify-between text-xs gap-2">
-                        <div class="min-w-0">
-                            <span class="text-slate-200 font-semibold block truncate">${p.name}</span>
-                            <span class="text-[10px] text-slate-500 mono">Installed: v${p.version || '1.0'}</span>
-                        </div>
-                        ${p.has_update ? '<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">UPDATE: v' + (p.new_version || 'Latest') + '</span>' : '<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">UP TO DATE</span>'}
-                    </div>
-                `).join('');
+                var phtml = '';
+                for (var pIdx = 0; pIdx < plugins.length; pIdx++) {
+                    var p = plugins[pIdx];
+                    var upBadge = p.has_update 
+                        ? '<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">UPDATE: v' + (p.new_version || 'Latest') + '</span>'
+                        : '<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">UP TO DATE</span>';
+                    
+                    phtml += '<div class="bg-slate-950 border border-slate-800 px-3.5 py-2.5 rounded-xl flex items-center justify-between text-xs gap-2">' +
+                        '<div class="min-w-0">' +
+                            '<span class="text-slate-200 font-semibold block truncate">' + p.name + '</span>' +
+                            '<span class="text-[10px] text-slate-500 mono">Installed: v' + (p.version || '1.0') + '</span>' +
+                        '</div>' +
+                        upBadge +
+                    '</div>';
+                }
+                pluginsContainer.innerHTML = phtml;
             }
 
             // Users
-            const users = site.users || [];
+            var users = site.users || [];
             window.setTxt('drawer-tab-user-count', users.length);
-            const usersContainer = document.getElementById('drawer-users-list');
+            var usersContainer = document.getElementById('drawer-users-list');
             if (usersContainer) {
-                usersContainer.innerHTML = users.map(u => `
-                    <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-3">
-                        <div>
-                            <strong class="text-white text-sm">${u.user_login}</strong>
-                            <span class="text-slate-400 ml-1 sm:ml-2">(${u.user_email})</span>
-                            <div class="text-[10px] text-slate-500 mt-0.5">Role: <span class="text-indigo-400 font-bold uppercase">${(u.roles || ['user']).join(', ')}</span></div>
-                        </div>
-                        <div class="flex items-center gap-2 self-start sm:self-auto">
-                            <button onclick="resetUserPassword('${u.id}', '${u.user_login}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/20 rounded-xl font-semibold text-[11px] flex items-center gap-1.5 cursor-pointer"><i class="fa-solid fa-key"></i> Reset Pass</button>
-                            <button onclick="deleteUser('${u.id}', '${u.user_login}')" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-[11px] flex items-center gap-1.5 shadow-md shadow-red-600/30 cursor-pointer"><i class="fa-solid fa-trash"></i> Delete User</button>
-                        </div>
-                    </div>
-                `).join('');
+                var uhtml = '';
+                for (var uIdx = 0; uIdx < users.length; uIdx++) {
+                    var u = users[uIdx];
+                    uhtml += '<div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-3">' +
+                        '<div>' +
+                            '<strong class="text-white text-sm">' + u.user_login + '</strong>' +
+                            '<span class="text-slate-400 ml-1 sm:ml-2">(' + u.user_email + ')</span>' +
+                            '<div class="text-[10px] text-slate-500 mt-0.5">Role: <span class="text-indigo-400 font-bold uppercase">' + (u.roles || ['user']).join(', ') + '</span></div>' +
+                        '</div>' +
+                        '<div class="flex items-center gap-2 self-start sm:self-auto">' +
+                            '<button type="button" onclick="resetUserPassword(\'' + u.id + '\', \'' + u.user_login + '\')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/20 rounded-xl font-semibold text-[11px] flex items-center gap-1.5 cursor-pointer"><i class="fa-solid fa-key"></i> Reset Pass</button>' +
+                            '<button type="button" onclick="deleteUser(\'' + u.id + '\', \'' + u.user_login + '\')" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-[11px] flex items-center gap-1.5 shadow-md shadow-red-600/30 cursor-pointer"><i class="fa-solid fa-trash"></i> Delete User</button>' +
+                        '</div>' +
+                    '</div>';
+                }
+                usersContainer.innerHTML = uhtml;
             }
 
             // Backups
-            const backups = site.backups || [];
-            const backupsContainer = document.getElementById('drawer-backups-list');
+            var backups = site.backups || [];
+            var backupsContainer = document.getElementById('drawer-backups-list');
             if (backupsContainer) {
-                backupsContainer.innerHTML = backups.map(b => `
-                    <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">
-                        <div>
-                            <div class="font-bold text-white truncate">${b.filename || 'Database Snapshot'}</div>
-                            <div class="text-[10px] text-slate-500 mono mt-0.5">Location: ${b.location || '/wp-content/flotek-backups/'} • ${b.filesize || '48.2 MB'}</div>
-                        </div>
-                        <button onclick="executeRollback('${b.filename}')" class="self-start sm:self-auto px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded font-semibold text-[11px] flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-rotate-left"></i> Rollback DB</button>
-                    </div>
-                `).join('');
+                var bhtml = '';
+                for (var bIdx = 0; bIdx < backups.length; bIdx++) {
+                    var b = backups[bIdx];
+                    bhtml += '<div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">' +
+                        '<div>' +
+                            '<div class="font-bold text-white truncate">' + (b.filename || 'Database Snapshot') + '</div>' +
+                            '<div class="text-[10px] text-slate-500 mono mt-0.5">Location: ' + (b.location || '/wp-content/flotek-backups/') + ' • ' + (b.filesize || '48.2 MB') + '</div>' +
+                        '</div>' +
+                        '<button type="button" onclick="executeRollback(\'' + b.filename + '\')" class="self-start sm:self-auto px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded font-semibold text-[11px] flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-rotate-left"></i> Rollback DB</button>' +
+                    '</div>';
+                }
+                backupsContainer.innerHTML = bhtml;
             }
 
             // SEO & Analytics
-            const analytics = site.analytics || { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' };
-            const seo = site.seo || { sitemap_status: 'Indexed', broken_links: 0 };
+            var analytics = site.analytics || { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' };
+            var seo = site.seo || { sitemap_status: 'Indexed', broken_links: 0 };
             window.setTxt('drawer-seo-visitors', (analytics.visitors_7d || 1420).toLocaleString());
             window.setTxt('drawer-seo-views', (analytics.pageviews || 4890).toLocaleString());
             window.setTxt('drawer-seo-bounce', analytics.bounce_rate || '34.2%');
-            const seoStatusEl = document.getElementById('drawer-seo-sitemap');
+            var seoStatusEl = document.getElementById('drawer-seo-sitemap');
             if (seoStatusEl) seoStatusEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + (seo.sitemap_status || 'Indexed');
 
-            // Domain-Specific Incident Stream
-            const siteEvents = window.getSiteSecurityEvents(site);
+            // Domain-Specific Incident Stream (Safe parsing)
+            var siteEvents = window.getSiteSecurityEvents(site);
             window.setTxt('drawer-tab-sec-count', siteEvents.length);
             window.setTxt('drawer-events-count-label', siteEvents.length + ' events');
 
-            const eventsContainer = document.getElementById('drawer-site-events');
+            var eventsContainer = document.getElementById('drawer-site-events');
             if (eventsContainer) {
                 if (siteEvents.length === 0) {
                     eventsContainer.innerHTML = '<div class="text-xs text-slate-500 p-4 bg-slate-950 rounded-xl text-center">No security incidents recorded for this website.</div>';
                 } else {
-                    eventsContainer.innerHTML = siteEvents.map(e => `
-                        <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs space-y-1">
-                            <div class="flex justify-between items-center font-bold ${e.type === 'AUDIT' ? 'text-indigo-400' : 'text-rose-400'}">
-                                <span><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${e.event}</span>
-                                <span class="text-[10px] text-slate-500 mono">${new Date(e.timestamp).toLocaleTimeString()}</span>
-                            </div>
-                            <div class="text-[11px] text-slate-300">${typeof e.details === 'object' ? Object.entries(e.details).map(([k, v]) => `<span class="mr-3 font-mono text-[10px] text-slate-400">${k}: <strong class="text-slate-200">${v}</strong></span>`).join('') : e.details}</div>
-                        </div>
-                    `).join('');
+                    var sEventsHtml = '';
+                    for (var seIdx = 0; seIdx < siteEvents.length; seIdx++) {
+                        var se = siteEvents[seIdx];
+                        var seColor = se.type === 'AUDIT' ? 'text-indigo-400' : 'text-rose-400';
+                        
+                        var detailsStr = '';
+                        if (se.details && typeof se.details === 'object') {
+                            var dKeys = Object.keys(se.details);
+                            for (var dk = 0; dk < dKeys.length; dk++) {
+                                detailsStr += '<span class="mr-3 font-mono text-[10px] text-slate-400">' + dKeys[dk] + ': <strong class="text-slate-200">' + se.details[dKeys[dk]] + '</strong></span>';
+                            }
+                        } else {
+                            detailsStr = String(se.details || '');
+                        }
+
+                        sEventsHtml += '<div class="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs space-y-1">' +
+                            '<div class="flex justify-between items-center font-bold ' + seColor + '">' +
+                                '<span><i class="fa-solid fa-triangle-exclamation mr-1"></i> ' + se.event + '</span>' +
+                                '<span class="text-[10px] text-slate-500 mono">' + new Date(se.timestamp).toLocaleTimeString() + '</span>' +
+                            '</div>' +
+                            '<div class="text-[11px] text-slate-300">' + detailsStr + '</div>' +
+                        '</div>';
+                    }
+                    eventsContainer.innerHTML = sEventsHtml;
                 }
             }
 
-            const drawer = document.getElementById('site-drawer');
+            var drawer = document.getElementById('site-drawer');
             if (drawer) drawer.style.display = 'flex';
         };
 
         window.submitStandaloneDomain = async function() {
-            const domain = document.getElementById('input-domain-name').value.trim();
+            var domain = document.getElementById('input-domain-name').value.trim();
             if (!domain) return alert('Please enter a domain name.');
 
-            const btn = document.getElementById('btn-submit-domain');
+            var btn = document.getElementById('btn-submit-domain');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Scanning...';
             btn.disabled = true;
 
             try {
-                const res = await fetch('/api/add-domain', {
+                var res = await fetch('/api/add-domain', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ domain_name: domain })
                 });
-                const result = await res.json();
+                var result = await res.json();
                 if (result.success) {
-                    alert('✅ Domain "' + domain + '" added permanently with ' + result.domain.dns_records.length + ' DNS records!');
+                    alert('Domain added successfully!');
                     window.closeAddDomainModal();
                     window.switchFleetCategory('domains');
                     window.refreshData();
                 } else {
-                    alert('❌ Failed: ' + (result.error || 'Could not scan domain'));
+                    alert('Error: ' + (result.error || 'Could not scan domain'));
                 }
             } catch (e) {
-                alert('Error: ' + e.message);
+                alert('Connection error: ' + e.message);
             } finally {
                 btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Scan & Add';
                 btn.disabled = false;
@@ -986,14 +1070,17 @@
         };
 
         window.deleteStandaloneDomain = async function(domain) {
-            if (!confirm('⚠️ Are you sure you want to permanently delete "' + domain + '"?')) return;
+            if (!confirm('Are you sure you want to delete "' + domain + '"?')) return;
             try {
                 await fetch('/api/delete-domain', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ domain_name: domain })
                 });
-                window.globalData.domains = (window.globalData.domains || []).filter(d => window.normalizeDomain(d.domain) !== window.normalizeDomain(domain));
+                window.globalData.domains = (window.globalData.domains || []).filter(function(d) {
+                    return window.normalizeDomain(d.domain) !== window.normalizeDomain(domain);
+                });
+                window.renderAll();
                 window.refreshData();
             } catch (e) {}
         };
@@ -1004,24 +1091,24 @@
         };
 
         window.provisionNewUser = async function() {
-            const username = document.getElementById('new-user-name').value.trim();
-            const email = document.getElementById('new-user-email').value.trim();
-            const role = document.getElementById('new-user-role').value;
-            const password = prompt('Enter password for ' + username + ':', 'FlotekSecurePass!2026');
+            var username = document.getElementById('new-user-name').value.trim();
+            var email = document.getElementById('new-user-email').value.trim();
+            var role = document.getElementById('new-user-role').value;
+            var password = prompt('Enter password for ' + username + ':', 'FlotekSecurePass!2026');
             if (!username || !email || !password) return alert('All fields are required.');
 
             try {
-                const res = await fetch('/api/create-user', {
+                var res = await fetch('/api/create-user', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ site_url: window.activeSiteUrl, username, email, role, password })
+                    body: JSON.stringify({ site_url: window.activeSiteUrl, username: username, email: email, role: role, password: password })
                 });
-                const result = await res.json();
+                var result = await res.json();
                 if (result.success) {
-                    alert('✅ User "' + username + '" created!');
+                    alert('User created successfully!');
                     window.refreshData();
                 } else {
-                    alert('❌ Failed: ' + (result.error || 'Server error'));
+                    alert('Failed: ' + (result.error || 'Server error'));
                 }
             } catch (e) {
                 alert('Error: ' + e.message);
@@ -1029,20 +1116,20 @@
         };
 
         window.resetUserPassword = async function(userId, username) {
-            const newPassword = prompt('Enter NEW password for "' + username + '":', 'FlotekNewPass!2026');
+            var newPassword = prompt('Enter NEW password for "' + username + '":', 'FlotekNewPass!2026');
             if (!newPassword) return;
 
             try {
-                const res = await fetch('/api/reset-password', {
+                var res = await fetch('/api/reset-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ site_url: window.activeSiteUrl, user_id: userId, new_password: newPassword })
                 });
-                const result = await res.json();
+                var result = await res.json();
                 if (result.success) {
-                    alert('✅ Password updated!');
+                    alert('Password updated!');
                 } else {
-                    alert('❌ Failed: ' + (result.error || 'Error'));
+                    alert('Failed: ' + (result.error || 'Error'));
                 }
             } catch (e) {
                 alert('Error: ' + e.message);
@@ -1050,20 +1137,20 @@
         };
 
         window.deleteUser = async function(userId, username) {
-            if (!confirm('⚠️ Are you sure you want to delete user "' + username + '" from ' + window.activeSiteUrl + '?')) return;
+            if (!confirm('Are you sure you want to delete user "' + username + '"?')) return;
 
             try {
-                const res = await fetch('/api/delete-user', {
+                var res = await fetch('/api/delete-user', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ site_url: window.activeSiteUrl, user_id: userId })
                 });
-                const result = await res.json();
+                var result = await res.json();
                 if (result.success) {
-                    alert('✅ User "' + username + '" deleted!');
+                    alert('User deleted!');
                     window.refreshData();
                 } else {
-                    alert('❌ Deletion failed: ' + (result.error || 'Error'));
+                    alert('Deletion failed: ' + (result.error || 'Error'));
                 }
             } catch (e) {
                 alert('Error: ' + e.message);
@@ -1071,22 +1158,22 @@
         };
 
         window.executeRemotePluginUpdate = async function() {
-            const btn = document.getElementById('btn-bulk-update');
+            var btn = document.getElementById('btn-bulk-update');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
             btn.disabled = true;
 
             try {
-                const res = await fetch('/api/trigger-update', {
+                var res = await fetch('/api/trigger-update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ site_url: window.activeSiteUrl })
                 });
-                const result = await res.json();
+                var result = await res.json();
                 if (result.success) {
-                    alert('✅ Updates pushed to ' + window.activeSiteUrl + '!');
+                    alert('Updates pushed successfully!');
                     window.refreshData();
                 } else {
-                    alert('❌ Update failed: ' + (result.error || 'Server error'));
+                    alert('Update failed: ' + (result.error || 'Server error'));
                 }
             } catch (err) {
                 alert('Error: ' + err.message);
@@ -1097,22 +1184,22 @@
         };
 
         window.executeRemoteBackup = async function() {
-            const btn = document.getElementById('btn-create-backup');
+            var btn = document.getElementById('btn-create-backup');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
             btn.disabled = true;
 
             try {
-                const res = await fetch('/api/trigger-backup', {
+                var res = await fetch('/api/trigger-backup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ site_url: window.activeSiteUrl })
                 });
-                const result = await res.json();
+                var result = await res.json();
                 if (result.success) {
-                    alert('✅ Database Backup Created on FTP!\n\nFile: ' + result.filename);
+                    alert('Database backup created on FTP!\nFile: ' + result.filename);
                     window.refreshData();
                 } else {
-                    alert('❌ Backup failed: ' + (result.error || 'Server error'));
+                    alert('Backup failed: ' + (result.error || 'Server error'));
                 }
             } catch (err) {
                 alert('Error: ' + err.message);
@@ -1123,20 +1210,20 @@
         };
 
         window.executeRollback = async function(filename) {
-            if (!confirm('Are you sure you want to ROLLBACK ' + window.activeSiteUrl + ' to ' + filename + '?')) return;
+            if (!confirm('Are you sure you want to rollback to ' + filename + '?')) return;
 
             try {
-                const res = await fetch('/api/trigger-rollback', {
+                var res = await fetch('/api/trigger-rollback', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ site_url: window.activeSiteUrl, filename })
+                    body: JSON.stringify({ site_url: window.activeSiteUrl, filename: filename })
                 });
-                const result = await res.json();
+                var result = await res.json();
                 if (result.success) {
-                    alert('✅ Rollback Complete! Restored to ' + filename + '.');
+                    alert('Rollback complete! Restored to ' + filename);
                     window.refreshData();
                 } else {
-                    alert('❌ Rollback error: ' + (result.error || 'Failed'));
+                    alert('Rollback error: ' + (result.error || 'Failed'));
                 }
             } catch (err) {
                 alert('Error: ' + err.message);
@@ -1144,12 +1231,18 @@
         };
 
         window.exportDNSZoneFile = function() {
-            const cleanIdentifier = window.normalizeDomain(window.activeSiteUrl || '');
-            const site = (window.globalData.sites || []).find(s => window.normalizeDomain(s.url) === cleanIdentifier || window.normalizeDomain(s.domain) === cleanIdentifier) || 
-                         (window.globalData.domains || []).find(d => window.normalizeDomain(d.domain) === cleanIdentifier);
+            var cleanIdentifier = window.normalizeDomain(window.activeSiteUrl || '');
+            var site = null;
+            var list = [].concat(window.globalData.sites || [], window.globalData.domains || []);
+            for (var i = 0; i < list.length; i++) {
+                if (window.normalizeDomain(list[i].url) === cleanIdentifier || window.normalizeDomain(list[i].domain) === cleanIdentifier) {
+                    site = list[i];
+                    break;
+                }
+            }
             
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(site ? site.dns_records : [], null, 2));
-            const downloadAnchor = document.createElement('a');
+            var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(site ? site.dns_records : [], null, 2));
+            var downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
             downloadAnchor.setAttribute("download", 'dns-zone-' + (cleanIdentifier || 'domain') + '.json');
             document.body.appendChild(downloadAnchor);
@@ -1158,48 +1251,49 @@
         };
 
         window.renderAll = function() {
-            const siteCount = (window.globalData.sites || []).length;
-            const domainCount = (window.globalData.domains || []).length;
-            const totalEvents = (window.globalData.events || []).length;
+            try {
+                var siteCount = (window.globalData.sites || []).length;
+                var domainCount = (window.globalData.domains || []).length;
+                var totalEvents = (window.globalData.events || []).length;
 
-            window.setTxt('site-count-badge', siteCount);
-            window.setTxt('domain-count-badge', domainCount);
-            window.setTxt('stat-up-count', siteCount + domainCount);
-            window.setTxt('stat-down-count', '0');
-            window.setTxt('stat-incidents-count', totalEvents + ' Incidents');
-            window.setTxt('waf-log-badge', totalEvents);
+                window.setTxt('site-count-badge', siteCount);
+                window.setTxt('domain-count-badge', domainCount);
+                window.setTxt('stat-up-count', siteCount + domainCount);
+                window.setTxt('stat-down-count', '0');
+                window.setTxt('stat-incidents-count', totalEvents + ' Incidents');
+                window.setTxt('waf-log-badge', totalEvents);
 
-            window.renderWebsites(window.globalData.sites);
-            window.renderDomains(window.globalData.domains);
-            window.renderEvents([...(window.globalData.events || []), ...(window.globalData.audit_logs || [])]);
+                window.renderWebsites(window.globalData.sites);
+                window.renderDomains(window.globalData.domains);
+                window.renderEvents([].concat(window.globalData.events || [], window.globalData.audit_logs || []));
 
-            if (window.activeSiteUrl) {
-                window.openDrawer(window.activeSiteUrl, true);
+                if (window.activeSiteUrl) {
+                    window.openDrawer(window.activeSiteUrl, true);
+                }
+            } catch (e) {
+                console.error("Render error:", e);
             }
         };
 
         window.refreshData = async function() {
             try {
-                const res = await fetch('/api/dashboard-data?cb=' + Date.now());
-                const data = await res.json();
+                var res = await fetch('/api/dashboard-data?cb=' + Date.now());
+                var data = await res.json();
                 
                 if (data.sites && data.sites.length > 0) window.globalData.sites = data.sites;
                 if (data.domains && data.domains.length > 0) window.globalData.domains = data.domains;
                 if (data.events) window.globalData.events = data.events;
                 if (data.audit_logs) window.globalData.audit_logs = data.audit_logs;
             } catch (err) {
-                console.log('Background sync:', err.message);
+                console.log('Background sync waiting for server.');
             }
 
             window.renderAll();
         };
 
-        // Render on DOM ready and immediately
-        document.addEventListener('DOMContentLoaded', () => {
-            window.renderAll();
-            window.refreshData();
-        });
+        // Instant render
         window.renderAll();
+        window.refreshData();
         setInterval(window.refreshData, 5000);
     </script>
 </body>
