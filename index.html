@@ -59,7 +59,7 @@
                 <h2 class="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
                     Monitors <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 </h2>
-                <p class="text-xs text-slate-400 mt-0.5">Real-time uptime, response latency & WordPress telemetry</p>
+                <p class="text-xs text-slate-400 mt-0.5">Real-time uptime, response latency &amp; WordPress telemetry</p>
             </div>
 
             <div class="flex items-center gap-2.5">
@@ -139,13 +139,14 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-400">Active Incidents:</span>
-                        <span class="font-bold text-emerald-400">0 Incidents</span>
+                        <span class="font-bold text-emerald-400" id="stat-incidents-count">0 Incidents</span>
                     </div>
                 </div>
 
                 <div class="bg-[#080d17] border border-slate-800 p-4 rounded-2xl space-y-2">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <i class="fa-solid fa-shield-virus text-rose-400"></i> Fleet WAF Log
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-virus text-rose-400"></i> Fleet WAF Log</span>
+                        <span id="waf-log-badge" class="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 text-[10px] font-mono">0</span>
                     </h3>
                     <div id="events-container" class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1">
                         <div class="text-slate-500 text-[11px] p-2 text-center">Fleet protection active.</div>
@@ -174,7 +175,7 @@
             <div class="flex justify-end gap-2 pt-2">
                 <button onclick="closeAddDomainModal()" class="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl font-semibold cursor-pointer">Cancel</button>
                 <button id="btn-submit-domain" onclick="submitStandaloneDomain()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-xl font-bold flex items-center gap-1.5 cursor-pointer">
-                    <i class="fa-solid fa-magnifying-glass"></i> Scan & Add
+                    <i class="fa-solid fa-magnifying-glass"></i> Scan &amp; Add
                 </button>
             </div>
         </div>
@@ -215,10 +216,10 @@
                 <div class="overflow-x-auto custom-scrollbar pb-2">
                     <div id="drawer-tabs-bar" class="flex gap-2 text-xs min-w-max">
                         <button onclick="switchTab('tab-overview')" id="btn-tab-overview" class="tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5 wp-only-tab cursor-pointer">
-                            <i class="fa-solid fa-palette"></i> Theme & Vitals
+                            <i class="fa-solid fa-palette"></i> Theme &amp; Vitals
                         </button>
                         <button onclick="switchTab('tab-dns')" id="btn-tab-dns" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 cursor-pointer">
-                            <i class="fa-solid fa-network-wired"></i> DNS & SSL (<span id="drawer-dns-count">0</span>)
+                            <i class="fa-solid fa-network-wired"></i> DNS &amp; SSL (<span id="drawer-dns-count">0</span>)
                         </button>
                         <button onclick="switchTab('tab-wp')" id="btn-tab-wp" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
                             <i class="fa-solid fa-cube"></i> Updates (<span id="drawer-tab-plugin-count">0</span>)
@@ -230,10 +231,10 @@
                             <i class="fa-solid fa-users"></i> Users (<span id="drawer-tab-user-count">0</span>)
                         </button>
                         <button onclick="switchTab('tab-seo')" id="btn-tab-seo" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
-                            <i class="fa-solid fa-magnifying-glass-chart"></i> SEO & Analytics
+                            <i class="fa-solid fa-magnifying-glass-chart"></i> SEO &amp; Analytics
                         </button>
                         <button onclick="switchTab('tab-sec')" id="btn-tab-sec" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
-                            <i class="fa-solid fa-shield-halved"></i> WAF & Attacks
+                            <i class="fa-solid fa-shield-halved"></i> WAF &amp; Attacks (<span id="drawer-tab-sec-count">0</span>)
                         </button>
                     </div>
                 </div>
@@ -377,7 +378,7 @@
 
                     <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-2.5">
                         <h4 class="font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
-                            <i class="fa-solid fa-sitemap text-indigo-400"></i> Sitemap & Indexing Health
+                            <i class="fa-solid fa-sitemap text-indigo-400"></i> Sitemap &amp; Indexing Health
                         </h4>
                         <div class="flex justify-between text-slate-300">
                             <span>Sitemap XML Status:</span>
@@ -402,7 +403,10 @@
                             <span class="text-xs font-bold text-emerald-400">5 Attempts / 15m Throttled</span>
                         </div>
                     </div>
-                    <h4 class="text-xs font-bold uppercase text-slate-400 mt-2">Live Incident Log for this Site</h4>
+                    <div class="flex items-center justify-between mt-2">
+                        <h4 class="text-xs font-bold uppercase text-slate-400">Live Incident Log for this Site</h4>
+                        <span class="text-[11px] text-slate-500 font-mono" id="drawer-events-count-label">0 events</span>
+                    </div>
                     <div id="drawer-site-events" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-1"></div>
                 </div>
 
@@ -425,6 +429,15 @@
         window.setTxt = function(id, val) {
             const el = document.getElementById(id);
             if (el) el.innerText = val;
+        };
+
+        window.normalizeDomain = function(str) {
+            if (!str) return '';
+            return str.toLowerCase()
+                .replace(/^https?:\/\//, '')
+                .replace(/^www\./, '')
+                .replace(/\/.*$/, '')
+                .trim();
         };
 
         window.generateUptimeBars = function() {
@@ -490,6 +503,19 @@
             if (activeBtn) activeBtn.className = "tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5 cursor-pointer";
         };
 
+        window.getSiteSecurityEvents = function(targetSite) {
+            if (!targetSite) return [];
+            const cleanTarget = window.normalizeDomain(targetSite.url || targetSite.domain || '');
+            const targetName = (targetSite.name || '').toLowerCase().trim();
+
+            const allEvents = [...(window.globalData.events || []), ...(window.globalData.audit_logs || [])];
+            return allEvents.filter(e => {
+                const eventCleanDomain = window.normalizeDomain(e.domain || e.site_url || '');
+                const eventName = (e.site_name || '').toLowerCase().trim();
+                return (cleanTarget && eventCleanDomain === cleanTarget) || (targetName && eventName === targetName);
+            });
+        };
+
         window.renderWebsites = function(sites) {
             const container = document.getElementById('websites-fleet-container');
             if (!container) return;
@@ -501,15 +527,19 @@
 
             container.innerHTML = sites.map(site => {
                 const updateCount = site.updates_count || 0;
+                const siteEvents = window.getSiteSecurityEvents(site);
+                const eventCount = siteEvents.length;
+
                 return `
-                <div onclick="openDrawer('${site.url}')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div onclick="openDrawer('${site.url || site.domain}')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0 shadow-sm shadow-emerald-400/50"></div>
+                        <div class="w-3 h-3 rounded-full ${eventCount > 0 ? 'bg-rose-400 shadow-rose-400/50' : 'bg-emerald-400 shadow-emerald-400/50'} shrink-0 shadow-sm"></div>
                         <div class="min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <h4 class="font-bold text-sm text-white group-hover:text-emerald-300 transition truncate">${site.name}</h4>
                                 <span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">${site.tag || 'wordpress site'}</span>
                                 ${updateCount > 0 ? `<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-md border border-amber-500/20">${updateCount} updates</span>` : ''}
+                                ${eventCount > 0 ? `<span class="px-2 py-0.5 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-md border border-rose-500/20 flex items-center gap-1"><i class="fa-solid fa-shield-virus text-[9px]"></i> ${eventCount} alerts</span>` : ''}
                             </div>
                             <span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">${site.url}</span>
                         </div>
@@ -569,33 +599,34 @@
                 return;
             }
 
-            container.innerHTML = events.slice(0, 5).map(e => `
+            container.innerHTML = events.slice(0, 10).map(e => `
                 <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[11px] flex items-center justify-between">
                     <div>
-                        <div class="font-bold text-white">${e.event}</div>
-                        <div class="text-slate-500 text-[10px]">${e.site_name}</div>
+                        <div class="font-bold ${e.type === 'AUDIT' ? 'text-indigo-300' : 'text-rose-400'}">${e.event}</div>
+                        <div class="text-slate-500 text-[10px]">${e.site_name || e.domain}</div>
                     </div>
                     <span class="text-[10px] text-slate-400 mono">${new Date(e.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                 </div>`).join('');
         };
 
         window.filterMonitors = function() {
-            const query = document.getElementById('fleet-search-input').value.toLowerCase();
-            const filteredSites = window.globalData.sites.filter(s => s.name.toLowerCase().includes(query) || s.url.toLowerCase().includes(query));
-            const filteredDomains = (window.globalData.domains || []).filter(d => d.name.toLowerCase().includes(query) || d.domain.toLowerCase().includes(query));
+            const query = (document.getElementById('fleet-search-input').value || '').toLowerCase().trim();
+            const filteredSites = (window.globalData.sites || []).filter(s => (s.name || '').toLowerCase().includes(query) || (s.url || '').toLowerCase().includes(query) || (s.domain || '').toLowerCase().includes(query));
+            const filteredDomains = (window.globalData.domains || []).filter(d => (d.name || '').toLowerCase().includes(query) || (d.domain || '').toLowerCase().includes(query));
             window.renderWebsites(filteredSites);
             window.renderDomains(filteredDomains);
         };
 
         window.openDrawer = function(identifier, isBackgroundSync = false) {
             window.activeSiteUrl = identifier;
-            const isWebsite = identifier.startsWith('http');
-            const cleanIdentifier = identifier.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
+            const cleanIdentifier = window.normalizeDomain(identifier);
 
-            const site = (window.globalData.sites || []).find(s => s.url === identifier || s.domain === cleanIdentifier) || 
-                         (window.globalData.domains || []).find(d => d.domain === cleanIdentifier || d.domain === identifier);
+            const site = (window.globalData.sites || []).find(s => window.normalizeDomain(s.url) === cleanIdentifier || window.normalizeDomain(s.domain) === cleanIdentifier) || 
+                         (window.globalData.domains || []).find(d => window.normalizeDomain(d.domain) === cleanIdentifier);
             
             if (!site) return;
+
+            const isWebsite = site.type === 'WEBSITE' || !!site.url;
 
             window.setTxt('drawer-title', site.name || cleanIdentifier);
             const drawerUrl = document.getElementById('drawer-url');
@@ -677,7 +708,7 @@
                 `).join('');
             }
 
-            // Users with Working Delete Button
+            // Users
             const users = site.users || [];
             window.setTxt('drawer-tab-user-count', users.length);
             const usersContainer = document.getElementById('drawer-users-list');
@@ -721,16 +752,10 @@
             const seoStatusEl = document.getElementById('drawer-seo-sitemap');
             if (seoStatusEl) seoStatusEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + (seo.sitemap_status || 'Indexed');
 
-            // DOMAIN-SPECIFIC INCIDENT STREAM (Flexible Matcher)
-            const siteEvents = [...(window.globalData.events || []), ...(window.globalData.audit_logs || [])].filter(e => {
-                const eventUrl = (e.site_url || '').toLowerCase();
-                const eventDomain = (e.domain || '').toLowerCase();
-                const eventName = (e.site_name || '').toLowerCase();
-                const targetClean = cleanIdentifier.toLowerCase();
-                const targetName = (site.name || '').toLowerCase();
-
-                return eventUrl.includes(targetClean) || eventDomain === targetClean || eventName === targetName;
-            });
+            // DOMAIN-SPECIFIC INCIDENT STREAM
+            const siteEvents = window.getSiteSecurityEvents(site);
+            window.setTxt('drawer-tab-sec-count', siteEvents.length);
+            window.setTxt('drawer-events-count-label', siteEvents.length + ' events');
 
             const eventsContainer = document.getElementById('drawer-site-events');
             if (eventsContainer) {
@@ -738,12 +763,12 @@
                     eventsContainer.innerHTML = '<div class="text-xs text-slate-500 p-4 bg-slate-950 rounded-xl text-center">No security incidents recorded for this website.</div>';
                 } else {
                     eventsContainer.innerHTML = siteEvents.map(e => `
-                        <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs">
-                            <div class="flex justify-between font-bold ${e.type === 'AUDIT' ? 'text-indigo-400' : 'text-rose-400'}">
-                                <span>${e.event}</span>
+                        <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs space-y-1">
+                            <div class="flex justify-between items-center font-bold ${e.type === 'AUDIT' ? 'text-indigo-400' : 'text-rose-400'}">
+                                <span><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${e.event}</span>
                                 <span class="text-[10px] text-slate-500 mono">${new Date(e.timestamp).toLocaleTimeString()}</span>
                             </div>
-                            <pre class="mt-1 text-[10px] text-slate-400 font-mono">${JSON.stringify(e.details, null, 2)}</pre>
+                            <div class="text-[11px] text-slate-300">${typeof e.details === 'object' ? Object.entries(e.details).map(([k, v]) => `<span class="mr-3 font-mono text-[10px] text-slate-400">${k}: <strong class="text-slate-200">${v}</strong></span>`).join('') : e.details}</div>
                         </div>
                     `).join('');
                 }
@@ -792,7 +817,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ domain_name: domain })
                 });
-                window.globalData.domains = (window.globalData.domains || []).filter(d => d.domain !== domain && d.name !== domain);
+                window.globalData.domains = (window.globalData.domains || []).filter(d => window.normalizeDomain(d.domain) !== window.normalizeDomain(domain));
                 window.refreshData();
             } catch (e) {}
         };
@@ -823,7 +848,7 @@
                     alert('❌ Failed: ' + (result.error || 'Server error'));
                 }
             } catch (e) {
-                alert(`Error: ${e.message}`);
+                alert('Error: ' + e.message);
             }
         };
 
@@ -841,10 +866,10 @@
                 if (result.success) {
                     alert('✅ Password updated!');
                 } else {
-                    alert(`❌ Failed: ${result.error || 'Error'}`);
+                    alert('❌ Failed: ' + (result.error || 'Error'));
                 }
             } catch (e) {
-                alert(`Error: ${e.message}`);
+                alert('Error: ' + e.message);
             }
         };
 
@@ -862,10 +887,10 @@
                     alert('✅ User "' + username + '" deleted!');
                     window.refreshData();
                 } else {
-                    alert(`❌ Deletion failed: ${result.error || 'Error'}`);
+                    alert('❌ Deletion failed: ' + (result.error || 'Error'));
                 }
             } catch (e) {
-                alert(`Error: ${e.message}`);
+                alert('Error: ' + e.message);
             }
         };
 
@@ -885,10 +910,10 @@
                     alert('✅ Updates Pushed to ' + window.activeSiteUrl + '!');
                     window.refreshData();
                 } else {
-                    alert('❌ Update failed: ${result.error || 'Server error'}`);
+                    alert('❌ Update failed: ' + (result.error || 'Server error'));
                 }
             } catch (err) {
-                alert(`Error: ${err.message}`);
+                alert('Error: ' + err.message);
             } finally {
                 btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> 1-Click Bulk Update';
                 btn.disabled = false;
@@ -911,10 +936,10 @@
                     alert('✅ Database Backup Created on FTP!\n\nFile: ' + result.filename);
                     window.refreshData();
                 } else {
-                    alert(`❌ Backup failed: ${result.error || 'Server error'}`);
+                    alert('❌ Backup failed: ' + (result.error || 'Server error'));
                 }
             } catch (err) {
-                alert(`Error: ${err.message}`);
+                alert('Error: ' + err.message);
             } finally {
                 btn.innerHTML = '<i class="fa-solid fa-download"></i> Dump SQL to FTP';
                 btn.disabled = false;
@@ -935,17 +960,17 @@
                     alert('✅ Rollback Complete! Restored to ' + filename + '.');
                     window.refreshData();
                 } else {
-                    alert(`❌ Rollback error: ${result.error || 'Failed'}`);
+                    alert('❌ Rollback error: ' + (result.error || 'Failed'));
                 }
             } catch (err) {
-                alert(`Error: ${err.message}`);
+                alert('Error: ' + err.message);
             }
         };
 
         window.exportDNSZoneFile = function() {
-            const cleanIdentifier = (window.activeSiteUrl || '').replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
-            const site = (window.globalData.sites || []).find(s => s.url === window.activeSiteUrl || s.domain === cleanIdentifier) || 
-                         (window.globalData.domains || []).find(d => d.domain === cleanIdentifier);
+            const cleanIdentifier = window.normalizeDomain(window.activeSiteUrl || '');
+            const site = (window.globalData.sites || []).find(s => window.normalizeDomain(s.url) === cleanIdentifier || window.normalizeDomain(s.domain) === cleanIdentifier) || 
+                         (window.globalData.domains || []).find(d => window.normalizeDomain(d.domain) === cleanIdentifier);
             
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(site ? site.dns_records : [], null, 2));
             const downloadAnchor = document.createElement('a');
@@ -968,18 +993,27 @@
                 window.globalData.audit_logs = data.audit_logs || [];
             } catch (err) {}
 
-            window.setTxt('site-count-badge', window.globalData.sites.length);
-            window.setTxt('domain-count-badge', window.globalData.domains.length);
-            window.setTxt('stat-up-count', window.globalData.sites.length + window.globalData.domains.length);
+            const siteCount = (window.globalData.sites || []).length;
+            const domainCount = (window.globalData.domains || []).length;
+            const totalEvents = (window.globalData.events || []).length;
+
+            window.setTxt('site-count-badge', siteCount);
+            window.setTxt('domain-count-badge', domainCount);
+            window.setTxt('stat-up-count', siteCount + domainCount);
             window.setTxt('stat-down-count', '0');
+            window.setTxt('stat-incidents-count', totalEvents + ' Incidents');
+            window.setTxt('waf-log-badge', totalEvents);
 
             window.renderWebsites(window.globalData.sites);
             window.renderDomains(window.globalData.domains);
-            window.renderEvents([...window.globalData.events, ...window.globalData.audit_logs]);
+            window.renderEvents([...(window.globalData.events || []), ...(window.globalData.audit_logs || [])]);
 
-            if (window.activeSiteUrl) window.openDrawer(window.activeSiteUrl, true);
+            if (window.activeSiteUrl) {
+                window.openDrawer(window.activeSiteUrl, true);
+            }
         };
 
+        // Initial Load
         window.refreshData();
         setInterval(window.refreshData, 5000);
     </script>
