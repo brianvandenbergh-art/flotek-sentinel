@@ -223,7 +223,7 @@ function inspectLiveSSL(domain) {
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
-// DASHBOARD FLEET DATA API (ALWAYS RETURNS DATA)
+// DASHBOARD FLEET DATA API
 app.get('/api/dashboard-data', (req, res) => {
     const siteList = Object.values(monitoredSites);
     const domainList = Object.values(standaloneDomains);
