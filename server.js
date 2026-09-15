@@ -1,6 +1,6 @@
 /**
  * Flotek Sentinel - Enterprise Fleet Command Hub
- * Complete Fasthosts DNS Zone & Domain-Isolated Alert Pipeline
+ * Dynamic DNS Discovery, Live SSL Telemetry & Domain-Isolated Security Engine
  */
 
 const express = require('express');
@@ -16,158 +16,128 @@ app.use(cors());
 app.use(express.static(__dirname));
 
 const PORT = process.env.PORT || 3000;
-const ALERT_EMAIL = 'brian.vandenbergh@flotek.io';
-const SENDER_EMAIL = 'monitor@flotek.io';
 const SHARED_SECRET = 'flotek-super-secret-key-2026';
 const DB_FILE = path.join(__dirname, 'data.json');
 
+// Domain Normalization Utility
 function normalizeHost(str) {
     if (!str) return '';
-    return str.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '').trim();
+    return str.toLowerCase()
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .replace(/\/.*$/, '')
+        .trim();
 }
 
-// COMPLETE FASTHOSTS DNS RECORDS FOR GAMLINS.COM (57 Records)
-const GAMLINS_DNS_RECORDS = [
-    { type: 'A', host: 'ftp.bala', value: '81.149.214.126', priority: '-' },
-    { type: 'A', host: 'bangor', value: '81.149.89.247', priority: '-' },
-    { type: 'A', host: 'www.colwynbay', value: '81.149.161.214', priority: '-' },
-    { type: 'A', host: 'media', value: '77.72.4.12', priority: '-' },
-    { type: 'A', host: 'conwy', value: '81.149.161.224', priority: '-' },
-    { type: 'A', host: 'www.conwy', value: '81.149.161.224', priority: '-' },
-    { type: 'A', host: 'oneadvanced', value: '217.33.17.154', priority: '-' },
-    { type: 'A', host: 'www.porthmadog', value: '62.249.237.127', priority: '-' },
-    { type: 'A', host: 'www.bangor', value: '81.149.89.247', priority: '-' },
-    { type: 'A', host: 'ftp.colwynbay', value: '81.149.161.214', priority: '-' },
-    { type: 'A', host: 'porthmadog', value: '62.249.237.127', priority: '-' },
-    { type: 'A', host: '@ (Apex)', value: '77.68.64.20', priority: '-' },
-    { type: 'A', host: 'ftp', value: '217.160.231.48', priority: '-' },
-    { type: 'A', host: 'rds', value: '217.33.17.154', priority: '-' },
-    { type: 'A', host: 'www.rhos', value: '81.149.161.201', priority: '-' },
-    { type: 'A', host: 'www', value: '77.68.64.20', priority: '-' },
-    { type: 'A', host: 'ftp.bangor', value: '81.149.89.247', priority: '-' },
-    { type: 'A', host: 'vpn', value: '217.33.17.154', priority: '-' },
-    { type: 'A', host: 'rhos', value: '81.149.161.201', priority: '-' },
-    { type: 'A', host: 'ftp.rhos', value: '81.149.161.201', priority: '-' },
-    { type: 'A', host: 'bala', value: '81.149.214.126', priority: '-' },
-    { type: 'A', host: 'www.bala', value: '81.149.214.126', priority: '-' },
-    { type: 'A', host: 'access', value: '217.33.17.154', priority: '-' },
-    { type: 'A', host: 'colwynbay', value: '81.149.161.214', priority: '-' },
-    { type: 'A', host: 'ftp.conwy', value: '81.149.161.224', priority: '-' },
-    { type: 'A', host: 'ftp.porthmadog', value: '62.249.237.127', priority: '-' },
-    { type: 'AAAA', host: 'ftp', value: '2001:8d8:1001:1566:af9e:4818:ddbc:9034', priority: '-' },
-    { type: 'CNAME', host: 'barracuda92160414593', value: 'encrypt.barracudanetworks.com', priority: '-' },
-    { type: 'CNAME', host: 'lyncdiscover', value: 'webdir.online.lync.com', priority: '-' },
-    { type: 'CNAME', host: 'msoid', value: 'clientconfig.microsoftonline-p.net', priority: '-' },
-    { type: 'CNAME', host: 'sip', value: 'sipdir.online.lync.com', priority: '-' },
-    { type: 'CNAME', host: 'enterpriseenrollment', value: 'enterpriseenrollment.manage.microsoft.com', priority: '-' },
-    { type: 'CNAME', host: 'selector2._domainkey', value: 'selector2-gamlins-com._domainkey.gamlinssolicitors.onmicrosoft.com', priority: '-' },
-    { type: 'CNAME', host: 'autodiscover', value: 'autodiscover.outlook.com', priority: '-' },
-    { type: 'CNAME', host: 'selector1._domainkey', value: 'selector1-gamlins-com._domainkey.gamlinssolicitors.onmicrosoft.com', priority: '-' },
-    { type: 'CNAME', host: 'enterpriseregistration', value: 'enterpriseregistration.windows.net', priority: '-' },
-    { type: 'CNAME', host: '_e871c8238c0992dfb1d08a0579540795', value: 'd35c57a8cd92e6e14960a213a6c4a159.946b0507346f29e922367dc35fa48c7e.2ypqfzmqgo.sectigo.com', priority: '-' },
-    { type: 'MX', host: '@', value: 'gamlins-com.mail.protection.outlook.com', priority: 0 },
-    { type: 'MX', host: 'colwynbay', value: 'gamlins.com.pri-mx.uk0105.smtproutes.com', priority: 0 },
-    { type: 'MX', host: 'rhos', value: 'gamlins.com.pri-mx.uk0105.smtproutes.com', priority: 0 },
-    { type: 'MX', host: 'bangor', value: 'gamlins.com.pri-mx.uk0105.smtproutes.com', priority: 0 },
-    { type: 'MX', host: 'conwy', value: 'gamlins.com.pri-mx.uk0105.smtproutes.com', priority: 0 },
-    { type: 'MX', host: 'bala', value: 'gamlins.com.pri-mx.uk0105.smtproutes.com', priority: 0 },
-    { type: 'MX', host: 'porthmadog', value: 'gamlins.com.pri-mx.uk0105.smtproutes.com', priority: 0 },
-    { type: 'MX', host: 'porthmadog', value: 'gamlins.com.bak-mx.uk0105.smtpbak.com', priority: 10 },
-    { type: 'MX', host: 'bala', value: 'gamlins.com.bak-mx.uk0105.smtpbak.com', priority: 10 },
-    { type: 'MX', host: 'colwynbay', value: 'gamlins.com.bak-mx.uk0105.smtpbak.com', priority: 10 },
-    { type: 'MX', host: 'rhos', value: 'gamlins.com.bak-mx.uk0105.smtpbak.com', priority: 10 },
-    { type: 'MX', host: 'bangor', value: 'gamlins.com.bak-mx.uk0105.smtpbak.com', priority: 10 },
-    { type: 'MX', host: 'conwy', value: 'gamlins.com.bak-mx.uk0105.smtpbak.com', priority: 10 },
-    { type: 'SRV', host: '_sipfederationtls._tcp', value: 'sipfed.online.lync.com:5061', priority: 1 },
-    { type: 'SRV', host: '_sip._tls', value: 'sipdir.online.lync.com:443', priority: 1 },
-    { type: 'TXT', host: '_dmarc', value: 'v=DMARC1; p=none; rua=mailto:dmarc@gamlins.com; ruf=mailto:dmarc@gamlins.com', priority: '-' },
-    { type: 'TXT', host: '@', value: 'google-site-verification=pNe_HhdGDCl4DdOGG2llSWNmx9yJsIcuZ6Vn_I-XRtk', priority: '-' },
-    { type: 'TXT', host: '@', value: 'v=spf1 ip4:77.72.4.12 ip4:217.36.123.251 ip4:217.33.17.154 ip4:213.123.154.41 ip4:212.140.244.34 ip4:81.149.22.172 ip4:81.143.235.178 include:spfa.cpmails.com include:_spf.kundenserver.de include:spf.protection.outlook.com -all', priority: '-' },
-    { type: 'TXT', host: '@', value: 'v=verifydomain MS=9954264', priority: '-' }
-];
-
-const CORE_SITES = {
+// 1. CORE DEFAULT FLEET (3 Websites, 2 Domains)
+const INITIAL_SITES = {
     'https://grandprixexpress.com': {
         name: 'Grand Prix Express',
         url: 'https://grandprixexpress.com',
         domain: 'grandprixexpress.com',
-        tag: 'flotek website',
-        wp_version: '7.0.4',
-        php_version: '8.3.30',
-        theme: { name: 'ServerEast', version: '1.1.4' },
+        tag: 'flotek logistics',
+        wp_version: '6.5.2',
+        php_version: '8.2.18',
+        theme: { name: 'ServerEast Fleet', version: '1.2.0' },
         plugins: [
             { name: 'Meta Box', version: '5.6.17', has_update: true, new_version: '5.15.0' },
             { name: 'Redirection', version: '5.3.10', has_update: true, new_version: '5.10.0' },
             { name: 'Wordfence Security', version: '7.11.0', has_update: false },
             { name: 'All-In-One Security (AIOS)', version: '5.2.5', has_update: false },
-            { name: 'Flotek Sentinel Agent', version: '8.5', has_update: false }
+            { name: 'Flotek Sentinel Agent', version: '8.5.0', has_update: false }
         ],
         users: [
             { id: 1, user_login: 'garry', user_email: 'garry.whitney@grandprixexpress.com', roles: ['editor'], registered: '2025-01-10' },
             { id: 2, user_login: 'oes-admin', user_email: 'paul.hesketh@oes-uk.com', roles: ['administrator'], registered: '2024-11-20' }
         ],
-        updates_count: 12,
+        updates_count: 2,
         security_engine: 'AIOS + Wordfence',
         performance: { queries: 28, load_time: '0.28s', memory: '18 MB' },
         ssl: { valid: true, days_left: 84, issuer: "Cloudflare / Let's Encrypt" },
-        dns_records: [
-            { type: 'A', host: '@ (Apex)', value: '77.68.64.20', priority: '-' },
-            { type: 'A', host: 'www', value: '77.68.64.20', priority: '-' },
-            { type: 'A', host: 'ftp', value: '84.18.207.60', priority: '-' },
-            { type: 'A', host: 'mail', value: '82.153.170.129', priority: '-' },
-            { type: 'MX', host: '@', value: 'grandprixexpress-com.mail.protection.outlook.com', priority: 0 },
-            { type: 'TXT', host: '@', value: 'v=spf1 include:spf.protection.outlook.com ~all', priority: '-' }
-        ],
+        dns_records: [],
         seo: { sitemap_status: 'Indexed (42 URLs Valid)', broken_links: 0 },
         analytics: { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' },
-        backups: [{ id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '48.2 MB', date: new Date().toLocaleDateString() }],
-        health_score: 64,
+        backups: [
+            { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '48.2 MB', date: new Date().toLocaleDateString() }
+        ],
+        health_score: 94,
         status: 'ONLINE',
-        latency: 45,
+        latency: 42,
         type: 'WEBSITE'
     },
     'https://gamlins.com': {
         name: 'Gamlins Solicitors',
         url: 'https://gamlins.com',
         domain: 'gamlins.com',
-        tag: 'flotek client',
-        wp_version: '7.0.4',
-        php_version: '8.3.30',
-        theme: { name: 'Gamlins Theme', version: '2.0.1' },
+        tag: 'flotek legal',
+        wp_version: '6.4.3',
+        php_version: '8.2.20',
+        theme: { name: 'Gamlins Solicitors Enterprise', version: '2.1.0' },
         plugins: [
             { name: 'Advanced Custom Fields Pro', version: '6.1.0', has_update: true, new_version: '6.3.2' },
             { name: 'Contact Form 7', version: '5.8.0', has_update: true, new_version: '5.9.4' },
-            { name: 'Flotek Sentinel Agent', version: '8.5', has_update: false }
+            { name: 'WP Rocket', version: '3.14.0', has_update: false },
+            { name: 'Flotek Sentinel Agent', version: '8.5.0', has_update: false }
         ],
         users: [
-            { id: 1, user_login: 'gamlins-admin', user_email: 'info@gamlins.com', roles: ['administrator'], registered: '2024-08-15' }
+            { id: 1, user_login: 'gamlins-admin', user_email: 'info@gamlins.com', roles: ['administrator'], registered: '2024-08-15' },
+            { id: 2, user_login: 'reception', user_email: 'reception@gamlins.com', roles: ['author'], registered: '2025-02-01' }
         ],
-        updates_count: 22,
-        security_engine: 'Multi-Layer Defense',
+        updates_count: 2,
+        security_engine: 'Enterprise WAF Active',
         performance: { queries: 34, load_time: '0.31s', memory: '24 MB' },
         ssl: { valid: true, days_left: 156, issuer: "Sectigo Limited" },
-        dns_records: GAMLINS_DNS_RECORDS,
+        dns_records: [],
         seo: { sitemap_status: 'Indexed (184 URLs Valid)', broken_links: 0 },
         analytics: { visitors_7d: 3920, pageviews: 11480, bounce_rate: '24.1%' },
-        backups: [{ id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '62.4 MB', date: new Date().toLocaleDateString() }],
-        health_score: 34,
+        backups: [
+            { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '62.4 MB', date: new Date().toLocaleDateString() }
+        ],
+        health_score: 91,
         status: 'ONLINE',
         latency: 48,
+        type: 'WEBSITE'
+    },
+    'https://flotek.io': {
+        name: 'Flotek Group HQ',
+        url: 'https://flotek.io',
+        domain: 'flotek.io',
+        tag: 'flotek core',
+        wp_version: '6.5.3',
+        php_version: '8.3.0',
+        theme: { name: 'Flotek Modern Platform', version: '3.0.4' },
+        plugins: [
+            { name: 'Elementor Pro', version: '3.20.0', has_update: false },
+            { name: 'Flotek Sentinel Agent', version: '8.5.0', has_update: false }
+        ],
+        users: [
+            { id: 1, user_login: 'brian.admin', user_email: 'brian.vandenbergh@flotek.io', roles: ['administrator'], registered: '2023-05-12' }
+        ],
+        updates_count: 0,
+        security_engine: 'Sentinel Guardian WAF',
+        performance: { queries: 22, load_time: '0.19s', memory: '16 MB' },
+        ssl: { valid: true, days_left: 210, issuer: "DigiCert Global Root CA" },
+        dns_records: [],
+        seo: { sitemap_status: 'Indexed (88 URLs Valid)', broken_links: 0 },
+        analytics: { visitors_7d: 5240, pageviews: 18200, bounce_rate: '19.4%' },
+        backups: [
+            { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '38.0 MB', date: new Date().toLocaleDateString() }
+        ],
+        health_score: 99,
+        status: 'ONLINE',
+        latency: 35,
         type: 'WEBSITE'
     }
 };
 
-const CORE_DOMAINS = {
+const INITIAL_DOMAINS = {
     'gamlins.co.uk': {
         name: 'gamlins.co.uk',
         domain: 'gamlins.co.uk',
-        registrar: 'Fasthosts',
+        registrar: 'Fasthosts LiveDNS',
         nameservers: ['ns1.livedns.co.uk', 'ns2.livedns.co.uk'],
         ssl: { valid: false, days_left: 0, issuer: 'No Certificate (Domain Only / Parked)' },
-        dns_records: [
-            { type: 'A', host: '@', value: '88.208.252.9', priority: '-' },
-            { type: 'MX', host: '@', value: 'mailserver.livemail.co.uk', priority: 10 }
-        ],
+        dns_records: [],
         type: 'DOMAIN_ONLY',
         status: 'ONLINE'
     },
@@ -177,71 +147,54 @@ const CORE_DOMAINS = {
         registrar: 'ZADNS / Absolute Hosting',
         nameservers: ['ns21.zadns.co.za', 'ns22.zadns.co.za'],
         ssl: { valid: false, days_left: 0, issuer: 'No Certificate (Domain Only / Parked)' },
-        dns_records: [
-            { type: 'A', host: '@ (Apex)', value: '102.214.8.65', priority: '-' },
-            { type: 'NS', host: '@', value: 'ns21.zadns.co.za', priority: '-' },
-            { type: 'MX', host: '@', value: 'mail.moolawise.co.za', priority: 10 },
-            { type: 'TXT', host: '@', value: 'v=spf1 a mx include:_spf.absolutehosting.joburg ~all', priority: '-' }
-        ],
+        dns_records: [],
         type: 'DOMAIN_ONLY',
         status: 'ONLINE'
     }
 };
 
-const SEED_SECURITY_EVENTS = [
+const INITIAL_EVENTS = [
     {
-        id: 1715000000001,
-        site_url: 'https://grandprixexpress.com',
-        domain: 'grandprixexpress.com',
-        site_name: 'Grand Prix Express',
-        event: 'MALICIOUS_PROBE_BLOCKED',
-        type: 'SECURITY',
-        details: { pattern: '/wp-config.php', uri: '/wp-config.php.bak', ip_address: '185.220.101.5' },
-        timestamp: new Date(Date.now() - 1000 * 60 * 12).toISOString()
-    },
-    {
-        id: 1715000000002,
+        id: 1,
         site_url: 'https://gamlins.com',
         domain: 'gamlins.com',
         site_name: 'Gamlins Solicitors',
         event: 'FAILED_LOGIN_ATTEMPT',
         type: 'SECURITY',
-        details: { target_user: 'admin', ip_address: '45.154.255.89', time: 'Throttled 5 attempts' },
-        timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString()
+        details: { target_user: 'admin_master', ip_address: '185.220.101.32', alert: 'Brute-force throttle triggered' },
+        timestamp: new Date(Date.now() - 1000 * 60 * 14).toISOString()
+    },
+    {
+        id: 2,
+        site_url: 'https://grandprixexpress.com',
+        domain: 'grandprixexpress.com',
+        site_name: 'Grand Prix Express',
+        event: 'MALICIOUS_PROBE_BLOCKED',
+        type: 'SECURITY',
+        details: { pattern: '/wp-config.php.bak', ip_address: '45.154.255.89', action: '403 Forbidden' },
+        timestamp: new Date(Date.now() - 1000 * 60 * 38).toISOString()
     }
 ];
 
-let monitoredSites = { ...CORE_SITES };
-let standaloneDomains = { ...CORE_DOMAINS };
-let securityEvents = [...SEED_SECURITY_EVENTS];
+let monitoredSites = { ...INITIAL_SITES };
+let standaloneDomains = { ...INITIAL_DOMAINS };
+let securityEvents = [...INITIAL_EVENTS];
 let auditLogs = [];
 
+// 2. DATABASE PERSISTENCE
 function loadDatabase() {
     try {
         if (fs.existsSync(DB_FILE)) {
             const raw = fs.readFileSync(DB_FILE, 'utf8');
             const data = JSON.parse(raw);
-            if (data.sites && typeof data.sites === 'object' && Object.keys(data.sites).length > 0) {
-                monitoredSites = data.sites;
-            }
-            if (data.domains && typeof data.domains === 'object' && Object.keys(data.domains).length > 0) {
-                standaloneDomains = data.domains;
-            }
-            if (Array.isArray(data.events) && data.events.length > 0) {
-                securityEvents = data.events;
-            }
-            if (Array.isArray(data.audit_logs)) {
-                auditLogs = data.audit_logs;
-            }
+            if (data.sites && Object.keys(data.sites).length > 0) monitoredSites = data.sites;
+            if (data.domains && Object.keys(data.domains).length > 0) standaloneDomains = data.domains;
+            if (Array.isArray(data.events) && data.events.length > 0) securityEvents = data.events;
+            if (Array.isArray(data.audit_logs)) auditLogs = data.audit_logs;
         }
-    } catch (e) {
-        monitoredSites = { ...CORE_SITES };
-        standaloneDomains = { ...CORE_DOMAINS };
-        securityEvents = [...SEED_SECURITY_EVENTS];
+    } catch (err) {
+        console.error('Error reading database file, using default fleet memory:', err.message);
     }
-
-    if (!monitoredSites || Object.keys(monitoredSites).length === 0) monitoredSites = { ...CORE_SITES };
-    if (!standaloneDomains || Object.keys(standaloneDomains).length === 0) standaloneDomains = { ...CORE_DOMAINS };
 }
 
 function saveDatabase() {
@@ -252,122 +205,131 @@ function saveDatabase() {
             events: securityEvents,
             audit_logs: auditLogs
         }, null, 2));
-    } catch (e) {}
+    } catch (err) {
+        console.error('Error persisting database:', err.message);
+    }
 }
 
 loadDatabase();
 saveDatabase();
 
-const SUBDOMAIN_PROBES = [
-    'www', 'mail', 'ftp', 'sftp', 'ssh', 'remote', 'ftp.remote', 'www.remote',
-    'ftp.mail', 'www.mail', 'slipstream', 'www.slipstream', 'autodiscover',
-    'webmail', 'smtp', 'mcp', 'mailserver', 'bala', 'www.bala', 'access',
-    'colwynbay', 'ftp.conwy', 'ftp.porthmadoq', 'lyncdiscover', 'msoid', 'sip',
-    'enterpriseenrollment', 'enterpriseregistration', 'barracuda92160414593',
-    'barracuda36629914597', '_dmarc', 'brevo1._domainkey', 'brevo2._domainkey',
-    'livemail1._domainkey', 'livemail2._domainkey', 'livemail3._domainkey',
-    'livemail4._domainkey', 'selector1._domainkey', 'selector2._domainkey',
-    'selector1-gamlins-com._domainkey', 'selector2-gamlins-com._domainkey',
-    'google._domainkey', 'k1._domainkey', '_e871c8238c0992dfb1d08a0579540795'
+// 3. FULL DYNAMIC DNS SCANNER (No hardcoding)
+const COMMON_SUBDOMAINS = [
+    'www', 'mail', 'ftp', 'smtp', 'webmail', 'autodiscover', 'remote',
+    'vpn', 'portal', 'api', 'colwynbay', 'bangor', 'conwy', 'bala', 
+    'porthmadog', 'rhos', '_dmarc', 'sip', 'lyncdiscover'
 ];
 
 async function scanFullDNSZone(domain) {
-    const cleanHost = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
-    if (cleanHost.includes('gamlins.com')) return GAMLINS_DNS_RECORDS;
+    const host = normalizeHost(domain);
+    const records = [];
 
-    let records = [];
+    // Apex record lookups
     try {
-        const a = await dns.resolve4(cleanHost).catch(() => []);
+        const a = await dns.resolve4(host).catch(() => []);
         a.forEach(ip => records.push({ type: 'A', host: '@ (Apex)', value: ip, priority: '-' }));
 
-        const aaaa = await dns.resolve6(cleanHost).catch(() => []);
+        const aaaa = await dns.resolve6(host).catch(() => []);
         aaaa.forEach(ip => records.push({ type: 'AAAA', host: '@ (Apex)', value: ip, priority: '-' }));
 
-        const ns = await dns.resolveNs(cleanHost).catch(() => []);
-        ns.forEach(val => records.push({ type: 'NS', host: '@', value: val, priority: '-' }));
+        const mx = await dns.resolveMx(host).catch(() => []);
+        mx.forEach(item => records.push({ type: 'MX', host: '@', value: item.exchange, priority: item.priority }));
 
-        const mx = await dns.resolveMx(cleanHost).catch(() => []);
-        mx.forEach(val => records.push({ type: 'MX', host: '@', value: val.exchange, priority: val.priority }));
+        const txt = await dns.resolveTxt(host).catch(() => []);
+        txt.forEach(item => records.push({ type: 'TXT', host: '@', value: item.join(' '), priority: '-' }));
 
-        const txt = await dns.resolveTxt(cleanHost).catch(() => []);
-        txt.forEach(val => records.push({ type: 'TXT', host: '@', value: val.join(' '), priority: '-' }));
+        const ns = await dns.resolveNs(host).catch(() => []);
+        ns.forEach(item => records.push({ type: 'NS', host: '@', value: item, priority: '-' }));
     } catch (e) {}
 
-    await Promise.all(SUBDOMAIN_PROBES.map(async (sub) => {
-        const subFqdn = `${sub}.${cleanHost}`;
+    // Subdomain probing
+    await Promise.all(COMMON_SUBDOMAINS.map(async (sub) => {
+        const fqdn = `${sub}.${host}`;
         try {
-            const cnames = await dns.resolveCname(subFqdn).catch(() => []);
+            const cnames = await dns.resolveCname(fqdn).catch(() => []);
             if (cnames.length > 0) {
                 cnames.forEach(target => records.push({ type: 'CNAME', host: sub, value: target, priority: '-' }));
-            } else {
-                const ips = await dns.resolve4(subFqdn).catch(() => []);
-                ips.forEach(ip => records.push({ type: 'A', host: sub, value: ip, priority: '-' }));
+                return;
             }
-
-            const txts = await dns.resolveTxt(subFqdn).catch(() => []);
-            txts.forEach(t => records.push({ type: 'TXT', host: sub, value: t.join(' '), priority: '-' }));
-
-            const mxs = await dns.resolveMx(subFqdn).catch(() => []);
-            mxs.forEach(m => records.push({ type: 'MX', host: sub, value: m.exchange, priority: m.priority }));
+            const ips = await dns.resolve4(fqdn).catch(() => []);
+            ips.forEach(ip => records.push({ type: 'A', host: sub, value: ip, priority: '-' }));
         } catch (e) {}
     }));
 
-    return records.length > 0 ? records : [{ type: 'A', host: '@', value: '77.68.64.20', priority: '-' }];
+    return records.length > 0 ? records : [{ type: 'A', host: '@ (Apex)', value: 'Resolving via DNS...', priority: '-' }];
 }
 
+// 4. LIVE SSL INSPECTION
 function inspectLiveSSL(domain) {
     return new Promise((resolve) => {
-        const cleanHost = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
-        const socket = tls.connect(443, cleanHost, { servername: cleanHost, timeout: 3500 }, () => {
+        const host = normalizeHost(domain);
+        const socket = tls.connect(443, host, { servername: host, timeout: 3000 }, () => {
             const cert = socket.getPeerCertificate();
             socket.destroy();
 
             if (cert && cert.valid_to) {
-                const expiryDate = new Date(cert.valid_to);
-                const daysLeft = Math.max(0, Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)));
-                const issuerName = cert.issuer ? (cert.issuer.O || cert.issuer.CN || "Let's Encrypt") : "Active SSL";
-                resolve({ valid: true, days_left: daysLeft, issuer: issuerName, expires: expiryDate.toLocaleDateString() });
+                const expiry = new Date(cert.valid_to);
+                const daysLeft = Math.max(0, Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)));
+                const issuer = cert.issuer ? (cert.issuer.O || cert.issuer.CN || "Standard SSL") : "Active SSL";
+                resolve({ valid: true, days_left: daysLeft, issuer });
             } else {
-                resolve({ valid: false, days_left: 0, issuer: "No Certificate (Domain Only / Parked)", expires: 'N/A' });
+                resolve({ valid: false, days_left: 0, issuer: "No Certificate (Domain Only)" });
             }
         });
 
-        socket.on('error', () => resolve({ valid: false, days_left: 0, issuer: "No Certificate (Domain Only / Parked)", expires: 'N/A' }));
-        socket.on('timeout', () => { socket.destroy(); resolve({ valid: false, days_left: 0, issuer: "No Certificate (Domain Only / Parked)", expires: 'N/A' }); });
+        socket.on('error', () => resolve({ valid: false, days_left: 0, issuer: "No Certificate (Domain Only)" }));
+        socket.on('timeout', () => { socket.destroy(); resolve({ valid: false, days_left: 0, issuer: "No Certificate (Domain Only)" }); });
     });
 }
 
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+// Perform baseline DNS populating on launch
+(async () => {
+    for (const siteUrl in monitoredSites) {
+        if (!monitoredSites[siteUrl].dns_records || monitoredSites[siteUrl].dns_records.length === 0) {
+            monitoredSites[siteUrl].dns_records = await scanFullDNSZone(siteUrl);
+        }
+    }
+    for (const domName in standaloneDomains) {
+        if (!standaloneDomains[domName].dns_records || standaloneDomains[domName].dns_records.length === 0) {
+            standaloneDomains[domName].dns_records = await scanFullDNSZone(domName);
+        }
+    }
+    saveDatabase();
+})();
 
-// DASHBOARD FLEET DATA API
+// 5. REST APIS
+
+// Dashboard Fleet Feed
 app.get('/api/dashboard-data', (req, res) => {
+    res.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+    });
+
     const siteList = Object.values(monitoredSites);
     const domainList = Object.values(standaloneDomains);
-    let totalUpdates = 0;
-    siteList.forEach(s => totalUpdates += (s.updates_count || 0));
 
     res.json({
+        success: true,
         sites: siteList,
         domains: domainList,
         events: securityEvents,
         audit_logs: auditLogs,
-        total_updates: totalUpdates,
-        fleet_health: 98,
-        alert_email: ALERT_EMAIL,
-        sender_email: SENDER_EMAIL
+        fleet_health: 99
     });
 });
 
-// WORDPRESS AGENT REGISTRATION
+// WordPress Agent Deep Sync & Registration
 app.post('/api/register', async (req, res) => {
-    const authHeader = req.headers['x-hub-secret'];
-    if (authHeader !== SHARED_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+    const secret = req.headers['x-hub-secret'];
+    if (secret !== SHARED_SECRET) return res.status(403).json({ error: 'Unauthorized hub secret' });
 
     const data = req.body;
-    const cleanHost = (data.site_url || '').replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
-    const normalizedKey = normalizeHost(data.site_url);
-    delete standaloneDomains[cleanHost];
-    delete standaloneDomains[normalizedKey];
+    if (!data.site_url) return res.status(400).json({ error: 'site_url required' });
+
+    const clean = normalizeHost(data.site_url);
+    delete standaloneDomains[clean];
 
     const [liveSSL, liveDNS] = await Promise.all([
         inspectLiveSSL(data.site_url),
@@ -375,55 +337,55 @@ app.post('/api/register', async (req, res) => {
     ]);
 
     monitoredSites[data.site_url] = {
-        name: data.site_name || cleanHost,
+        name: data.site_name || clean,
         url: data.site_url,
-        domain: cleanHost,
-        tag: cleanHost.includes('flotek') ? 'flotek website' : cleanHost.split('.')[0],
-        wp_version: data.wp_version || '7.0.4',
-        php_version: data.php_version || '8.3.30',
+        domain: clean,
+        tag: data.tag || 'wordpress site',
+        wp_version: data.wp_version || '6.5',
+        php_version: data.php_version || '8.2',
         theme: data.theme || { name: 'Active Theme', version: '1.0' },
         plugins: data.plugins || [],
         users: data.users || [],
         updates_count: data.pending_updates || 0,
-        security_engine: 'Multi-Layer Defense',
+        security_engine: 'Multi-Layer Sentinel Defense',
         performance: data.performance || { queries: 28, load_time: '0.28s', memory: '18 MB' },
         ssl: liveSSL,
         dns_records: liveDNS,
         seo: data.seo || { sitemap_status: 'Indexed', broken_links: 0 },
-        analytics: data.analytics || { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' },
+        analytics: data.analytics || { visitors_7d: 1200, pageviews: 4100, bounce_rate: '30.0%' },
         backups: monitoredSites[data.site_url]?.backups || [
             { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '48.2 MB', date: new Date().toLocaleDateString() }
         ],
         health_score: Math.max(30, 100 - (data.pending_updates || 0) * 3),
         status: 'ONLINE',
-        latency: Math.floor(Math.random() * 15 + 40),
+        latency: Math.floor(Math.random() * 15 + 35),
         type: 'WEBSITE'
     };
 
     saveDatabase();
-    res.json({ success: true });
+    res.json({ success: true, site: monitoredSites[data.site_url] });
 });
 
-// STANDALONE DOMAINS
+// Standalone Domain Manager
 app.post('/api/add-domain', async (req, res) => {
     const { domain_name } = req.body;
-    if (!domain_name) return res.status(400).json({ error: 'Domain is required' });
+    if (!domain_name) return res.status(400).json({ error: 'Domain name required' });
 
-    const cleanHost = domain_name.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
+    const clean = normalizeHost(domain_name);
     const [liveSSL, liveDNS] = await Promise.all([
-        inspectLiveSSL(cleanHost),
-        scanFullDNSZone(cleanHost)
+        inspectLiveSSL(clean),
+        scanFullDNSZone(clean)
     ]);
 
-    let nameservers = ['Fasthosts NS'];
+    let nameservers = ['LiveDNS NS'];
     try {
-        nameservers = await dns.resolveNs(cleanHost);
+        nameservers = await dns.resolveNs(clean);
     } catch (e) {}
 
-    standaloneDomains[cleanHost] = {
-        name: cleanHost,
-        domain: cleanHost,
-        registrar: nameservers[0] ? (nameservers[0].includes('livedns') ? 'Fasthosts' : nameservers[0].includes('zadns') ? 'ZADNS' : 'Custom NS') : 'Fasthosts',
+    standaloneDomains[clean] = {
+        name: clean,
+        domain: clean,
+        registrar: nameservers[0] ? (nameservers[0].includes('livedns') ? 'Fasthosts LiveDNS' : 'Authoritative DNS') : 'Standard DNS',
         nameservers: nameservers,
         ssl: liveSSL,
         dns_records: liveDNS,
@@ -432,21 +394,47 @@ app.post('/api/add-domain', async (req, res) => {
     };
 
     saveDatabase();
-    res.json({ success: true, domain: standaloneDomains[cleanHost] });
+    res.json({ success: true, domain: standaloneDomains[clean] });
 });
 
 app.post('/api/delete-domain', (req, res) => {
     const { domain_name } = req.body;
     if (domain_name) {
-        const cleanHost = domain_name.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
-        delete standaloneDomains[cleanHost];
+        const clean = normalizeHost(domain_name);
+        delete standaloneDomains[clean];
         delete standaloneDomains[domain_name];
         saveDatabase();
     }
     res.json({ success: true });
 });
 
-// USER MANAGEMENT & PROXIES
+// Event Ingestion from WordPress Agent
+app.post('/api/event', (req, res) => {
+    const secret = req.headers['x-hub-secret'];
+    if (secret !== SHARED_SECRET) return res.status(403).json({ error: 'Unauthorized' });
+
+    const { site_url, site_name, event, details, type, timestamp } = req.body;
+    const clean = normalizeHost(site_url);
+
+    const record = {
+        id: Date.now(),
+        site_url: site_url || clean,
+        domain: clean,
+        site_name: site_name || clean,
+        event: event || 'SECURITY_ALERT',
+        details: details || {},
+        type: type || 'SECURITY',
+        timestamp: timestamp || new Date().toISOString()
+    };
+
+    if (type === 'AUDIT') auditLogs.unshift(record);
+    else securityEvents.unshift(record);
+
+    saveDatabase();
+    res.json({ success: true, record });
+});
+
+// Proxy actions for Remote Management
 app.post('/api/create-user', async (req, res) => {
     const { site_url, username, email, role, password } = req.body;
     try {
@@ -497,8 +485,8 @@ app.post('/api/trigger-update', async (req, res) => {
             headers: { 'Content-Type': 'application/json', 'X-Hub-Secret': SHARED_SECRET }
         });
         res.json(await response.json());
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
     }
 });
 
@@ -521,50 +509,11 @@ app.post('/api/trigger-backup', async (req, res) => {
             saveDatabase();
         }
         res.json(result);
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
     }
 });
 
-app.post('/api/trigger-rollback', async (req, res) => {
-    const { site_url, filename } = req.body;
-    try {
-        const response = await fetch(`${site_url}/wp-json/flotek/v1/restore-backup`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Hub-Secret': SHARED_SECRET },
-            body: JSON.stringify({ filename })
-        });
-        res.json(await response.json());
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-    }
+app.listen(PORT, () => {
+    console.log(`🛡️ Flotek Sentinel Enterprise Command Hub active on port ${PORT}`);
 });
-
-// REAL-TIME SECURITY EVENT RECORDER
-app.post('/api/event', (req, res) => {
-    const authHeader = req.headers['x-hub-secret'];
-    if (authHeader !== SHARED_SECRET) return res.status(403).json({ error: 'Unauthorized' });
-
-    const { site_url, site_name, event, details, type, timestamp } = req.body;
-    const cleanHost = (site_url || '').replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
-
-    const record = {
-        id: Date.now(),
-        site_url: site_url || cleanHost,
-        domain: cleanHost,
-        site_name: site_name || cleanHost,
-        event,
-        details: details || {},
-        type: type || 'SECURITY',
-        timestamp: timestamp || new Date().toISOString()
-    };
-
-    if (type === 'AUDIT') auditLogs.unshift(record);
-    else securityEvents.unshift(record);
-
-    console.log(`🚨 [ALERT STORED] ${event} on ${site_name || cleanHost}`);
-    saveDatabase();
-    res.json({ success: true });
-});
-
-app.listen(PORT, () => console.log(`🛡️ Flotek Enterprise Command Hub running on port ${PORT}`));
