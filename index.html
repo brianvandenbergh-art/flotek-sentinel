@@ -22,7 +22,7 @@
     <aside class="w-full md:w-64 bg-[#080d17] border-b md:border-b-0 md:border-r border-slate-800/80 p-4 flex md:flex-col justify-between shrink-0 z-10">
         <div class="space-y-6 w-full">
             <div class="flex items-center gap-2.5 px-2">
-                <div class="h-8 w-8 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-lg flex items-center justify-center text-slate-950 font-black text-sm">
+                <div class="h-8 w-8 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-lg flex items-center justify-center text-slate-950 font-black text-sm shadow-md shadow-emerald-500/20">
                     FS
                 </div>
                 <div>
@@ -135,7 +135,7 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-400">Average Fleet Latency:</span>
-                        <span class="font-bold text-white mono" id="stat-avg-latency">46 ms</span>
+                        <span class="font-bold text-white mono" id="stat-avg-latency">42 ms</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-400">Active Incidents:</span>
@@ -167,7 +167,7 @@
                 </h3>
                 <button onclick="closeAddDomainModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
-            <p class="text-xs text-slate-400">Add any domain without WordPress (e.g. <code>grandprixexpress.co.uk</code>) to automatically scan all DNS records and monitor SSL.</p>
+            <p class="text-xs text-slate-400">Add any domain without WordPress (e.g. <code>customdomain.co.uk</code>) to automatically scan all DNS records and monitor SSL.</p>
             <div>
                 <label class="text-[11px] font-semibold text-slate-300 block mb-1">Domain Name</label>
                 <input id="input-domain-name" type="text" placeholder="e.g. yourdomain.co.uk" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500">
@@ -549,7 +549,7 @@
                         <span class="text-[11px] text-slate-500 flex items-center gap-1"><i class="fa-solid fa-rotate text-[9px]"></i> 30s</span>
                         ${window.generateUptimeBars()}
                         <span class="text-xs font-bold text-emerald-400 mono">100%</span>
-                        <span class="text-xs font-mono text-slate-400">${site.latency || 45}ms</span>
+                        <span class="text-xs font-mono text-slate-400">${site.latency || 42}ms</span>
                         <div class="text-slate-600 group-hover:text-slate-300"><i class="fa-solid fa-chevron-right text-xs"></i></div>
                     </div>
                 </div>`;
@@ -572,7 +572,7 @@
                         <div class="min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <h4 class="font-bold text-sm text-white group-hover:text-indigo-300 transition truncate">${d.name}</h4>
-                                <span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">${d.registrar || 'Fasthosts'}</span>
+                                <span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">${d.registrar || 'Authoritative DNS'}</span>
                             </div>
                             <span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">${d.domain}</span>
                         </div>
@@ -635,7 +635,7 @@
                 drawerUrl.querySelector('span').innerText = site.url || site.domain || cleanIdentifier;
             }
 
-            // HIDE WP TABS FOR STANDALONE DOMAINS
+            // Tabs toggle based on entity type
             document.querySelectorAll('.wp-only-tab').forEach(el => {
                 if (isWebsite) el.classList.remove('hidden');
                 else el.classList.add('hidden');
@@ -752,7 +752,7 @@
             const seoStatusEl = document.getElementById('drawer-seo-sitemap');
             if (seoStatusEl) seoStatusEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + (seo.sitemap_status || 'Indexed');
 
-            // DOMAIN-SPECIFIC INCIDENT STREAM
+            // Domain-Specific Incident Stream
             const siteEvents = window.getSiteSecurityEvents(site);
             window.setTxt('drawer-tab-sec-count', siteEvents.length);
             window.setTxt('drawer-events-count-label', siteEvents.length + ' events');
@@ -907,7 +907,7 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert('✅ Updates Pushed to ' + window.activeSiteUrl + '!');
+                    alert('✅ Updates pushed to ' + window.activeSiteUrl + '!');
                     window.refreshData();
                 } else {
                     alert('❌ Update failed: ' + (result.error || 'Server error'));
@@ -981,17 +981,19 @@
             downloadAnchor.remove();
         };
 
-        // REAL-TIME AUTO SYNC ENGINE
+        // Automatic Dashboard Refresh
         window.refreshData = async function() {
             try {
                 const res = await fetch('/api/dashboard-data?cb=' + Date.now());
                 const data = await res.json();
                 
-                window.globalData.sites = (data.sites && data.sites.length > 0) ? data.sites : window.globalData.sites;
-                window.globalData.domains = (data.domains && data.domains.length > 0) ? data.domains : window.globalData.domains;
+                if (data.sites) window.globalData.sites = data.sites;
+                if (data.domains) window.globalData.domains = data.domains;
                 window.globalData.events = data.events || [];
                 window.globalData.audit_logs = data.audit_logs || [];
-            } catch (err) {}
+            } catch (err) {
+                console.error('Data sync failed:', err);
+            }
 
             const siteCount = (window.globalData.sites || []).length;
             const domainCount = (window.globalData.domains || []).length;
@@ -1013,7 +1015,6 @@
             }
         };
 
-        // Initial Load
         window.refreshData();
         setInterval(window.refreshData, 5000);
     </script>
