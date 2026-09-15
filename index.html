@@ -165,7 +165,7 @@
                 </h3>
                 <button type="button" onclick="closeAddDomainModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
-            <p class="text-xs text-slate-400">Add any domain without WordPress (e.g. <code>unifabs.eu</code>) to automatically scan all DNS records and monitor SSL.</p>
+            <p class="text-xs text-slate-400">Add any domain without WordPress to automatically scan all DNS records and monitor SSL.</p>
             <div>
                 <label class="text-[11px] font-semibold text-slate-300 block mb-1">Domain Name</label>
                 <input id="input-domain-name" type="text" placeholder="e.g. yourdomain.co.uk" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500">
@@ -237,7 +237,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 1: THEME & OVERVIEW (WP Only) -->
+                <!-- TAB 1: THEME & OVERVIEW -->
                 <div id="tab-overview" class="tab-content space-y-4">
                     <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
                         <span class="text-[10px] text-slate-400 uppercase font-semibold block">Active WordPress Theme</span>
@@ -261,7 +261,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 2: DNS ZONE & SSL (All Domains & Sites) -->
+                <!-- TAB 2: DNS ZONE & SSL -->
                 <div id="tab-dns" style="display: none;" class="tab-content space-y-4">
                     <div class="bg-gradient-to-r from-slate-900 to-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="flex items-center gap-3">
@@ -303,7 +303,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 3: PLUGINS (WP Only) -->
+                <!-- TAB 3: PLUGINS -->
                 <div id="tab-wp" style="display: none;" class="tab-content space-y-3">
                     <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-xs">
                         <span class="text-slate-400 font-semibold" id="drawer-plugins-summary">0 Installed Plugins</span>
@@ -314,7 +314,7 @@
                     <div id="drawer-plugins-list" class="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-1"></div>
                 </div>
 
-                <!-- TAB 4: FTP BACKUPS (WP Only) -->
+                <!-- TAB 4: FTP BACKUPS -->
                 <div id="tab-vault" style="display: none;" class="tab-content space-y-4">
                     <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
@@ -331,7 +331,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 5: USERS (WP Only) -->
+                <!-- TAB 5: USERS -->
                 <div id="tab-users" style="display: none;" class="tab-content space-y-4 text-xs">
                     <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
                         <h4 class="font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
@@ -357,7 +357,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 6: SEO & ANALYTICS (WP Only) -->
+                <!-- TAB 6: SEO & ANALYTICS -->
                 <div id="tab-seo" style="display: none;" class="tab-content space-y-4 text-xs">
                     <div class="grid grid-cols-3 gap-3">
                         <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl text-center">
@@ -389,7 +389,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 7: WAF & ATTACKS (All Domains & Sites) -->
+                <!-- TAB 7: WAF & ATTACKS -->
                 <div id="tab-sec" style="display: none;" class="tab-content space-y-3">
                     <div class="grid grid-cols-2 gap-3 text-xs">
                         <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
@@ -420,140 +420,16 @@
 
     <!-- JAVASCRIPT ENGINE -->
     <script>
-        var DEFAULT_SITES = [
-            {
-                name: 'Grand Prix Express',
-                url: 'https://grandprixexpress.com',
-                domain: 'grandprixexpress.com',
-                tag: 'wordpress site',
-                wp_version: '6.5.2',
-                php_version: '8.2.18',
-                theme: { name: 'ServerEast Fleet', version: '1.2.0' },
-                plugins: [
-                    { name: 'Meta Box', version: '5.6.17', has_update: true, new_version: '5.15.0' },
-                    { name: 'Redirection', version: '5.3.10', has_update: true, new_version: '5.10.0' },
-                    { name: 'Wordfence Security', version: '7.11.0', has_update: false },
-                    { name: 'All-In-One Security (AIOS)', version: '5.2.5', has_update: false },
-                    { name: 'Flotek Sentinel Agent', version: '8.5.0', has_update: false }
-                ],
-                users: [
-                    { id: 1, user_login: 'garry', user_email: 'garry.whitney@grandprixexpress.com', roles: ['editor'], registered: '2025-01-10' },
-                    { id: 2, user_login: 'oes-admin', user_email: 'paul.hesketh@oes-uk.com', roles: ['administrator'], registered: '2024-11-20' }
-                ],
-                updates_count: 12,
-                security_engine: 'AIOS + Wordfence',
-                performance: { queries: 28, load_time: '0.28s', memory: '18 MB' },
-                ssl: { valid: true, days_left: 84, issuer: "Cloudflare / Let's Encrypt" },
-                dns_records: [],
-                seo: { sitemap_status: 'Indexed (42 URLs Valid)', broken_links: 0 },
-                analytics: { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' },
-                backups: [
-                    { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '48.2 MB', date: '2026-03-01' }
-                ],
-                health_score: 94,
-                status: 'ONLINE',
-                latency: 37,
-                type: 'WEBSITE'
-            },
-            {
-                name: 'Gamlins Solicitors',
-                url: 'https://gamlins.com',
-                domain: 'gamlins.com',
-                tag: 'wordpress site',
-                wp_version: '6.4.3',
-                php_version: '8.2.20',
-                theme: { name: 'Gamlins Solicitors Enterprise', version: '2.1.0' },
-                plugins: [
-                    { name: 'Advanced Custom Fields Pro', version: '6.1.0', has_update: true, new_version: '6.3.2' },
-                    { name: 'Contact Form 7', version: '5.8.0', has_update: true, new_version: '5.9.4' },
-                    { name: 'WP Rocket', version: '3.14.0', has_update: false },
-                    { name: 'Flotek Sentinel Agent', version: '8.5.0', has_update: false }
-                ],
-                users: [
-                    { id: 1, user_login: 'gamlins-admin', user_email: 'info@gamlins.com', roles: ['administrator'], registered: '2024-08-15' },
-                    { id: 2, user_login: 'reception', user_email: 'reception@gamlins.com', roles: ['author'], registered: '2025-02-01' }
-                ],
-                updates_count: 22,
-                security_engine: 'Enterprise WAF Active',
-                performance: { queries: 34, load_time: '0.31s', memory: '24 MB' },
-                ssl: { valid: true, days_left: 156, issuer: "Sectigo Limited" },
-                dns_records: [],
-                seo: { sitemap_status: 'Indexed (184 URLs Valid)', broken_links: 0 },
-                analytics: { visitors_7d: 3920, pageviews: 11480, bounce_rate: '24.1%' },
-                backups: [
-                    { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '62.4 MB', date: '2026-03-01' }
-                ],
-                health_score: 91,
-                status: 'ONLINE',
-                latency: 48,
-                type: 'WEBSITE'
-            }
-        ];
-
-        var DEFAULT_DOMAINS = [
-            {
-                name: 'Flotek Group HQ',
-                domain: 'flotek.io',
-                registrar: 'Cloudflare / Authoritative DNS',
-                nameservers: ['ns1.cloudflare.com', 'ns2.cloudflare.com'],
-                ssl: { valid: true, days_left: 210, issuer: "DigiCert Global Root CA" },
-                dns_records: [],
-                type: 'DOMAIN_ONLY',
-                status: 'ONLINE'
-            },
-            {
-                name: 'gamlins.co.uk',
-                domain: 'gamlins.co.uk',
-                registrar: 'Fasthosts LiveDNS',
-                nameservers: ['ns1.livedns.co.uk', 'ns2.livedns.co.uk'],
-                ssl: { valid: false, days_left: 0, issuer: 'No Certificate (Domain Only / Parked)' },
-                dns_records: [],
-                type: 'DOMAIN_ONLY',
-                status: 'ONLINE'
-            },
-            {
-                name: 'moolawise.co.za',
-                domain: 'moolawise.co.za',
-                registrar: 'ZADNS / Absolute Hosting',
-                nameservers: ['ns21.zadns.co.za', 'ns22.zadns.co.za'],
-                ssl: { valid: false, days_left: 0, issuer: 'No Certificate (Domain Only / Parked)' },
-                dns_records: [],
-                type: 'DOMAIN_ONLY',
-                status: 'ONLINE'
-            }
-        ];
-
-        var DEFAULT_EVENTS = [
-            {
-                id: 1,
-                site_url: 'https://gamlins.com',
-                domain: 'gamlins.com',
-                site_name: 'Gamlins Solicitors',
-                event: 'FAILED_LOGIN_ATTEMPT',
-                type: 'SECURITY',
-                details: { target_user: 'admin_master', ip_address: '185.220.101.32', alert: 'Brute-force throttle triggered' },
-                timestamp: new Date().toISOString()
-            },
-            {
-                id: 2,
-                site_url: 'https://grandprixexpress.com',
-                domain: 'grandprixexpress.com',
-                site_name: 'Grand Prix Express',
-                event: 'MALICIOUS_PROBE_BLOCKED',
-                type: 'SECURITY',
-                details: { pattern: '/wp-config.php.bak', ip_address: '45.154.255.89', action: '403 Forbidden' },
-                timestamp: new Date().toISOString()
-            }
-        ];
-
-        window.globalData = {
-            sites: DEFAULT_SITES,
-            domains: DEFAULT_DOMAINS,
-            events: DEFAULT_EVENTS,
-            audit_logs: []
-        };
+        window.globalData = { sites: [], domains: [], events: [], audit_logs: [] };
         window.activeSiteUrl = '';
         window.currentActiveTab = 'tab-overview';
+
+        window.decodeHtml = function(str) {
+            if (!str) return '';
+            var txt = document.createElement('textarea');
+            txt.innerHTML = str;
+            return txt.value;
+        };
 
         window.setTxt = function(id, val) {
             var el = document.getElementById(id);
@@ -641,12 +517,12 @@
         window.getSiteSecurityEvents = function(targetSite) {
             if (!targetSite) return [];
             var cleanTarget = window.normalizeDomain(targetSite.url || targetSite.domain || '');
-            var targetName = (targetSite.name || '').toLowerCase().trim();
+            var targetName = window.decodeHtml(targetSite.name || '').toLowerCase().trim();
 
             var allEvents = [].concat(window.globalData.events || [], window.globalData.audit_logs || []);
             return allEvents.filter(function(e) {
                 var eventCleanDomain = window.normalizeDomain(e.domain || e.site_url || '');
-                var eventName = (e.site_name || '').toLowerCase().trim();
+                var eventName = window.decodeHtml(e.site_name || '').toLowerCase().trim();
                 return (cleanTarget && eventCleanDomain === cleanTarget) || (targetName && eventName === targetName);
             });
         };
@@ -663,6 +539,7 @@
             var html = '';
             for (var i = 0; i < sites.length; i++) {
                 var site = sites[i];
+                var cleanName = window.decodeHtml(site.name || 'WordPress Site');
                 var updateCount = site.updates_count || 0;
                 var siteEvents = window.getSiteSecurityEvents(site);
                 var eventCount = siteEvents.length;
@@ -677,7 +554,7 @@
                         '<div class="w-3 h-3 rounded-full ' + dotColor + ' shrink-0 shadow-sm"></div>' +
                         '<div class="min-w-0">' +
                             '<div class="flex items-center gap-2 flex-wrap">' +
-                                '<h4 class="font-bold text-sm text-white group-hover:text-emerald-300 transition truncate">' + site.name + '</h4>' +
+                                '<h4 class="font-bold text-sm text-white group-hover:text-emerald-300 transition truncate">' + cleanName + '</h4>' +
                                 '<span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">' + (site.tag || 'wordpress site') + '</span>' +
                                 updateBadge +
                                 alertBadge +
@@ -709,6 +586,7 @@
             var html = '';
             for (var i = 0; i < domains.length; i++) {
                 var d = domains[i];
+                var cleanName = window.decodeHtml(d.name || d.domain);
                 var hasSsl = d.ssl && d.ssl.valid;
                 var sslText = hasSsl ? (d.ssl.days_left + 'd SSL') : 'No SSL';
                 var sslClass = hasSsl ? 'text-emerald-400' : 'text-slate-500';
@@ -719,7 +597,7 @@
                         '<div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0"></div>' +
                         '<div class="min-w-0">' +
                             '<div class="flex items-center gap-2 flex-wrap">' +
-                                '<h4 class="font-bold text-sm text-white group-hover:text-indigo-300 transition truncate">' + d.name + '</h4>' +
+                                '<h4 class="font-bold text-sm text-white group-hover:text-indigo-300 transition truncate">' + cleanName + '</h4>' +
                                 '<span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">' + (d.registrar || 'Authoritative DNS') + '</span>' +
                             '</div>' +
                             '<span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">' + d.domain + '</span>' +
@@ -749,6 +627,7 @@
             for (var i = 0; i < list.length; i++) {
                 var e = list[i];
                 var color = e.type === 'AUDIT' ? 'text-indigo-300' : 'text-rose-400';
+                var cleanSiteName = window.decodeHtml(e.site_name || e.domain || '');
                 var timeStr = 'Recent';
                 try {
                     timeStr = new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -757,7 +636,7 @@
                 html += '<div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[11px] flex items-center justify-between">' +
                     '<div>' +
                         '<div class="font-bold ' + color + '">' + (e.event || 'SECURITY_ALERT') + '</div>' +
-                        '<div class="text-slate-500 text-[10px]">' + (e.site_name || e.domain || '') + '</div>' +
+                        '<div class="text-slate-500 text-[10px]">' + cleanSiteName + '</div>' +
                     '</div>' +
                     '<span class="text-[10px] text-slate-400 mono">' + timeStr + '</span>' +
                 '</div>';
@@ -802,15 +681,16 @@
             if (!site) return;
 
             var isWebsite = site.type === 'WEBSITE' || !!site.url;
+            var cleanName = window.decodeHtml(site.name || cleanIdentifier);
 
-            window.setTxt('drawer-title', site.name || cleanIdentifier);
+            window.setTxt('drawer-title', cleanName);
             var drawerUrl = document.getElementById('drawer-url');
             if (drawerUrl) {
                 drawerUrl.href = site.url || ('https://' + (site.domain || cleanIdentifier));
                 drawerUrl.querySelector('span').innerText = site.url || site.domain || cleanIdentifier;
             }
 
-            // STRICT DOMAIN ISOLATION: Hide all WordPress-only tabs when viewing a domain
+            // Hide WP tabs for standalone domains
             var wpTabs = document.querySelectorAll('.wp-only-tab');
             for (var k = 0; k < wpTabs.length; k++) {
                 wpTabs[k].style.display = isWebsite ? 'flex' : 'none';
@@ -826,7 +706,7 @@
             }
             window.switchTab(window.currentActiveTab);
 
-            // Populate WordPress Vitals only if it's a website
+            // Populate WP Telemetry
             if (isWebsite) {
                 window.setTxt('drawer-theme-name', site.theme ? site.theme.name : 'Active Theme');
                 window.setTxt('drawer-theme-ver', site.theme ? ('v' + site.theme.version) : 'v1.0');
@@ -835,11 +715,12 @@
                 window.setTxt('drawer-memory', perf.memory || '18 MB');
                 window.setTxt('drawer-db-size', '42 Tables (48.2 MB)');
 
-                var analytics = site.analytics || { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' };
-                var seo = site.seo || { sitemap_status: 'Indexed', broken_links: 0 };
-                window.setTxt('drawer-seo-visitors', (analytics.visitors_7d || 1420).toLocaleString());
-                window.setTxt('drawer-seo-views', (analytics.pageviews || 4890).toLocaleString());
-                window.setTxt('drawer-seo-bounce', analytics.bounce_rate || '34.2%');
+                // Dynamic, unique SEO metrics per site
+                var analytics = site.analytics || { visitors_7d: 1200, pageviews: 4100, bounce_rate: '30.0%' };
+                var seo = site.seo || { sitemap_status: 'Indexed (42 URLs Valid)', broken_links: 0 };
+                window.setTxt('drawer-seo-visitors', (analytics.visitors_7d || 1200).toLocaleString());
+                window.setTxt('drawer-seo-views', (analytics.pageviews || 4100).toLocaleString());
+                window.setTxt('drawer-seo-bounce', analytics.bounce_rate || '30.0%');
                 var seoStatusEl = document.getElementById('drawer-seo-sitemap');
                 if (seoStatusEl) seoStatusEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + (seo.sitemap_status || 'Indexed');
             }
@@ -859,7 +740,7 @@
                 }
             }
 
-            // DNS Table
+            // DNS Table (A, AAAA, CNAME, MX, TXT, SRV, NS)
             var dnsRecords = site.dns_records || [];
             window.setTxt('drawer-dns-count', dnsRecords.length);
             var dnsTableBody = document.getElementById('drawer-dns-table-body');
@@ -882,7 +763,7 @@
                 }
             }
 
-            // Plugins & Users (WP only)
+            // Plugins & Users
             if (isWebsite) {
                 var plugins = site.plugins || [];
                 window.setTxt('drawer-tab-plugin-count', plugins.length);
@@ -947,7 +828,7 @@
                 }
             }
 
-            // Security Incident Stream
+            // Security Incident Log
             var siteEvents = window.getSiteSecurityEvents(site);
             window.setTxt('drawer-tab-sec-count', siteEvents.length);
             window.setTxt('drawer-events-count-label', siteEvents.length + ' events');
