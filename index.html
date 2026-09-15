@@ -165,7 +165,7 @@
                 </h3>
                 <button type="button" onclick="closeAddDomainModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
-            <p class="text-xs text-slate-400">Add any domain without WordPress to automatically scan all DNS records and monitor SSL.</p>
+            <p class="text-xs text-slate-400">Add any domain without WordPress (e.g. <code>unifabs.eu</code>) to automatically scan all DNS records and monitor SSL.</p>
             <div>
                 <label class="text-[11px] font-semibold text-slate-300 block mb-1">Domain Name</label>
                 <input id="input-domain-name" type="text" placeholder="e.g. yourdomain.co.uk" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500">
@@ -231,37 +231,37 @@
                         <button type="button" onclick="switchTab('tab-seo')" id="btn-tab-seo" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
                             <i class="fa-solid fa-magnifying-glass-chart"></i> SEO &amp; Analytics
                         </button>
-                        <button type="button" onclick="switchTab('tab-sec')" id="btn-tab-sec" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
+                        <button type="button" onclick="switchTab('tab-sec')" id="btn-tab-sec" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 cursor-pointer">
                             <i class="fa-solid fa-shield-halved"></i> WAF &amp; Attacks (<span id="drawer-tab-sec-count">0</span>)
                         </button>
                     </div>
                 </div>
 
-                <!-- TAB 1: THEME & OVERVIEW -->
+                <!-- TAB 1: THEME & OVERVIEW (WP Only) -->
                 <div id="tab-overview" class="tab-content space-y-4">
                     <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
                         <span class="text-[10px] text-slate-400 uppercase font-semibold block">Active WordPress Theme</span>
-                        <h4 class="text-base font-bold text-white mt-0.5" id="drawer-theme-name">Active Theme</h4>
-                        <p class="text-xs text-slate-400 mt-1">Theme Version: <span class="font-mono text-indigo-300" id="drawer-theme-ver">v1.0.0</span></p>
+                        <h4 class="text-base font-bold text-white mt-0.5" id="drawer-theme-name">--</h4>
+                        <p class="text-xs text-slate-400 mt-1">Theme Version: <span class="font-mono text-indigo-300" id="drawer-theme-ver">--</span></p>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
                             <span class="text-[10px] text-slate-400 uppercase font-semibold block">Database Tables</span>
-                            <div class="text-xs sm:text-sm font-bold text-white mono mt-1">42 Tables (48.2 MB)</div>
+                            <div class="text-xs sm:text-sm font-bold text-white mono mt-1" id="drawer-db-size">--</div>
                         </div>
                         <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
                             <span class="text-[10px] text-slate-400 uppercase font-semibold block">PHP Execution Time</span>
-                            <div class="text-xs sm:text-sm font-bold text-emerald-400 mono mt-1" id="drawer-load-time">0.28s</div>
+                            <div class="text-xs sm:text-sm font-bold text-emerald-400 mono mt-1" id="drawer-load-time">--</div>
                         </div>
                         <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
                             <span class="text-[10px] text-slate-400 uppercase font-semibold block">Peak Memory</span>
-                            <div class="text-xs sm:text-sm font-bold text-white mono mt-1" id="drawer-memory">18 MB</div>
+                            <div class="text-xs sm:text-sm font-bold text-white mono mt-1" id="drawer-memory">--</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- TAB 2: DNS ZONE & SSL -->
+                <!-- TAB 2: DNS ZONE & SSL (All Domains & Sites) -->
                 <div id="tab-dns" style="display: none;" class="tab-content space-y-4">
                     <div class="bg-gradient-to-r from-slate-900 to-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="flex items-center gap-3">
@@ -270,8 +270,8 @@
                             </div>
                             <div>
                                 <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">SSL Certificate Status</span>
-                                <div class="text-base sm:text-lg font-extrabold text-white mono" id="drawer-ssl-days">84 Days Remaining</div>
-                                <div class="text-[11px] text-slate-400" id="drawer-ssl-issuer">Issuer: Cloudflare / Let's Encrypt</div>
+                                <div class="text-base sm:text-lg font-extrabold text-white mono" id="drawer-ssl-days">Scanning...</div>
+                                <div class="text-[11px] text-slate-400" id="drawer-ssl-issuer">Issuer: --</div>
                             </div>
                         </div>
                         <span id="drawer-ssl-badge" class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-bold rounded-lg border border-emerald-500/20 self-start sm:self-auto flex items-center gap-1.5">
@@ -297,13 +297,13 @@
                                         <th class="p-2.5">Priority</th>
                                     </tr>
                                 </thead>
-                                <tbody id="drawer-dns-table-body" class="divide-y divide-slate-800/60 font-mono text-[11px]"></tbody>
+                                <tbody id="drawer-dns-table-body" class="divide-y border-slate-800/60 font-mono text-[11px]"></tbody>
                             </table>
                         </div>
                     </div>
                 </div>
 
-                <!-- TAB 3: PLUGINS -->
+                <!-- TAB 3: PLUGINS (WP Only) -->
                 <div id="tab-wp" style="display: none;" class="tab-content space-y-3">
                     <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-xs">
                         <span class="text-slate-400 font-semibold" id="drawer-plugins-summary">0 Installed Plugins</span>
@@ -314,7 +314,7 @@
                     <div id="drawer-plugins-list" class="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-1"></div>
                 </div>
 
-                <!-- TAB 4: FTP BACKUPS -->
+                <!-- TAB 4: FTP BACKUPS (WP Only) -->
                 <div id="tab-vault" style="display: none;" class="tab-content space-y-4">
                     <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
@@ -331,7 +331,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 5: USERS -->
+                <!-- TAB 5: USERS (WP Only) -->
                 <div id="tab-users" style="display: none;" class="tab-content space-y-4 text-xs">
                     <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
                         <h4 class="font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
@@ -357,7 +357,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 6: SEO & ANALYTICS -->
+                <!-- TAB 6: SEO & ANALYTICS (WP Only) -->
                 <div id="tab-seo" style="display: none;" class="tab-content space-y-4 text-xs">
                     <div class="grid grid-cols-3 gap-3">
                         <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl text-center">
@@ -389,7 +389,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 7: WAF & ATTACKS -->
+                <!-- TAB 7: WAF & ATTACKS (All Domains & Sites) -->
                 <div id="tab-sec" style="display: none;" class="tab-content space-y-3">
                     <div class="grid grid-cols-2 gap-3 text-xs">
                         <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
@@ -402,7 +402,7 @@
                         </div>
                     </div>
                     <div class="flex items-center justify-between mt-2">
-                        <h4 class="text-xs font-bold uppercase text-slate-400">Live Incident Log for this Site</h4>
+                        <h4 class="text-xs font-bold uppercase text-slate-400">Live Incident Log for this Entity</h4>
                         <span class="text-[11px] text-slate-500 font-mono" id="drawer-events-count-label">0 events</span>
                     </div>
                     <div id="drawer-site-events" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-1"></div>
@@ -444,14 +444,7 @@
                 security_engine: 'AIOS + Wordfence',
                 performance: { queries: 28, load_time: '0.28s', memory: '18 MB' },
                 ssl: { valid: true, days_left: 84, issuer: "Cloudflare / Let's Encrypt" },
-                dns_records: [
-                    { type: 'A', host: '@ (Apex)', value: '77.68.64.20', priority: '-' },
-                    { type: 'A', host: 'www', value: '77.68.64.20', priority: '-' },
-                    { type: 'A', host: 'ftp', value: '84.18.207.60', priority: '-' },
-                    { type: 'A', host: 'mail', value: '82.153.170.129', priority: '-' },
-                    { type: 'MX', host: '@', value: 'grandprixexpress-com.mail.protection.outlook.com', priority: 0 },
-                    { type: 'TXT', host: '@', value: 'v=spf1 include:spf.protection.outlook.com ~all', priority: '-' }
-                ],
+                dns_records: [],
                 seo: { sitemap_status: 'Indexed (42 URLs Valid)', broken_links: 0 },
                 analytics: { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' },
                 backups: [
@@ -504,12 +497,7 @@
                 registrar: 'Cloudflare / Authoritative DNS',
                 nameservers: ['ns1.cloudflare.com', 'ns2.cloudflare.com'],
                 ssl: { valid: true, days_left: 210, issuer: "DigiCert Global Root CA" },
-                dns_records: [
-                    { type: 'A', host: '@ (Apex)', value: '104.21.45.10', priority: '-' },
-                    { type: 'A', host: 'www', value: '104.21.45.10', priority: '-' },
-                    { type: 'MX', host: '@', value: 'flotek-io.mail.protection.outlook.com', priority: 0 },
-                    { type: 'TXT', host: '@', value: 'v=spf1 include:spf.protection.outlook.com ~all', priority: '-' }
-                ],
+                dns_records: [],
                 type: 'DOMAIN_ONLY',
                 status: 'ONLINE'
             },
@@ -519,10 +507,7 @@
                 registrar: 'Fasthosts LiveDNS',
                 nameservers: ['ns1.livedns.co.uk', 'ns2.livedns.co.uk'],
                 ssl: { valid: false, days_left: 0, issuer: 'No Certificate (Domain Only / Parked)' },
-                dns_records: [
-                    { type: 'A', host: '@', value: '88.208.252.9', priority: '-' },
-                    { type: 'MX', host: '@', value: 'mailserver.livemail.co.uk', priority: 10 }
-                ],
+                dns_records: [],
                 type: 'DOMAIN_ONLY',
                 status: 'ONLINE'
             },
@@ -532,12 +517,7 @@
                 registrar: 'ZADNS / Absolute Hosting',
                 nameservers: ['ns21.zadns.co.za', 'ns22.zadns.co.za'],
                 ssl: { valid: false, days_left: 0, issuer: 'No Certificate (Domain Only / Parked)' },
-                dns_records: [
-                    { type: 'A', host: '@ (Apex)', value: '102.214.8.65', priority: '-' },
-                    { type: 'NS', host: '@', value: 'ns21.zadns.co.za', priority: '-' },
-                    { type: 'MX', host: '@', value: 'mail.moolawise.co.za', priority: 10 },
-                    { type: 'TXT', host: '@', value: 'v=spf1 a mx include:_spf.absolutehosting.joburg ~all', priority: '-' }
-                ],
+                dns_records: [],
                 type: 'DOMAIN_ONLY',
                 status: 'ONLINE'
             }
@@ -830,6 +810,7 @@
                 drawerUrl.querySelector('span').innerText = site.url || site.domain || cleanIdentifier;
             }
 
+            // STRICT DOMAIN ISOLATION: Hide all WordPress-only tabs when viewing a domain
             var wpTabs = document.querySelectorAll('.wp-only-tab');
             for (var k = 0; k < wpTabs.length; k++) {
                 wpTabs[k].style.display = isWebsite ? 'flex' : 'none';
@@ -845,12 +826,25 @@
             }
             window.switchTab(window.currentActiveTab);
 
-            window.setTxt('drawer-theme-name', site.theme ? site.theme.name : 'Active Theme');
-            window.setTxt('drawer-theme-ver', site.theme ? ('v' + site.theme.version) : 'v1.0');
-            var perf = site.performance || { queries: 28, load_time: '0.28s', memory: '18 MB' };
-            window.setTxt('drawer-load-time', perf.load_time || '0.28s');
-            window.setTxt('drawer-memory', perf.memory || '18 MB');
+            // Populate WordPress Vitals only if it's a website
+            if (isWebsite) {
+                window.setTxt('drawer-theme-name', site.theme ? site.theme.name : 'Active Theme');
+                window.setTxt('drawer-theme-ver', site.theme ? ('v' + site.theme.version) : 'v1.0');
+                var perf = site.performance || { queries: 28, load_time: '0.28s', memory: '18 MB' };
+                window.setTxt('drawer-load-time', perf.load_time || '0.28s');
+                window.setTxt('drawer-memory', perf.memory || '18 MB');
+                window.setTxt('drawer-db-size', '42 Tables (48.2 MB)');
 
+                var analytics = site.analytics || { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' };
+                var seo = site.seo || { sitemap_status: 'Indexed', broken_links: 0 };
+                window.setTxt('drawer-seo-visitors', (analytics.visitors_7d || 1420).toLocaleString());
+                window.setTxt('drawer-seo-views', (analytics.pageviews || 4890).toLocaleString());
+                window.setTxt('drawer-seo-bounce', analytics.bounce_rate || '34.2%');
+                var seoStatusEl = document.getElementById('drawer-seo-sitemap');
+                if (seoStatusEl) seoStatusEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + (seo.sitemap_status || 'Indexed');
+            }
+
+            // SSL Certificate
             var hasSSL = site.ssl && site.ssl.valid;
             window.setTxt('drawer-ssl-days', hasSSL ? (site.ssl.days_left + ' Days Remaining') : 'No Certificate');
             window.setTxt('drawer-ssl-issuer', 'Issuer: ' + (site.ssl ? site.ssl.issuer : 'No SSL (Domain Only)'));
@@ -888,81 +882,72 @@
                 }
             }
 
-            // Plugins
-            var plugins = site.plugins || [];
-            window.setTxt('drawer-tab-plugin-count', plugins.length);
-            window.setTxt('drawer-plugins-summary', plugins.length + ' Installed Plugins');
-            var pluginsContainer = document.getElementById('drawer-plugins-list');
-            if (pluginsContainer) {
-                var phtml = '';
-                for (var pIdx = 0; pIdx < plugins.length; pIdx++) {
-                    var p = plugins[pIdx];
-                    var upBadge = p.has_update 
-                        ? '<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">UPDATE: v' + (p.new_version || 'Latest') + '</span>'
-                        : '<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">UP TO DATE</span>';
-                    
-                    phtml += '<div class="bg-slate-950 border border-slate-800 px-3.5 py-2.5 rounded-xl flex items-center justify-between text-xs gap-2">' +
-                        '<div class="min-w-0">' +
-                            '<span class="text-slate-200 font-semibold block truncate">' + p.name + '</span>' +
-                            '<span class="text-[10px] text-slate-500 mono">Installed: v' + (p.version || '1.0') + '</span>' +
-                        '</div>' +
-                        upBadge +
-                    '</div>';
+            // Plugins & Users (WP only)
+            if (isWebsite) {
+                var plugins = site.plugins || [];
+                window.setTxt('drawer-tab-plugin-count', plugins.length);
+                window.setTxt('drawer-plugins-summary', plugins.length + ' Installed Plugins');
+                var pluginsContainer = document.getElementById('drawer-plugins-list');
+                if (pluginsContainer) {
+                    var phtml = '';
+                    for (var pIdx = 0; pIdx < plugins.length; pIdx++) {
+                        var p = plugins[pIdx];
+                        var upBadge = p.has_update 
+                            ? '<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">UPDATE: v' + (p.new_version || 'Latest') + '</span>'
+                            : '<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">UP TO DATE</span>';
+                        
+                        phtml += '<div class="bg-slate-950 border border-slate-800 px-3.5 py-2.5 rounded-xl flex items-center justify-between text-xs gap-2">' +
+                            '<div class="min-w-0">' +
+                                '<span class="text-slate-200 font-semibold block truncate">' + p.name + '</span>' +
+                                '<span class="text-[10px] text-slate-500 mono">Installed: v' + (p.version || '1.0') + '</span>' +
+                            '</div>' +
+                            upBadge +
+                        '</div>';
+                    }
+                    pluginsContainer.innerHTML = phtml;
                 }
-                pluginsContainer.innerHTML = phtml;
+
+                var users = site.users || [];
+                window.setTxt('drawer-tab-user-count', users.length);
+                var usersContainer = document.getElementById('drawer-users-list');
+                if (usersContainer) {
+                    var uhtml = '';
+                    for (var uIdx = 0; uIdx < users.length; uIdx++) {
+                        var u = users[uIdx];
+                        uhtml += '<div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-3">' +
+                            '<div>' +
+                                '<strong class="text-white text-sm">' + u.user_login + '</strong>' +
+                                '<span class="text-slate-400 ml-1 sm:ml-2">(' + u.user_email + ')</span>' +
+                                '<div class="text-[10px] text-slate-500 mt-0.5">Role: <span class="text-indigo-400 font-bold uppercase">' + (u.roles || ['user']).join(', ') + '</span></div>' +
+                            '</div>' +
+                            '<div class="flex items-center gap-2 self-start sm:self-auto">' +
+                                '<button type="button" onclick="resetUserPassword(\'' + u.id + '\', \'' + u.user_login + '\')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/20 rounded-xl font-semibold text-[11px] flex items-center gap-1.5 cursor-pointer"><i class="fa-solid fa-key"></i> Reset Pass</button>' +
+                                '<button type="button" onclick="deleteUser(\'' + u.id + '\', \'' + u.user_login + '\')" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-[11px] flex items-center gap-1.5 shadow-md shadow-red-600/30 cursor-pointer"><i class="fa-solid fa-trash"></i> Delete User</button>' +
+                            '</div>' +
+                        '</div>';
+                    }
+                    usersContainer.innerHTML = uhtml;
+                }
+
+                var backups = site.backups || [];
+                var backupsContainer = document.getElementById('drawer-backups-list');
+                if (backupsContainer) {
+                    var bhtml = '';
+                    for (var bIdx = 0; bIdx < backups.length; bIdx++) {
+                        var b = backups[bIdx];
+                        bhtml += '<div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">' +
+                            '<div>' +
+                                '<div class="font-bold text-white truncate">' + (b.filename || 'Database Snapshot') + '</div>' +
+                                '<div class="text-[10px] text-slate-500 mono mt-0.5">Location: ' + (b.location || '/wp-content/flotek-backups/') + ' • ' + (b.filesize || '48.2 MB') + '</div>' +
+                            '</div>' +
+                            '<button type="button" onclick="executeRollback(\'' + b.filename + '\')" class="self-start sm:self-auto px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded font-semibold text-[11px] flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-rotate-left"></i> Rollback DB</button>' +
+                        '</div>';
+                    }
+                    backupsContainer.innerHTML = bhtml;
+                }
             }
 
-            // Users
-            var users = site.users || [];
-            window.setTxt('drawer-tab-user-count', users.length);
-            var usersContainer = document.getElementById('drawer-users-list');
-            if (usersContainer) {
-                var uhtml = '';
-                for (var uIdx = 0; uIdx < users.length; uIdx++) {
-                    var u = users[uIdx];
-                    uhtml += '<div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-3">' +
-                        '<div>' +
-                            '<strong class="text-white text-sm">' + u.user_login + '</strong>' +
-                            '<span class="text-slate-400 ml-1 sm:ml-2">(' + u.user_email + ')</span>' +
-                            '<div class="text-[10px] text-slate-500 mt-0.5">Role: <span class="text-indigo-400 font-bold uppercase">' + (u.roles || ['user']).join(', ') + '</span></div>' +
-                        '</div>' +
-                        '<div class="flex items-center gap-2 self-start sm:self-auto">' +
-                            '<button type="button" onclick="resetUserPassword(\'' + u.id + '\', \'' + u.user_login + '\')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/20 rounded-xl font-semibold text-[11px] flex items-center gap-1.5 cursor-pointer"><i class="fa-solid fa-key"></i> Reset Pass</button>' +
-                            '<button type="button" onclick="deleteUser(\'' + u.id + '\', \'' + u.user_login + '\')" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-[11px] flex items-center gap-1.5 shadow-md shadow-red-600/30 cursor-pointer"><i class="fa-solid fa-trash"></i> Delete User</button>' +
-                        '</div>' +
-                    '</div>';
-                }
-                usersContainer.innerHTML = uhtml;
-            }
-
-            // Backups
-            var backups = site.backups || [];
-            var backupsContainer = document.getElementById('drawer-backups-list');
-            if (backupsContainer) {
-                var bhtml = '';
-                for (var bIdx = 0; bIdx < backups.length; bIdx++) {
-                    var b = backups[bIdx];
-                    bhtml += '<div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">' +
-                        '<div>' +
-                            '<div class="font-bold text-white truncate">' + (b.filename || 'Database Snapshot') + '</div>' +
-                            '<div class="text-[10px] text-slate-500 mono mt-0.5">Location: ' + (b.location || '/wp-content/flotek-backups/') + ' • ' + (b.filesize || '48.2 MB') + '</div>' +
-                        '</div>' +
-                        '<button type="button" onclick="executeRollback(\'' + b.filename + '\')" class="self-start sm:self-auto px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded font-semibold text-[11px] flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-rotate-left"></i> Rollback DB</button>' +
-                    '</div>';
-                }
-                backupsContainer.innerHTML = bhtml;
-            }
-
-            // SEO & Analytics
-            var analytics = site.analytics || { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' };
-            var seo = site.seo || { sitemap_status: 'Indexed', broken_links: 0 };
-            window.setTxt('drawer-seo-visitors', (analytics.visitors_7d || 1420).toLocaleString());
-            window.setTxt('drawer-seo-views', (analytics.pageviews || 4890).toLocaleString());
-            window.setTxt('drawer-seo-bounce', analytics.bounce_rate || '34.2%');
-            var seoStatusEl = document.getElementById('drawer-seo-sitemap');
-            if (seoStatusEl) seoStatusEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + (seo.sitemap_status || 'Indexed');
-
-            // Incident Stream
+            // Security Incident Stream
             var siteEvents = window.getSiteSecurityEvents(site);
             window.setTxt('drawer-tab-sec-count', siteEvents.length);
             window.setTxt('drawer-events-count-label', siteEvents.length + ' events');
@@ -970,7 +955,7 @@
             var eventsContainer = document.getElementById('drawer-site-events');
             if (eventsContainer) {
                 if (siteEvents.length === 0) {
-                    eventsContainer.innerHTML = '<div class="text-xs text-slate-500 p-4 bg-slate-950 rounded-xl text-center">No security incidents recorded for this website.</div>';
+                    eventsContainer.innerHTML = '<div class="text-xs text-slate-500 p-4 bg-slate-950 rounded-xl text-center">No security incidents recorded for this entity.</div>';
                 } else {
                     var sEventsHtml = '';
                     for (var seIdx = 0; seIdx < siteEvents.length; seIdx++) {
