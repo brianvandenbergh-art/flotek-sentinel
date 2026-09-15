@@ -197,7 +197,7 @@
                             <div class="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-sm font-bold">
                                 <i class="fa-solid fa-circle-down"></i>
                             </div>
-                            <div class="text-lg font-extrabold text-white mt-1" id="stat-down-count">0</div>
+                            <div class="text-lg font-extrabold text-white mt-1">0</div>
                             <span class="text-[10px] text-slate-400 font-semibold uppercase">Down</span>
                         </div>
                         <div>
@@ -218,7 +218,7 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-400">Average Fleet Latency:</span>
-                        <span class="font-bold text-white mono" id="stat-avg-latency">46 ms</span>
+                        <span class="font-bold text-white mono">46 ms</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-400">Active Incidents:</span>
@@ -228,7 +228,7 @@
 
                 <div class="bg-[#080d17] border border-slate-800 p-4 rounded-2xl space-y-2">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <i class="fa-solid fa-shield-virus text-rose-400"></i> Global Security Stream
+                        <i class="fa-solid fa-shield-virus text-rose-400"></i> Fleet WAF Log
                     </h3>
                     <div id="events-container" class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1">
                         <div class="text-slate-500 text-[11px] p-2 text-center">Fleet protection active.</div>
@@ -240,7 +240,7 @@
 
     </div>
 
-    <!-- MODAL: ADD STANDALONE DOMAIN (Clean Isolated Markup) -->
+    <!-- POPUP CONTAINER: ADD DOMAIN MODAL -->
     <div id="add-domain-modal" style="display: none;" class="fixed inset-0 z-50 items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
         <div class="relative bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full z-10 shadow-2xl space-y-4">
             <div class="flex justify-between items-center">
@@ -249,7 +249,7 @@
                 </h3>
                 <button onclick="closeAddDomainModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
-            <p class="text-xs text-slate-400">Add any domain without WordPress to automatically scan DNS records and monitor SSL.</p>
+            <p class="text-xs text-slate-400">Add any domain without WordPress (e.g. <code>grandprixexpress.co.uk</code>) to automatically scan all DNS records and monitor SSL.</p>
             <div>
                 <label class="text-[11px] font-semibold text-slate-300 block mb-1">Domain Name</label>
                 <input id="input-domain-name" type="text" placeholder="e.g. yourdomain.co.uk" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500">
@@ -263,7 +263,7 @@
         </div>
     </div>
 
-    <!-- DRAWER: DEEP INSPECTOR (Clean Isolated Markup) -->
+    <!-- POPUP CONTAINER: DEEP INSPECTION DRAWER -->
     <div id="site-drawer" style="display: none;" class="fixed inset-0 z-50 justify-end bg-slate-950/80 backdrop-blur-sm">
         <div class="w-full sm:max-w-4xl bg-[#090e18] sm:border-l border-slate-800 p-4 sm:p-6 flex flex-col justify-between shadow-2xl custom-scrollbar overflow-y-auto">
             
@@ -294,7 +294,7 @@
                     </div>
                 </div>
 
-                <!-- TABS (Clean Inline Display) -->
+                <!-- TABS (Filtered for Domains vs Websites) -->
                 <div class="overflow-x-auto custom-scrollbar pb-2">
                     <div id="drawer-tabs-bar" class="flex gap-2 text-xs min-w-max">
                         <button onclick="switchTab('tab-overview')" id="btn-tab-overview" class="tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5 wp-only-tab cursor-pointer">
@@ -325,8 +325,8 @@
                 <div id="tab-overview" class="tab-content space-y-4">
                     <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
                         <span class="text-[10px] text-slate-400 uppercase font-semibold block">Active WordPress Theme</span>
-                        <h4 class="text-base font-bold text-white mt-0.5" id="drawer-theme-name">--</h4>
-                        <p class="text-xs text-slate-400 mt-1">Theme Version: <span class="font-mono text-indigo-300" id="drawer-theme-ver">v1.0</span></p>
+                        <h4 class="text-base font-bold text-white mt-0.5" id="drawer-theme-name">ServerEast</h4>
+                        <p class="text-xs text-slate-400 mt-1">Theme Version: <span class="font-mono text-indigo-300" id="drawer-theme-ver">v1.1.4</span></p>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -499,9 +499,9 @@
         </div>
     </div>
 
-    <!-- SCRIPT ENGINE -->
+    <!-- GLOBALLY BOUND JAVASCRIPT ENGINE -->
     <script>
-        const FALLBACK_SITES = [
+        window.FALLBACK_SITES = [
             {
                 name: 'Grand Prix Express',
                 url: 'https://grandprixexpress.com',
@@ -559,7 +559,7 @@
             }
         ];
 
-        const FALLBACK_DOMAINS = [
+        window.FALLBACK_DOMAINS = [
             {
                 name: 'gamlins.co.uk',
                 domain: 'gamlins.co.uk',
@@ -585,21 +585,13 @@
             }
         ];
 
-        window.globalData = { sites: FALLBACK_SITES, domains: FALLBACK_DOMAINS, events: [], audit_logs: [] };
+        window.globalData = { sites: window.FALLBACK_SITES, domains: window.FALLBACK_DOMAINS, events: [], audit_logs: [] };
         window.activeSiteUrl = '';
         window.currentActiveTab = 'tab-overview';
 
         window.setTxt = function(id, val) {
             const el = document.getElementById(id);
             if (el) el.innerText = val;
-        };
-
-        window.generateUptimeBars = function() {
-            let bars = '';
-            for (let i = 0; i < 20; i++) {
-                bars += '<span class="h-4 w-1 rounded-sm bg-emerald-400"></span>';
-            }
-            return '<div class="flex items-center gap-0.5">' + bars + '</div>';
         };
 
         window.switchFleetCategory = function(category) {
@@ -657,11 +649,9 @@
         window.renderWebsites = function(sites) {
             const container = document.getElementById('websites-fleet-container');
             if (!container) return;
+            const validSites = (sites && sites.length > 0) ? sites : window.FALLBACK_SITES;
 
-            const validSites = (sites && sites.length > 0) ? sites : FALLBACK_SITES;
-            container.innerHTML = validSites.map(site => {
-                const updateCount = site.updates_count || 0;
-                return `
+            container.innerHTML = validSites.map(site => `
                 <div onclick="openDrawer('${site.url}')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="flex items-center gap-3 min-w-0">
                         <div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0 shadow-sm shadow-emerald-400/50"></div>
@@ -669,7 +659,7 @@
                             <div class="flex items-center gap-2 flex-wrap">
                                 <h4 class="font-bold text-sm text-white group-hover:text-emerald-300 transition truncate">${site.name}</h4>
                                 <span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">${site.tag || 'wordpress site'}</span>
-                                ${updateCount > 0 ? `<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-md border border-amber-500/20">${updateCount} updates</span>` : ''}
+                                ${site.updates_count > 0 ? `<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-md border border-amber-500/20">${site.updates_count} updates</span>` : ''}
                             </div>
                             <span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">${site.url}</span>
                         </div>
@@ -677,20 +667,19 @@
 
                     <div class="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">
                         <span class="text-[11px] text-slate-500 flex items-center gap-1"><i class="fa-solid fa-rotate text-[9px]"></i> 30s</span>
-                        ${window.generateUptimeBars()}
+                        <div class="flex items-center gap-0.5"><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span><span class="h-4 w-1 rounded-sm bg-emerald-400"></span></div>
                         <span class="text-xs font-bold text-emerald-400 mono">100%</span>
                         <span class="text-xs font-mono text-slate-400">${site.latency || 45}ms</span>
                         <div class="text-slate-600 group-hover:text-slate-300"><i class="fa-solid fa-chevron-right text-xs"></i></div>
                     </div>
-                </div>`;
-            }).join('');
+                </div>`).join('');
         };
 
         window.renderDomains = function(domains) {
             const container = document.getElementById('domains-fleet-container');
             if (!container) return;
+            const validDomains = (domains && domains.length > 0) ? domains : window.FALLBACK_DOMAINS;
 
-            const validDomains = (domains && domains.length > 0) ? domains : FALLBACK_DOMAINS;
             container.innerHTML = validDomains.map(d => `
                 <div onclick="openDrawer('${d.domain}')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="flex items-center gap-3 min-w-0">
@@ -705,16 +694,13 @@
                     </div>
 
                     <div class="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">
-                        <span class="text-xs font-mono ${d.ssl && d.ssl.valid ? 'text-emerald-400' : 'text-slate-500'}">
-                            <i class="fa-solid fa-lock text-[10px]"></i> ${d.ssl && d.ssl.valid ? d.ssl.days_left + 'd SSL' : 'No SSL'}
-                        </span>
+                        <span class="text-xs font-mono text-slate-400">${d.ssl && d.ssl.valid ? d.ssl.days_left + 'd SSL' : 'No SSL'}</span>
                         <span class="text-xs font-mono text-indigo-300">${(d.dns_records || []).length} DNS Records</span>
                         <button onclick="event.stopPropagation(); deleteStandaloneDomain('${d.domain}')" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold cursor-pointer">
                             Delete
                         </button>
                     </div>
-                </div>`;
-            }).join('');
+                </div>`).join('');
         };
 
         window.renderEvents = function(events) {
@@ -738,7 +724,7 @@
         window.filterMonitors = function() {
             const query = document.getElementById('fleet-search-input').value.toLowerCase();
             const filteredSites = window.globalData.sites.filter(s => s.name.toLowerCase().includes(query) || s.url.toLowerCase().includes(query));
-            const filteredDomains = (window.globalData.domains || []).filter(d => d.name.toLowerCase().includes(query) || d.domain.toLowerCase().includes(query));
+            const filteredDomains = window.globalData.domains.filter(d => d.name.toLowerCase().includes(query) || d.domain.toLowerCase().includes(query));
             window.renderWebsites(filteredSites);
             window.renderDomains(filteredDomains);
         };
@@ -748,8 +734,8 @@
             const isWebsite = identifier.startsWith('http');
             const cleanIdentifier = identifier.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
 
-            const site = (window.globalData.sites || []).find(s => s.url === identifier || s.domain === cleanIdentifier) || 
-                         (window.globalData.domains || []).find(d => d.domain === cleanIdentifier || d.domain === identifier);
+            const site = window.globalData.sites.find(s => s.url === identifier || s.domain === cleanIdentifier) || 
+                         window.globalData.domains.find(d => d.domain === cleanIdentifier || d.domain === identifier);
             
             if (!site) return;
 
@@ -950,7 +936,7 @@
                 if (result.success) {
                     alert('✅ Password updated!');
                 } else {
-                    alert('❌ Failed: ' + (result.error || 'Error'));
+                    alert(`❌ Failed: ${result.error || 'Error'}`);
                 }
             } catch (e) {
                 alert(`Error: ${e.message}`);
@@ -971,7 +957,7 @@
                     alert('✅ User "' + username + '" deleted!');
                     window.refreshData();
                 } else {
-                    alert('❌ Deletion failed: ' + (result.error || 'Error'));
+                    alert(`❌ Deletion failed: ${result.error || 'Error'}`);
                 }
             } catch (e) {
                 alert(`Error: ${e.message}`);
@@ -994,7 +980,7 @@
                     alert('✅ Updates Pushed to ' + window.activeSiteUrl + '!');
                     window.refreshData();
                 } else {
-                    alert('❌ Update failed: ' + (result.error || 'Server error'));
+                    alert(`❌ Update failed: ${result.error || 'Server error'}`);
                 }
             } catch (err) {
                 alert(`Error: ${err.message}`);
@@ -1017,10 +1003,10 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert('✅ Database Backup Created on FTP!\n\nFile: ' + result.filename);
+                    alert('✅ Database Backup Created on FTP!\n\nFile: ${result.filename}');
                     window.refreshData();
                 } else {
-                    alert('❌ Backup failed: ' + (result.error || 'Server error'));
+                    alert(`❌ Backup failed: ${result.error || 'Server error'}`);
                 }
             } catch (err) {
                 alert(`Error: ${err.message}`);
@@ -1053,8 +1039,8 @@
 
         window.exportDNSZoneFile = function() {
             const cleanIdentifier = (window.activeSiteUrl || '').replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
-            const site = (window.globalData.sites || []).find(s => s.url === window.activeSiteUrl || s.domain === cleanIdentifier) || 
-                         (window.globalData.domains || []).find(d => d.domain === cleanIdentifier);
+            const site = window.globalData.sites.find(s => s.url === window.activeSiteUrl || s.domain === cleanIdentifier) || 
+                         window.globalData.domains.find(d => d.domain === cleanIdentifier);
             
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(site ? site.dns_records : [], null, 2));
             const downloadAnchor = document.createElement('a');
@@ -1087,7 +1073,7 @@
             window.renderEvents([...window.globalData.events, ...window.globalData.audit_logs]);
         };
 
-        // Render immediately on load
+        // START IMMEDIATELY
         window.renderWebsites(window.globalData.sites);
         window.renderDomains(window.globalData.domains);
         window.refreshData();
