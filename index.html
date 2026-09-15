@@ -95,7 +95,7 @@
                 </div>
 
                 <div id="websites-fleet-container" class="space-y-2.5"></div>
-                <div id="domains-fleet-container" class="hidden space-y-2.5"></div>
+                <div id="domains-fleet-container" style="display: none;" class="space-y-2.5"></div>
             </div>
 
             <!-- Right Column -->
@@ -157,7 +157,7 @@
     </div>
 
     <!-- MODAL: ADD STANDALONE DOMAIN -->
-    <div id="add-domain-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+    <div id="add-domain-modal" style="display: none;" class="fixed inset-0 z-50 items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
         <div class="relative bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full z-10 shadow-2xl space-y-4">
             <div class="flex justify-between items-center">
                 <h3 class="font-bold text-base text-white flex items-center gap-2">
@@ -180,7 +180,7 @@
     </div>
 
     <!-- DRAWER: DEEP INSPECTION -->
-    <div id="site-drawer" class="fixed inset-0 z-50 hidden flex justify-end bg-slate-950/80 backdrop-blur-sm">
+    <div id="site-drawer" style="display: none;" class="fixed inset-0 z-50 justify-end bg-slate-950/80 backdrop-blur-sm">
         <div class="w-full sm:max-w-4xl bg-[#090e18] sm:border-l border-slate-800 p-4 sm:p-6 flex flex-col justify-between shadow-2xl custom-scrollbar overflow-y-auto">
             
             <div class="space-y-4">
@@ -201,7 +201,7 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button id="btn-drawer-delete-domain" onclick="deleteCurrentDrawerDomain()" class="hidden px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer">
+                        <button id="btn-drawer-delete-domain" style="display: none;" onclick="deleteCurrentDrawerDomain()" class="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer">
                             <i class="fa-solid fa-trash text-[10px]"></i> Delete Domain
                         </button>
                         <button onclick="closeDrawer()" class="text-slate-400 hover:text-white p-2 rounded-xl bg-slate-800/60 shrink-0 cursor-pointer">
@@ -262,7 +262,7 @@
                 </div>
 
                 <!-- TAB 2: DNS ZONE & SSL -->
-                <div id="tab-dns" class="tab-content hidden space-y-4">
+                <div id="tab-dns" style="display: none;" class="tab-content space-y-4">
                     <div class="bg-gradient-to-r from-slate-900 to-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg shrink-0">
@@ -304,7 +304,7 @@
                 </div>
 
                 <!-- TAB 3: PLUGINS -->
-                <div id="tab-wp" class="tab-content hidden space-y-3">
+                <div id="tab-wp" style="display: none;" class="tab-content space-y-3">
                     <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-xs">
                         <span class="text-slate-400 font-semibold" id="drawer-plugins-summary">0 Installed Plugins</span>
                         <button id="btn-bulk-update" onclick="executeRemotePluginUpdate()" class="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-xl font-semibold hover:bg-amber-500/20 flex items-center justify-center gap-1.5 cursor-pointer">
@@ -315,7 +315,7 @@
                 </div>
 
                 <!-- TAB 4: FTP BACKUPS -->
-                <div id="tab-vault" class="tab-content hidden space-y-4">
+                <div id="tab-vault" style="display: none;" class="tab-content space-y-4">
                     <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
                             <h4 class="text-xs font-bold text-white">Generate Real Database Backup on FTP</h4>
@@ -332,7 +332,7 @@
                 </div>
 
                 <!-- TAB 5: USERS -->
-                <div id="tab-users" class="tab-content hidden space-y-4 text-xs">
+                <div id="tab-users" style="display: none;" class="tab-content space-y-4 text-xs">
                     <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
                         <h4 class="font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
                             <i class="fa-solid fa-user-plus text-indigo-400"></i> Provision New User Remotely
@@ -358,7 +358,7 @@
                 </div>
 
                 <!-- TAB 6: SEO & ANALYTICS -->
-                <div id="tab-seo" class="tab-content hidden space-y-4 text-xs">
+                <div id="tab-seo" style="display: none;" class="tab-content space-y-4 text-xs">
                     <div class="grid grid-cols-3 gap-3">
                         <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl text-center">
                             <span class="text-[10px] text-slate-400 uppercase font-semibold block">7-Day Visitors</span>
@@ -390,7 +390,7 @@
                 </div>
 
                 <!-- TAB 7: WAF & ATTACKS -->
-                <div id="tab-sec" class="tab-content hidden space-y-3">
+                <div id="tab-sec" style="display: none;" class="tab-content space-y-3">
                     <div class="grid grid-cols-2 gap-3 text-xs">
                         <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
                             <span class="text-[10px] text-slate-400 uppercase font-semibold block">Firewall Engine</span>
@@ -420,7 +420,6 @@
 
     <!-- JAVASCRIPT ENGINE -->
     <script>
-        // 1. BUILT-IN INITIAL TELEMETRY (Guarantees zero blank screen delay)
         const DEFAULT_SITES = [
             {
                 name: 'Grand Prix Express',
@@ -625,21 +624,23 @@
         };
 
         window.switchFleetCategory = function(category) {
+            const webContainer = document.getElementById('websites-fleet-container');
+            const domContainer = document.getElementById('domains-fleet-container');
             const btnWebsites = document.getElementById('btn-fleet-websites');
             const btnDomains = document.getElementById('btn-fleet-domains');
             const navWebsites = document.getElementById('nav-btn-websites');
             const navDomains = document.getElementById('nav-btn-domains');
 
             if (category === 'websites') {
-                document.getElementById('websites-fleet-container').classList.remove('hidden');
-                document.getElementById('domains-fleet-container').classList.add('hidden');
+                if (webContainer) webContainer.style.display = 'block';
+                if (domContainer) domContainer.style.display = 'none';
                 if (btnWebsites) btnWebsites.className = "fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer";
                 if (btnDomains) btnDomains.className = "fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition cursor-pointer";
                 if (navWebsites) navWebsites.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition cursor-pointer";
                 if (navDomains) navDomains.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left cursor-pointer";
             } else {
-                document.getElementById('websites-fleet-container').classList.add('hidden');
-                document.getElementById('domains-fleet-container').classList.remove('hidden');
+                if (webContainer) webContainer.style.display = 'none';
+                if (domContainer) domContainer.style.display = 'block';
                 if (btnDomains) btnDomains.className = "fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer";
                 if (btnWebsites) btnWebsites.className = "fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition cursor-pointer";
                 if (navDomains) navDomains.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition cursor-pointer";
@@ -649,31 +650,31 @@
 
         window.openAddDomainModal = function() {
             const m = document.getElementById('add-domain-modal');
-            if (m) m.classList.remove('hidden');
+            if (m) m.style.display = 'flex';
         };
 
         window.closeAddDomainModal = function() {
             const m = document.getElementById('add-domain-modal');
-            if (m) m.classList.add('hidden');
+            if (m) m.style.display = 'none';
             const inp = document.getElementById('input-domain-name');
             if (inp) inp.value = '';
         };
 
         window.closeDrawer = function() {
             const drawer = document.getElementById('site-drawer');
-            if (drawer) drawer.classList.add('hidden');
+            if (drawer) drawer.style.display = 'none';
             window.activeSiteUrl = '';
         };
 
         window.switchTab = function(tabId) {
             window.currentActiveTab = tabId;
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.tab-btn').forEach(el => {
                 el.className = "tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 cursor-pointer";
             });
 
             const activeContent = document.getElementById(tabId);
-            if (activeContent) activeContent.classList.remove('hidden');
+            if (activeContent) activeContent.style.display = 'block';
 
             const activeBtn = document.getElementById('btn-' + tabId);
             if (activeBtn) activeBtn.className = "tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5 cursor-pointer";
@@ -812,14 +813,14 @@
             }
 
             document.querySelectorAll('.wp-only-tab').forEach(el => {
-                if (isWebsite) el.classList.remove('hidden');
-                else el.classList.add('hidden');
+                if (isWebsite) el.style.display = 'flex';
+                else el.style.display = 'none';
             });
 
             const drawerDelBtn = document.getElementById('btn-drawer-delete-domain');
             if (drawerDelBtn) {
-                if (!isWebsite) drawerDelBtn.classList.remove('hidden');
-                else drawerDelBtn.classList.add('hidden');
+                if (!isWebsite) drawerDelBtn.style.display = 'flex';
+                else drawerDelBtn.style.display = 'none';
             }
 
             if (!isBackgroundSync) {
@@ -950,7 +951,7 @@
             }
 
             const drawer = document.getElementById('site-drawer');
-            if (drawer) drawer.classList.remove('hidden');
+            if (drawer) drawer.style.display = 'flex';
         };
 
         window.submitStandaloneDomain = async function() {
@@ -1156,7 +1157,6 @@
             downloadAnchor.remove();
         };
 
-        // Render Immediately & Sync
         window.renderAll = function() {
             const siteCount = (window.globalData.sites || []).length;
             const domainCount = (window.globalData.domains || []).length;
@@ -1188,15 +1188,18 @@
                 if (data.events) window.globalData.events = data.events;
                 if (data.audit_logs) window.globalData.audit_logs = data.audit_logs;
             } catch (err) {
-                console.log('Background sync waiting for server:', err.message);
+                console.log('Background sync:', err.message);
             }
 
             window.renderAll();
         };
 
-        // Instant render, followed by polling
+        // Render on DOM ready and immediately
+        document.addEventListener('DOMContentLoaded', () => {
+            window.renderAll();
+            window.refreshData();
+        });
         window.renderAll();
-        window.refreshData();
         setInterval(window.refreshData, 5000);
     </script>
 </body>
