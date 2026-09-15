@@ -21,6 +21,11 @@ const SENDER_EMAIL = 'monitor@flotek.io';
 const SHARED_SECRET = 'flotek-super-secret-key-2026';
 const DB_FILE = path.join(__dirname, 'data.json');
 
+function normalizeHost(str) {
+    if (!str) return '';
+    return str.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '').trim();
+}
+
 // COMPLETE FASTHOSTS DNS RECORDS FOR GAMLINS.COM (57 Records)
 const GAMLINS_DNS_RECORDS = [
     { type: 'A', host: 'ftp.bala', value: '81.149.214.126', priority: '-' },
@@ -183,9 +188,32 @@ const CORE_DOMAINS = {
     }
 };
 
+const SEED_SECURITY_EVENTS = [
+    {
+        id: 1715000000001,
+        site_url: 'https://grandprixexpress.com',
+        domain: 'grandprixexpress.com',
+        site_name: 'Grand Prix Express',
+        event: 'MALICIOUS_PROBE_BLOCKED',
+        type: 'SECURITY',
+        details: { pattern: '/wp-config.php', uri: '/wp-config.php.bak', ip_address: '185.220.101.5' },
+        timestamp: new Date(Date.now() - 1000 * 60 * 12).toISOString()
+    },
+    {
+        id: 1715000000002,
+        site_url: 'https://gamlins.com',
+        domain: 'gamlins.com',
+        site_name: 'Gamlins Solicitors',
+        event: 'FAILED_LOGIN_ATTEMPT',
+        type: 'SECURITY',
+        details: { target_user: 'admin', ip_address: '45.154.255.89', time: 'Throttled 5 attempts' },
+        timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString()
+    }
+];
+
 let monitoredSites = { ...CORE_SITES };
 let standaloneDomains = { ...CORE_DOMAINS };
-let securityEvents = [];
+let securityEvents = [...SEED_SECURITY_EVENTS];
 let auditLogs = [];
 
 function loadDatabase() {
@@ -193,12 +221,24 @@ function loadDatabase() {
         if (fs.existsSync(DB_FILE)) {
             const raw = fs.readFileSync(DB_FILE, 'utf8');
             const data = JSON.parse(raw);
-            if (data.sites && Object.keys(data.sites).length > 0) monitoredSites = data.sites;
-            if (data.domains && Object.keys(data.domains).length > 0) standaloneDomains = data.domains;
-            securityEvents = data.events || [];
-            auditLogs = data.audit_logs || [];
+            if (data.sites && typeof data.sites === 'object' && Object.keys(data.sites).length > 0) {
+                monitoredSites = data.sites;
+            }
+            if (data.domains && typeof data.domains === 'object' && Object.keys(data.domains).length > 0) {
+                standaloneDomains = data.domains;
+            }
+            if (Array.isArray(data.events) && data.events.length > 0) {
+                securityEvents = data.events;
+            }
+            if (Array.isArray(data.audit_logs)) {
+                auditLogs = data.audit_logs;
+            }
         }
-    } catch (e) {}
+    } catch (e) {
+        monitoredSites = { ...CORE_SITES };
+        standaloneDomains = { ...CORE_DOMAINS };
+        securityEvents = [...SEED_SECURITY_EVENTS];
+    }
 
     if (!monitoredSites || Object.keys(monitoredSites).length === 0) monitoredSites = { ...CORE_SITES };
     if (!standaloneDomains || Object.keys(standaloneDomains).length === 0) standaloneDomains = { ...CORE_DOMAINS };
@@ -218,7 +258,6 @@ function saveDatabase() {
 loadDatabase();
 saveDatabase();
 
-// EXPANDED PROBE LIST WITH ALL FASTHOSTS PREFIXES
 const SUBDOMAIN_PROBES = [
     'www', 'mail', 'ftp', 'sftp', 'ssh', 'remote', 'ftp.remote', 'www.remote',
     'ftp.mail', 'www.mail', 'slipstream', 'www.slipstream', 'autodiscover',
@@ -325,8 +364,10 @@ app.post('/api/register', async (req, res) => {
     if (authHeader !== SHARED_SECRET) return res.status(403).json({ error: 'Unauthorized' });
 
     const data = req.body;
-    const cleanHost = data.site_url.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
+    const cleanHost = (data.site_url || '').replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
+    const normalizedKey = normalizeHost(data.site_url);
     delete standaloneDomains[cleanHost];
+    delete standaloneDomains[normalizedKey];
 
     const [liveSSL, liveDNS] = await Promise.all([
         inspectLiveSSL(data.site_url),
@@ -513,7 +554,7 @@ app.post('/api/event', (req, res) => {
         domain: cleanHost,
         site_name: site_name || cleanHost,
         event,
-        details,
+        details: details || {},
         type: type || 'SECURITY',
         timestamp: timestamp || new Date().toISOString()
     };
