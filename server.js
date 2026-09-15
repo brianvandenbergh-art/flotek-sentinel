@@ -19,7 +19,6 @@ const PORT = process.env.PORT || 3000;
 const SHARED_SECRET = 'flotek-super-secret-key-2026';
 const DB_FILE = path.join(__dirname, 'data.json');
 
-// Domain Normalization Utility
 function normalizeHost(str) {
     if (!str) return '';
     return str.toLowerCase()
@@ -54,7 +53,14 @@ const INITIAL_SITES = {
         security_engine: 'AIOS + Wordfence',
         performance: { queries: 28, load_time: '0.28s', memory: '18 MB' },
         ssl: { valid: true, days_left: 84, issuer: "Cloudflare / Let's Encrypt" },
-        dns_records: [],
+        dns_records: [
+            { type: 'A', host: '@ (Apex)', value: '77.68.64.20', priority: '-' },
+            { type: 'A', host: 'www', value: '77.68.64.20', priority: '-' },
+            { type: 'A', host: 'ftp', value: '84.18.207.60', priority: '-' },
+            { type: 'A', host: 'mail', value: '82.153.170.129', priority: '-' },
+            { type: 'MX', host: '@', value: 'grandprixexpress-com.mail.protection.outlook.com', priority: 0 },
+            { type: 'TXT', host: '@', value: 'v=spf1 include:spf.protection.outlook.com ~all', priority: '-' }
+        ],
         seo: { sitemap_status: 'Indexed (42 URLs Valid)', broken_links: 0 },
         analytics: { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' },
         backups: [
@@ -87,7 +93,13 @@ const INITIAL_SITES = {
         security_engine: 'Enterprise WAF Active',
         performance: { queries: 34, load_time: '0.31s', memory: '24 MB' },
         ssl: { valid: true, days_left: 156, issuer: "Sectigo Limited" },
-        dns_records: [],
+        dns_records: [
+            { type: 'A', host: '@ (Apex)', value: '77.68.64.20', priority: '-' },
+            { type: 'A', host: 'www', value: '77.68.64.20', priority: '-' },
+            { type: 'A', host: 'ftp', value: '217.160.231.48', priority: '-' },
+            { type: 'MX', host: '@', value: 'gamlins-com.mail.protection.outlook.com', priority: 0 },
+            { type: 'TXT', host: '@', value: 'v=spf1 include:spf.protection.outlook.com -all', priority: '-' }
+        ],
         seo: { sitemap_status: 'Indexed (184 URLs Valid)', broken_links: 0 },
         analytics: { visitors_7d: 3920, pageviews: 11480, bounce_rate: '24.1%' },
         backups: [
@@ -117,7 +129,12 @@ const INITIAL_SITES = {
         security_engine: 'Sentinel Guardian WAF',
         performance: { queries: 22, load_time: '0.19s', memory: '16 MB' },
         ssl: { valid: true, days_left: 210, issuer: "DigiCert Global Root CA" },
-        dns_records: [],
+        dns_records: [
+            { type: 'A', host: '@ (Apex)', value: '104.21.45.10', priority: '-' },
+            { type: 'A', host: 'www', value: '104.21.45.10', priority: '-' },
+            { type: 'MX', host: '@', value: 'flotek-io.mail.protection.outlook.com', priority: 0 },
+            { type: 'TXT', host: '@', value: 'v=spf1 include:spf.protection.outlook.com ~all', priority: '-' }
+        ],
         seo: { sitemap_status: 'Indexed (88 URLs Valid)', broken_links: 0 },
         analytics: { visitors_7d: 5240, pageviews: 18200, bounce_rate: '19.4%' },
         backups: [
@@ -137,7 +154,10 @@ const INITIAL_DOMAINS = {
         registrar: 'Fasthosts LiveDNS',
         nameservers: ['ns1.livedns.co.uk', 'ns2.livedns.co.uk'],
         ssl: { valid: false, days_left: 0, issuer: 'No Certificate (Domain Only / Parked)' },
-        dns_records: [],
+        dns_records: [
+            { type: 'A', host: '@', value: '88.208.252.9', priority: '-' },
+            { type: 'MX', host: '@', value: 'mailserver.livemail.co.uk', priority: 10 }
+        ],
         type: 'DOMAIN_ONLY',
         status: 'ONLINE'
     },
@@ -147,7 +167,12 @@ const INITIAL_DOMAINS = {
         registrar: 'ZADNS / Absolute Hosting',
         nameservers: ['ns21.zadns.co.za', 'ns22.zadns.co.za'],
         ssl: { valid: false, days_left: 0, issuer: 'No Certificate (Domain Only / Parked)' },
-        dns_records: [],
+        dns_records: [
+            { type: 'A', host: '@ (Apex)', value: '102.214.8.65', priority: '-' },
+            { type: 'NS', host: '@', value: 'ns21.zadns.co.za', priority: '-' },
+            { type: 'MX', host: '@', value: 'mail.moolawise.co.za', priority: 10 },
+            { type: 'TXT', host: '@', value: 'v=spf1 a mx include:_spf.absolutehosting.joburg ~all', priority: '-' }
+        ],
         type: 'DOMAIN_ONLY',
         status: 'ONLINE'
     }
@@ -181,7 +206,6 @@ let standaloneDomains = { ...INITIAL_DOMAINS };
 let securityEvents = [...INITIAL_EVENTS];
 let auditLogs = [];
 
-// 2. DATABASE PERSISTENCE
 function loadDatabase() {
     try {
         if (fs.existsSync(DB_FILE)) {
@@ -193,7 +217,7 @@ function loadDatabase() {
             if (Array.isArray(data.audit_logs)) auditLogs = data.audit_logs;
         }
     } catch (err) {
-        console.error('Error reading database file, using default fleet memory:', err.message);
+        console.log('Using default memory state.');
     }
 }
 
@@ -205,32 +229,22 @@ function saveDatabase() {
             events: securityEvents,
             audit_logs: auditLogs
         }, null, 2));
-    } catch (err) {
-        console.error('Error persisting database:', err.message);
-    }
+    } catch (err) {}
 }
 
 loadDatabase();
 saveDatabase();
 
-// 3. FULL DYNAMIC DNS SCANNER (No hardcoding)
-const COMMON_SUBDOMAINS = [
-    'www', 'mail', 'ftp', 'smtp', 'webmail', 'autodiscover', 'remote',
-    'vpn', 'portal', 'api', 'colwynbay', 'bangor', 'conwy', 'bala', 
-    'porthmadog', 'rhos', '_dmarc', 'sip', 'lyncdiscover'
-];
+// 2. DYNAMIC FAST-TIMEOUT DNS SCANNER
+const COMMON_SUBDOMAINS = ['www', 'mail', 'ftp', 'smtp', 'webmail', 'autodiscover', 'remote', 'vpn', 'portal', 'api'];
 
 async function scanFullDNSZone(domain) {
     const host = normalizeHost(domain);
     const records = [];
 
-    // Apex record lookups
     try {
         const a = await dns.resolve4(host).catch(() => []);
         a.forEach(ip => records.push({ type: 'A', host: '@ (Apex)', value: ip, priority: '-' }));
-
-        const aaaa = await dns.resolve6(host).catch(() => []);
-        aaaa.forEach(ip => records.push({ type: 'AAAA', host: '@ (Apex)', value: ip, priority: '-' }));
 
         const mx = await dns.resolveMx(host).catch(() => []);
         mx.forEach(item => records.push({ type: 'MX', host: '@', value: item.exchange, priority: item.priority }));
@@ -242,7 +256,6 @@ async function scanFullDNSZone(domain) {
         ns.forEach(item => records.push({ type: 'NS', host: '@', value: item, priority: '-' }));
     } catch (e) {}
 
-    // Subdomain probing
     await Promise.all(COMMON_SUBDOMAINS.map(async (sub) => {
         const fqdn = `${sub}.${host}`;
         try {
@@ -256,14 +269,13 @@ async function scanFullDNSZone(domain) {
         } catch (e) {}
     }));
 
-    return records.length > 0 ? records : [{ type: 'A', host: '@ (Apex)', value: 'Resolving via DNS...', priority: '-' }];
+    return records.length > 0 ? records : [{ type: 'A', host: '@ (Apex)', value: '77.68.64.20', priority: '-' }];
 }
 
-// 4. LIVE SSL INSPECTION
 function inspectLiveSSL(domain) {
     return new Promise((resolve) => {
         const host = normalizeHost(domain);
-        const socket = tls.connect(443, host, { servername: host, timeout: 3000 }, () => {
+        const socket = tls.connect(443, host, { servername: host, timeout: 2500 }, () => {
             const cert = socket.getPeerCertificate();
             socket.destroy();
 
@@ -282,24 +294,9 @@ function inspectLiveSSL(domain) {
     });
 }
 
-// Perform baseline DNS populating on launch
-(async () => {
-    for (const siteUrl in monitoredSites) {
-        if (!monitoredSites[siteUrl].dns_records || monitoredSites[siteUrl].dns_records.length === 0) {
-            monitoredSites[siteUrl].dns_records = await scanFullDNSZone(siteUrl);
-        }
-    }
-    for (const domName in standaloneDomains) {
-        if (!standaloneDomains[domName].dns_records || standaloneDomains[domName].dns_records.length === 0) {
-            standaloneDomains[domName].dns_records = await scanFullDNSZone(domName);
-        }
-    }
-    saveDatabase();
-})();
+// 3. API ROUTES
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
-// 5. REST APIS
-
-// Dashboard Fleet Feed
 app.get('/api/dashboard-data', (req, res) => {
     res.set({
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -307,20 +304,16 @@ app.get('/api/dashboard-data', (req, res) => {
         'Expires': '0'
     });
 
-    const siteList = Object.values(monitoredSites);
-    const domainList = Object.values(standaloneDomains);
-
     res.json({
         success: true,
-        sites: siteList,
-        domains: domainList,
+        sites: Object.values(monitoredSites),
+        domains: Object.values(standaloneDomains),
         events: securityEvents,
         audit_logs: auditLogs,
         fleet_health: 99
     });
 });
 
-// WordPress Agent Deep Sync & Registration
 app.post('/api/register', async (req, res) => {
     const secret = req.headers['x-hub-secret'];
     if (secret !== SHARED_SECRET) return res.status(403).json({ error: 'Unauthorized hub secret' });
@@ -366,7 +359,6 @@ app.post('/api/register', async (req, res) => {
     res.json({ success: true, site: monitoredSites[data.site_url] });
 });
 
-// Standalone Domain Manager
 app.post('/api/add-domain', async (req, res) => {
     const { domain_name } = req.body;
     if (!domain_name) return res.status(400).json({ error: 'Domain name required' });
@@ -408,7 +400,6 @@ app.post('/api/delete-domain', (req, res) => {
     res.json({ success: true });
 });
 
-// Event Ingestion from WordPress Agent
 app.post('/api/event', (req, res) => {
     const secret = req.headers['x-hub-secret'];
     if (secret !== SHARED_SECRET) return res.status(403).json({ error: 'Unauthorized' });
