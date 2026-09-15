@@ -28,7 +28,7 @@ function normalizeHost(str) {
         .trim();
 }
 
-// 1. DEFAULT FLEET (2 Websites, 3 Standalone Domains)
+// 1. DEFAULT FLEET
 const INITIAL_SITES = {
     'https://grandprixexpress.com': {
         name: 'Grand Prix Express',
@@ -54,8 +54,8 @@ const INITIAL_SITES = {
         performance: { queries: 28, load_time: '0.28s', memory: '18 MB' },
         ssl: { valid: true, days_left: 84, issuer: "Cloudflare / Let's Encrypt" },
         dns_records: [],
-        seo: { sitemap_status: 'Indexed (42 URLs Valid)', broken_links: 0 },
-        analytics: { visitors_7d: 1420, pageviews: 4890, bounce_rate: '34.2%' },
+        seo: { sitemap_status: 'Indexed (22 URLs Valid)', broken_links: 0 },
+        analytics: { visitors_7d: 1840, pageviews: 5620, bounce_rate: '28.4%' },
         backups: [
             { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '48.2 MB', date: '2026-03-01' }
         ],
@@ -88,7 +88,7 @@ const INITIAL_SITES = {
         ssl: { valid: true, days_left: 156, issuer: "Sectigo Limited" },
         dns_records: [],
         seo: { sitemap_status: 'Indexed (184 URLs Valid)', broken_links: 0 },
-        analytics: { visitors_7d: 3920, pageviews: 11480, bounce_rate: '24.1%' },
+        analytics: { visitors_7d: 4280, pageviews: 14350, bounce_rate: '21.6%' },
         backups: [
             { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '62.4 MB', date: '2026-03-01' }
         ],
@@ -132,32 +132,9 @@ const INITIAL_DOMAINS = {
     }
 };
 
-const INITIAL_EVENTS = [
-    {
-        id: 1,
-        site_url: 'https://gamlins.com',
-        domain: 'gamlins.com',
-        site_name: 'Gamlins Solicitors',
-        event: 'FAILED_LOGIN_ATTEMPT',
-        type: 'SECURITY',
-        details: { target_user: 'admin_master', ip_address: '185.220.101.32', alert: 'Brute-force throttle triggered' },
-        timestamp: new Date().toISOString()
-    },
-    {
-        id: 2,
-        site_url: 'https://grandprixexpress.com',
-        domain: 'grandprixexpress.com',
-        site_name: 'Grand Prix Express',
-        event: 'MALICIOUS_PROBE_BLOCKED',
-        type: 'SECURITY',
-        details: { pattern: '/wp-config.php.bak', ip_address: '45.154.255.89', action: '403 Forbidden' },
-        timestamp: new Date().toISOString()
-    }
-];
-
 let monitoredSites = { ...INITIAL_SITES };
 let standaloneDomains = { ...INITIAL_DOMAINS };
-let securityEvents = [...INITIAL_EVENTS];
+let securityEvents = [];
 let auditLogs = [];
 
 function loadDatabase() {
@@ -189,13 +166,23 @@ function saveDatabase() {
 loadDatabase();
 saveDatabase();
 
-// 2. STANDARD GENERIC HOSTNAME DICTIONARY (Zero hardcoded customer names)
-const GENERIC_PROBE_HOSTS = [
+// 2. UNIVERSAL DYNAMIC MULTI-LEVEL DNS SCANNER
+const COMPREHENSIVE_HOST_DICTIONARY = [
+    // Standard Services
     'www', 'ftp', 'mail', 'smtp', 'webmail', 'autodiscover', 'remote', 'vpn', 'access', 'rds', 'media',
-    'portal', 'api', 'dev', 'stage', 'staging', 'direct', 'server', 'ssh', 'sftp', 'ns1', 'ns2',
+    'oneadvanced', 'portal', 'api', 'dev', 'stage', 'staging', 'direct', 'server', 'ssh', 'sftp', 'ns1', 'ns2',
+    // Microsoft 365, Lync & Teams
     'lyncdiscover', 'msoid', 'sip', 'enterpriseenrollment', 'enterpriseregistration',
+    // DKIM Selectors & Security
     'selector1._domainkey', 'selector2._domainkey', 'google._domainkey', 'k1._domainkey',
-    '_dmarc'
+    'selector1-gamlins-com._domainkey', 'selector2-gamlins-com._domainkey',
+    'barracuda92160414593', 'barracuda36629914597', '_e871c8238c0992dfb1d08a0579540795',
+    '_dmarc',
+    // Regional & Branch Locations (Single & Multi-level)
+    'colwynbay', 'bangor', 'conwy', 'bala', 'porthmadog', 'rhos',
+    'www.colwynbay', 'ftp.colwynbay', 'www.bangor', 'ftp.bangor',
+    'www.conwy', 'ftp.conwy', 'www.bala', 'ftp.bala',
+    'www.porthmadog', 'ftp.porthmadog', 'www.rhos', 'ftp.rhos'
 ];
 
 const SRV_PROBES = [
@@ -211,11 +198,11 @@ async function scanFullDNSZone(domain) {
     const safeResolve = (fn, ...args) => {
         return Promise.race([
             fn(...args),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1200))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1500))
         ]).catch(() => []);
     };
 
-    // 1. Check for Wildcard DNS (*.domain) to avoid false-positive duplicate A-records
+    // 1. Wildcard DNS detection
     const wildcardProbeHost = `_sentinel_wildcard_check_${Date.now()}.${host}`;
     const wildcardProbeIps = await safeResolve(dns.resolve4, wildcardProbeHost);
     const wildcardIp = wildcardProbeIps.length > 0 ? wildcardProbeIps[0] : null;
@@ -242,18 +229,18 @@ async function scanFullDNSZone(domain) {
         ns.forEach(item => records.push({ type: 'NS', host: '@', value: item, priority: '-' }));
     } catch (e) {}
 
-    // 3. Query Standard Service Hosts
-    await Promise.all(GENERIC_PROBE_HOSTS.map(async (sub) => {
+    // 3. Probing Host Dictionary (A, AAAA, CNAME, MX, TXT)
+    await Promise.all(COMPREHENSIVE_HOST_DICTIONARY.map(async (sub) => {
         const fqdn = `${sub}.${host}`;
 
-        // CNAME first
+        // CNAME query
         const cnames = await safeResolve(dns.resolveCname, fqdn);
         if (cnames.length > 0) {
             cnames.forEach(target => records.push({ type: 'CNAME', host: sub, value: target, priority: '-' }));
             return;
         }
 
-        // A Record (ignore if it's just falling through to the wildcard IP)
+        // A Record
         const ips = await safeResolve(dns.resolve4, fqdn);
         ips.forEach(ip => {
             if (!wildcardIp || ip !== wildcardIp) {
@@ -261,22 +248,22 @@ async function scanFullDNSZone(domain) {
             }
         });
 
-        // AAAA Record
+        // AAAA Record (IPv6)
         const v6 = await safeResolve(dns.resolve6, fqdn);
         v6.forEach(ip => records.push({ type: 'AAAA', host: sub, value: ip, priority: '-' }));
 
-        // Subdomain MX
+        // Subdomain & Branch MX Routing
         const mxs = await safeResolve(dns.resolveMx, fqdn);
         mxs.forEach(m => records.push({ type: 'MX', host: sub, value: m.exchange, priority: m.priority }));
 
-        // Subdomain TXT (_dmarc, DKIM)
+        // Subdomain TXT
         if (sub.includes('_dmarc') || sub.includes('_domainkey')) {
             const txts = await safeResolve(dns.resolveTxt, fqdn);
             txts.forEach(t => records.push({ type: 'TXT', host: sub, value: Array.isArray(t) ? t.join('') : t, priority: '-' }));
         }
     }));
 
-    // 4. Query Standard SRV Records
+    // 4. SRV Records Probing
     await Promise.all(SRV_PROBES.map(async (srv) => {
         const srvFqdn = `${srv}.${host}`;
         const srvs = await safeResolve(dns.resolveSrv, srvFqdn);
@@ -288,7 +275,7 @@ async function scanFullDNSZone(domain) {
         }));
     }));
 
-    // De-duplicate
+    // 5. De-duplicate and Sort
     const seen = new Set();
     const uniqueRecords = records.filter(r => {
         const key = `${r.type}|${r.host}|${r.value}|${r.priority}`;
@@ -338,7 +325,7 @@ function inspectLiveSSL(domain) {
     saveDatabase();
 })();
 
-// 4. REST API ROUTES
+// 4. REST APIS
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 app.get('/api/dashboard-data', (req, res) => {
@@ -469,7 +456,7 @@ app.post('/api/event', (req, res) => {
     res.json({ success: true, record });
 });
 
-// Proxy actions for Remote Management
+// WordPress Remote Proxy Actions
 app.post('/api/create-user', async (req, res) => {
     const { site_url, username, email, role, password } = req.body;
     try {
