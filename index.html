@@ -14,6 +14,10 @@
         .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #070a12; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        
+        /* Force tab visibility without CSS class conflicts */
+        .wp-tab-hidden { display: none !important; }
+        .wp-tab-visible { display: flex !important; }
     </style>
 </head>
 <body class="bg-[#0b101b] text-slate-100 min-h-screen custom-scrollbar flex flex-col md:flex-row">
@@ -210,7 +214,7 @@
                     </div>
                 </div>
 
-                <!-- TABS -->
+                <!-- TABS HEADER BAR -->
                 <div class="overflow-x-auto custom-scrollbar pb-2">
                     <div id="drawer-tabs-bar" class="flex gap-2 text-xs min-w-max">
                         <button type="button" onclick="switchTab('tab-overview')" id="btn-tab-overview" class="tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5 wp-only-tab cursor-pointer">
@@ -237,7 +241,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 1: THEME & OVERVIEW -->
+                <!-- TAB 1: THEME & OVERVIEW (WP Only) -->
                 <div id="tab-overview" class="tab-content space-y-4">
                     <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
                         <span class="text-[10px] text-slate-400 uppercase font-semibold block">Active WordPress Theme</span>
@@ -261,7 +265,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 2: DNS ZONE & SSL -->
+                <!-- TAB 2: DNS ZONE & SSL (All Domains & Sites) -->
                 <div id="tab-dns" style="display: none;" class="tab-content space-y-4">
                     <div class="bg-gradient-to-r from-slate-900 to-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="flex items-center gap-3">
@@ -303,7 +307,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 3: PLUGINS -->
+                <!-- TAB 3: PLUGINS (WP Only) -->
                 <div id="tab-wp" style="display: none;" class="tab-content space-y-3">
                     <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-xs">
                         <span class="text-slate-400 font-semibold" id="drawer-plugins-summary">0 Installed Plugins</span>
@@ -314,7 +318,7 @@
                     <div id="drawer-plugins-list" class="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-1"></div>
                 </div>
 
-                <!-- TAB 4: FTP BACKUPS -->
+                <!-- TAB 4: FTP BACKUPS (WP Only) -->
                 <div id="tab-vault" style="display: none;" class="tab-content space-y-4">
                     <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
@@ -331,7 +335,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 5: USERS -->
+                <!-- TAB 5: USERS (WP Only) -->
                 <div id="tab-users" style="display: none;" class="tab-content space-y-4 text-xs">
                     <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
                         <h4 class="font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
@@ -357,7 +361,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 6: SEO & ANALYTICS -->
+                <!-- TAB 6: SEO & ANALYTICS (WP Only) -->
                 <div id="tab-seo" style="display: none;" class="tab-content space-y-4 text-xs">
                     <div class="grid grid-cols-3 gap-3">
                         <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl text-center">
@@ -389,7 +393,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 7: WAF & ATTACKS -->
+                <!-- TAB 7: WAF & ATTACKS (All Entities) -->
                 <div id="tab-sec" style="display: none;" class="tab-content space-y-3">
                     <div class="grid grid-cols-2 gap-3 text-xs">
                         <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
@@ -453,6 +457,7 @@
             return '<div class="flex items-center gap-0.5">' + bars + '</div>';
         };
 
+        // Real-time Fleet Category Switching
         window.switchFleetCategory = function(category) {
             var webContainer = document.getElementById('websites-fleet-container');
             var domContainer = document.getElementById('domains-fleet-container');
@@ -494,24 +499,36 @@
             var drawer = document.getElementById('site-drawer');
             if (drawer) drawer.style.display = 'none';
             window.activeSiteUrl = '';
+            window.currentActiveTab = 'tab-overview';
         };
 
+        // Tab Switching Engine
         window.switchTab = function(tabId) {
             window.currentActiveTab = tabId;
+
+            // Hide all tab contents
             var tabs = document.querySelectorAll('.tab-content');
             for (var i = 0; i < tabs.length; i++) {
                 tabs[i].style.display = 'none';
             }
+
+            // Reset all tab button styles to unselected
             var tabBtns = document.querySelectorAll('.tab-btn');
             for (var j = 0; j < tabBtns.length; j++) {
-                tabBtns[j].className = "tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 cursor-pointer";
+                tabBtns[j].classList.remove('bg-indigo-600', 'text-white', 'font-bold');
+                tabBtns[j].classList.add('bg-slate-900', 'text-slate-400', 'font-semibold');
             }
 
+            // Show target content
             var activeContent = document.getElementById(tabId);
             if (activeContent) activeContent.style.display = 'block';
 
+            // Highlight target button
             var activeBtn = document.getElementById('btn-' + tabId);
-            if (activeBtn) activeBtn.className = "tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5 cursor-pointer";
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-slate-900', 'text-slate-400', 'font-semibold');
+                activeBtn.classList.add('bg-indigo-600', 'text-white', 'font-bold');
+            }
         };
 
         window.getSiteSecurityEvents = function(targetSite) {
@@ -656,23 +673,31 @@
             window.renderDomains(filteredDomains);
         };
 
+        // Fully Isolated Drawer Telemetry
         window.openDrawer = function(identifier, isBackgroundSync) {
             window.activeSiteUrl = identifier;
             var cleanIdentifier = window.normalizeDomain(identifier);
 
             var site = null;
+            var isWebsite = false;
+
+            // Strict lookup: Check websites first
             var sites = window.globalData.sites || [];
             for (var i = 0; i < sites.length; i++) {
                 if (window.normalizeDomain(sites[i].url) === cleanIdentifier || window.normalizeDomain(sites[i].domain) === cleanIdentifier) {
                     site = sites[i];
+                    isWebsite = true;
                     break;
                 }
             }
+
+            // Check standalone domains
             if (!site) {
                 var domains = window.globalData.domains || [];
                 for (var j = 0; j < domains.length; j++) {
                     if (window.normalizeDomain(domains[j].domain) === cleanIdentifier) {
                         site = domains[j];
+                        isWebsite = false;
                         break;
                     }
                 }
@@ -680,9 +705,7 @@
 
             if (!site) return;
 
-            var isWebsite = site.type === 'WEBSITE' || !!site.url;
             var cleanName = window.decodeHtml(site.name || cleanIdentifier);
-
             window.setTxt('drawer-title', cleanName);
             var drawerUrl = document.getElementById('drawer-url');
             if (drawerUrl) {
@@ -690,10 +713,16 @@
                 drawerUrl.querySelector('span').innerText = site.url || site.domain || cleanIdentifier;
             }
 
-            // Hide WP tabs for standalone domains
-            var wpTabs = document.querySelectorAll('.wp-only-tab');
-            for (var k = 0; k < wpTabs.length; k++) {
-                wpTabs[k].style.display = isWebsite ? 'flex' : 'none';
+            // 1. DYNAMICALLY SHOW/HIDE TABS ACCORDING TO ENTITY TYPE
+            var wpTabButtons = document.querySelectorAll('.wp-only-tab');
+            for (var k = 0; k < wpTabButtons.length; k++) {
+                if (isWebsite) {
+                    wpTabButtons[k].classList.remove('wp-tab-hidden');
+                    wpTabButtons[k].classList.add('wp-tab-visible');
+                } else {
+                    wpTabButtons[k].classList.remove('wp-tab-visible');
+                    wpTabButtons[k].classList.add('wp-tab-hidden');
+                }
             }
 
             var drawerDelBtn = document.getElementById('btn-drawer-delete-domain');
@@ -701,12 +730,21 @@
                 drawerDelBtn.style.display = isWebsite ? 'none' : 'flex';
             }
 
+            // 2. AUTOMATIC DEFAULT TAB ASSIGNMENT
             if (!isBackgroundSync) {
-                window.currentActiveTab = isWebsite ? 'tab-overview' : 'tab-dns';
+                var targetDefaultTab = isWebsite ? 'tab-overview' : 'tab-dns';
+                window.switchTab(targetDefaultTab);
+            } else {
+                // If background sync runs, guarantee domain isn't stuck on a WP tab
+                var wpOnlyTabIds = ['tab-overview', 'tab-wp', 'tab-vault', 'tab-users', 'tab-seo'];
+                if (!isWebsite && wpOnlyTabIds.indexOf(window.currentActiveTab) !== -1) {
+                    window.switchTab('tab-dns');
+                } else {
+                    window.switchTab(window.currentActiveTab);
+                }
             }
-            window.switchTab(window.currentActiveTab);
 
-            // Populate WP Telemetry
+            // 3. POPULATE TELEMETRY
             if (isWebsite) {
                 window.setTxt('drawer-theme-name', site.theme ? site.theme.name : 'Active Theme');
                 window.setTxt('drawer-theme-ver', site.theme ? ('v' + site.theme.version) : 'v1.0');
@@ -715,7 +753,7 @@
                 window.setTxt('drawer-memory', perf.memory || '18 MB');
                 window.setTxt('drawer-db-size', '42 Tables (48.2 MB)');
 
-                // Dynamic, unique SEO metrics per site
+                // Distinct SEO Metrics
                 var analytics = site.analytics || { visitors_7d: 1200, pageviews: 4100, bounce_rate: '30.0%' };
                 var seo = site.seo || { sitemap_status: 'Indexed (42 URLs Valid)', broken_links: 0 };
                 window.setTxt('drawer-seo-visitors', (analytics.visitors_7d || 1200).toLocaleString());
@@ -723,48 +761,8 @@
                 window.setTxt('drawer-seo-bounce', analytics.bounce_rate || '30.0%');
                 var seoStatusEl = document.getElementById('drawer-seo-sitemap');
                 if (seoStatusEl) seoStatusEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + (seo.sitemap_status || 'Indexed');
-            }
 
-            // SSL Certificate
-            var hasSSL = site.ssl && site.ssl.valid;
-            window.setTxt('drawer-ssl-days', hasSSL ? (site.ssl.days_left + ' Days Remaining') : 'No Certificate');
-            window.setTxt('drawer-ssl-issuer', 'Issuer: ' + (site.ssl ? site.ssl.issuer : 'No SSL (Domain Only)'));
-            var sslBadge = document.getElementById('drawer-ssl-badge');
-            if (sslBadge) {
-                if (hasSSL) {
-                    sslBadge.className = "px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-bold rounded-lg border border-emerald-500/20 self-start sm:self-auto flex items-center gap-1.5";
-                    sslBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> HTTPS SECURE';
-                } else {
-                    sslBadge.className = "px-2.5 py-1 bg-slate-800 text-slate-400 text-xs font-bold rounded-lg border border-slate-700 self-start sm:self-auto flex items-center gap-1.5";
-                    sslBadge.innerHTML = 'UNENCRYPTED / PARKED';
-                }
-            }
-
-            // DNS Table (A, AAAA, CNAME, MX, TXT, SRV, NS)
-            var dnsRecords = site.dns_records || [];
-            window.setTxt('drawer-dns-count', dnsRecords.length);
-            var dnsTableBody = document.getElementById('drawer-dns-table-body');
-            if (dnsTableBody) {
-                if (dnsRecords.length === 0) {
-                    dnsTableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">Scanning DNS zone records...</td></tr>';
-                } else {
-                    var dnsHtml = '';
-                    for (var rIdx = 0; rIdx < dnsRecords.length; rIdx++) {
-                        var r = dnsRecords[rIdx];
-                        var typeColor = r.type === 'A' ? 'text-indigo-400' : r.type === 'AAAA' ? 'text-teal-400' : r.type === 'CNAME' ? 'text-amber-400' : r.type === 'MX' ? 'text-emerald-400' : r.type === 'SRV' ? 'text-cyan-400' : 'text-purple-400';
-                        dnsHtml += '<tr class="hover:bg-slate-900/50">' +
-                            '<td class="p-2.5 font-bold ' + typeColor + '">' + r.type + '</td>' +
-                            '<td class="p-2.5 text-slate-300 whitespace-nowrap">' + r.host + '</td>' +
-                            '<td class="p-2.5 text-slate-200 truncate max-w-[200px] sm:max-w-sm">' + r.value + '</td>' +
-                            '<td class="p-2.5 text-slate-400">' + (r.priority !== undefined ? r.priority : '-') + '</td>' +
-                        '</tr>';
-                    }
-                    dnsTableBody.innerHTML = dnsHtml;
-                }
-            }
-
-            // Plugins & Users
-            if (isWebsite) {
+                // Plugins
                 var plugins = site.plugins || [];
                 window.setTxt('drawer-tab-plugin-count', plugins.length);
                 window.setTxt('drawer-plugins-summary', plugins.length + ' Installed Plugins');
@@ -788,6 +786,7 @@
                     pluginsContainer.innerHTML = phtml;
                 }
 
+                // Users
                 var users = site.users || [];
                 window.setTxt('drawer-tab-user-count', users.length);
                 var usersContainer = document.getElementById('drawer-users-list');
@@ -810,6 +809,7 @@
                     usersContainer.innerHTML = uhtml;
                 }
 
+                // Backups
                 var backups = site.backups || [];
                 var backupsContainer = document.getElementById('drawer-backups-list');
                 if (backupsContainer) {
@@ -828,7 +828,45 @@
                 }
             }
 
-            // Security Incident Log
+            // SSL Certificate Status
+            var hasSSL = site.ssl && site.ssl.valid;
+            window.setTxt('drawer-ssl-days', hasSSL ? (site.ssl.days_left + ' Days Remaining') : 'No Certificate');
+            window.setTxt('drawer-ssl-issuer', 'Issuer: ' + (site.ssl ? site.ssl.issuer : 'No SSL (Domain Only)'));
+            var sslBadge = document.getElementById('drawer-ssl-badge');
+            if (sslBadge) {
+                if (hasSSL) {
+                    sslBadge.className = "px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-bold rounded-lg border border-emerald-500/20 self-start sm:self-auto flex items-center gap-1.5";
+                    sslBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> HTTPS SECURE';
+                } else {
+                    sslBadge.className = "px-2.5 py-1 bg-slate-800 text-slate-400 text-xs font-bold rounded-lg border border-slate-700 self-start sm:self-auto flex items-center gap-1.5";
+                    sslBadge.innerHTML = 'UNENCRYPTED / PARKED';
+                }
+            }
+
+            // DNS Records Table
+            var dnsRecords = site.dns_records || [];
+            window.setTxt('drawer-dns-count', dnsRecords.length);
+            var dnsTableBody = document.getElementById('drawer-dns-table-body');
+            if (dnsTableBody) {
+                if (dnsRecords.length === 0) {
+                    dnsTableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">Scanning DNS zone records...</td></tr>';
+                } else {
+                    var dnsHtml = '';
+                    for (var rIdx = 0; rIdx < dnsRecords.length; rIdx++) {
+                        var r = dnsRecords[rIdx];
+                        var typeColor = r.type === 'A' ? 'text-indigo-400' : r.type === 'AAAA' ? 'text-teal-400' : r.type === 'CNAME' ? 'text-amber-400' : r.type === 'MX' ? 'text-emerald-400' : r.type === 'SRV' ? 'text-cyan-400' : 'text-purple-400';
+                        dnsHtml += '<tr class="hover:bg-slate-900/50">' +
+                            '<td class="p-2.5 font-bold ' + typeColor + '">' + r.type + '</td>' +
+                            '<td class="p-2.5 text-slate-300 whitespace-nowrap">' + r.host + '</td>' +
+                            '<td class="p-2.5 text-slate-200 truncate max-w-[200px] sm:max-w-sm">' + r.value + '</td>' +
+                            '<td class="p-2.5 text-slate-400">' + (r.priority !== undefined ? r.priority : '-') + '</td>' +
+                        '</tr>';
+                    }
+                    dnsTableBody.innerHTML = dnsHtml;
+                }
+            }
+
+            // Incident Stream
             var siteEvents = window.getSiteSecurityEvents(site);
             window.setTxt('drawer-tab-sec-count', siteEvents.length);
             window.setTxt('drawer-events-count-label', siteEvents.length + ' events');
