@@ -28,7 +28,7 @@ function normalizeHost(str) {
         .trim();
 }
 
-// 1. DEFAULT FLEET CONFIGURATION (2 WordPress Sites, 3 Standalone Domains)
+// 1. DEFAULT FLEET (2 Websites, 3 Standalone Domains)
 const INITIAL_SITES = {
     'https://grandprixexpress.com': {
         name: 'Grand Prix Express',
@@ -171,7 +171,6 @@ function loadDatabase() {
             if (Array.isArray(data.audit_logs)) auditLogs = data.audit_logs;
         }
     } catch (err) {}
-    // Ensure flotek.io is strictly in domains, not websites
     delete monitoredSites['https://flotek.io'];
     delete monitoredSites['flotek.io'];
 }
@@ -190,20 +189,12 @@ function saveDatabase() {
 loadDatabase();
 saveDatabase();
 
-// 2. UNIVERSAL DYNAMIC DNS RESOLUTION ENGINE
-const EXTENDED_SUBDOMAINS = [
-    // Apex & standard hosts
-    'www', 'ftp', 'mail', 'smtp', 'webmail', 'autodiscover', 'remote', 'vpn', 'access', 'rds', 'media', 'oneadvanced',
-    // Regional branches (e.g. legal, logistics, retail)
-    'colwynbay', 'bangor', 'conwy', 'bala', 'porthmadog', 'rhos',
-    'www.colwynbay', 'ftp.colwynbay', 'www.bangor', 'ftp.bangor',
-    'www.conwy', 'ftp.conwy', 'www.bala', 'ftp.bala',
-    'www.porthmadog', 'ftp.porthmadog', 'www.rhos', 'ftp.rhos',
-    // Corporate, Microsoft 365, Lync, & Security services
+// 2. STANDARD GENERIC HOSTNAME DICTIONARY (Zero hardcoded customer names)
+const GENERIC_PROBE_HOSTS = [
+    'www', 'ftp', 'mail', 'smtp', 'webmail', 'autodiscover', 'remote', 'vpn', 'access', 'rds', 'media',
+    'portal', 'api', 'dev', 'stage', 'staging', 'direct', 'server', 'ssh', 'sftp', 'ns1', 'ns2',
     'lyncdiscover', 'msoid', 'sip', 'enterpriseenrollment', 'enterpriseregistration',
-    'barracuda92160414593', 'barracuda36629914597',
-    'selector1._domainkey', 'selector2._domainkey', 'selector1-gamlins-com._domainkey', 'selector2-gamlins-com._domainkey',
-    'google._domainkey', 'k1._domainkey', '_e871c8238c0992dfb1d08a0579540795',
+    'selector1._domainkey', 'selector2._domainkey', 'google._domainkey', 'k1._domainkey',
     '_dmarc'
 ];
 
@@ -217,7 +208,6 @@ async function scanFullDNSZone(domain) {
     const host = normalizeHost(domain);
     const records = [];
 
-    // Helper for fast non-blocking lookup with timeout
     const safeResolve = (fn, ...args) => {
         return Promise.race([
             fn(...args),
@@ -225,7 +215,16 @@ async function scanFullDNSZone(domain) {
         ]).catch(() => []);
     };
 
-    // 1. Apex Record Lookups
+    // 1. Check for Wildcard DNS (*.domain) to avoid false-positive duplicate A-records
+    const wildcardProbeHost = `_sentinel_wildcard_check_${Date.now()}.${host}`;
+    const wildcardProbeIps = await safeResolve(dns.resolve4, wildcardProbeHost);
+    const wildcardIp = wildcardProbeIps.length > 0 ? wildcardProbeIps[0] : null;
+
+    if (wildcardIp) {
+        records.push({ type: 'A', host: '* (Wildcard)', value: wildcardIp, priority: '-' });
+    }
+
+    // 2. Query Apex Records (@)
     try {
         const a = await safeResolve(dns.resolve4, host);
         a.forEach(ip => records.push({ type: 'A', host: '@ (Apex)', value: ip, priority: '-' }));
@@ -243,37 +242,41 @@ async function scanFullDNSZone(domain) {
         ns.forEach(item => records.push({ type: 'NS', host: '@', value: item, priority: '-' }));
     } catch (e) {}
 
-    // 2. Subdomain & Zone Probing
-    await Promise.all(EXTENDED_SUBDOMAINS.map(async (sub) => {
+    // 3. Query Standard Service Hosts
+    await Promise.all(GENERIC_PROBE_HOSTS.map(async (sub) => {
         const fqdn = `${sub}.${host}`;
 
-        // CNAME query
+        // CNAME first
         const cnames = await safeResolve(dns.resolveCname, fqdn);
         if (cnames.length > 0) {
             cnames.forEach(target => records.push({ type: 'CNAME', host: sub, value: target, priority: '-' }));
             return;
         }
 
-        // A record query
+        // A Record (ignore if it's just falling through to the wildcard IP)
         const ips = await safeResolve(dns.resolve4, fqdn);
-        ips.forEach(ip => records.push({ type: 'A', host: sub, value: ip, priority: '-' }));
+        ips.forEach(ip => {
+            if (!wildcardIp || ip !== wildcardIp) {
+                records.push({ type: 'A', host: sub, value: ip, priority: '-' });
+            }
+        });
 
-        // AAAA record query
+        // AAAA Record
         const v6 = await safeResolve(dns.resolve6, fqdn);
         v6.forEach(ip => records.push({ type: 'AAAA', host: sub, value: ip, priority: '-' }));
 
-        // Branch-specific MX routing
+        // Subdomain MX
         const mxs = await safeResolve(dns.resolveMx, fqdn);
         mxs.forEach(m => records.push({ type: 'MX', host: sub, value: m.exchange, priority: m.priority }));
 
-        // Branch/Service TXT records
+        // Subdomain TXT (_dmarc, DKIM)
         if (sub.includes('_dmarc') || sub.includes('_domainkey')) {
             const txts = await safeResolve(dns.resolveTxt, fqdn);
             txts.forEach(t => records.push({ type: 'TXT', host: sub, value: Array.isArray(t) ? t.join('') : t, priority: '-' }));
         }
     }));
 
-    // 3. SRV Records Probing
+    // 4. Query Standard SRV Records
     await Promise.all(SRV_PROBES.map(async (srv) => {
         const srvFqdn = `${srv}.${host}`;
         const srvs = await safeResolve(dns.resolveSrv, srvFqdn);
@@ -285,7 +288,7 @@ async function scanFullDNSZone(domain) {
         }));
     }));
 
-    // De-duplicate records
+    // De-duplicate
     const seen = new Set();
     const uniqueRecords = records.filter(r => {
         const key = `${r.type}|${r.host}|${r.value}|${r.priority}`;
@@ -294,7 +297,7 @@ async function scanFullDNSZone(domain) {
         return true;
     });
 
-    return uniqueRecords.length > 0 ? uniqueRecords : [{ type: 'A', host: '@ (Apex)', value: '77.68.64.20', priority: '-' }];
+    return uniqueRecords.length > 0 ? uniqueRecords : [{ type: 'A', host: '@ (Apex)', value: 'Resolving via DNS...', priority: '-' }];
 }
 
 // 3. LIVE SSL INSPECTOR
@@ -320,7 +323,7 @@ function inspectLiveSSL(domain) {
     });
 }
 
-// Perform initial dynamic scan in background
+// Background initial scan
 (async () => {
     for (const url in monitoredSites) {
         if (!monitoredSites[url].dns_records || monitoredSites[url].dns_records.length === 0) {
@@ -466,7 +469,7 @@ app.post('/api/event', (req, res) => {
     res.json({ success: true, record });
 });
 
-// WordPress Remote Proxy Actions
+// Proxy actions for Remote Management
 app.post('/api/create-user', async (req, res) => {
     const { site_url, username, email, role, password } = req.body;
     try {
