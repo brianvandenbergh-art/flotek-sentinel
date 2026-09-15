@@ -1,16 +1,11 @@
 {
   "name": "flotek-sentinel",
   "version": "1.0.0",
-  "description": "Flotek Sentinel Fleet Command",
+  "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.19.2"
-  }
-},
   "keywords": [],
   "author": "",
   "license": "ISC",
