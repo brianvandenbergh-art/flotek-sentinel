@@ -1,6 +1,6 @@
 /**
  * Flotek Sentinel - Enterprise Fleet Command Hub
- * Subdomain Prober with CNAME Deduplication & Security Alert Pipeline
+ * Permanent Deletion Engine & Clean Alert Pipeline
  */
 
 const express = require('express');
@@ -26,6 +26,7 @@ let standaloneDomains = {};
 let securityEvents = [];
 let auditLogs = [];
 
+// PERSISTENCE ENGINE (Will NEVER resurrect deleted domains)
 function loadDatabase() {
     try {
         if (fs.existsSync(DB_FILE)) {
@@ -35,8 +36,11 @@ function loadDatabase() {
             standaloneDomains = data.domains || {};
             securityEvents = data.events || [];
             auditLogs = data.audit_logs || [];
+            console.log(`📁 [DB LOADED] Sites: ${Object.keys(monitoredSites).length}, Domains: ${Object.keys(standaloneDomains).length}`);
         }
-    } catch (e) {}
+    } catch (e) {
+        console.error('[DB LOAD ERROR]', e.message);
+    }
 }
 
 function saveDatabase() {
@@ -47,12 +51,14 @@ function saveDatabase() {
             events: securityEvents,
             audit_logs: auditLogs
         }, null, 2));
-    } catch (e) {}
+    } catch (e) {
+        console.error('[DB SAVE ERROR]', e.message);
+    }
 }
 
 loadDatabase();
 
-// EXPANDED DEDICATED PROBE LIST FOR CORPORATE & UK DOMAINS
+// EXPANDED PROBE LIST
 const SUBDOMAIN_PROBES = [
     'www', 'mail', 'ftp', 'sftp', 'ssh', 'remote', 'ftp.remote', 'www.remote',
     'ftp.mail', 'www.mail', 'slipstream', 'www.slipstream', 'autodiscover',
@@ -70,7 +76,6 @@ async function scanFullDNSZone(domain) {
     const cleanHost = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
     let records = [];
 
-    // 1. Root Apex Queries
     try {
         const a = await dns.resolve4(cleanHost).catch(() => []);
         a.forEach(ip => records.push({ type: 'A', host: '@ (Apex)', value: ip, priority: '-' }));
@@ -88,16 +93,13 @@ async function scanFullDNSZone(domain) {
         txt.forEach(val => records.push({ type: 'TXT', host: '@', value: val.join(' '), priority: '-' }));
     } catch (e) {}
 
-    // 2. Parallel Subdomain Probing
     await Promise.all(SUBDOMAIN_PROBES.map(async (sub) => {
         const subFqdn = `${sub}.${cleanHost}`;
         try {
-            // Check CNAME first
             const cnames = await dns.resolveCname(subFqdn).catch(() => []);
             if (cnames.length > 0) {
                 cnames.forEach(target => records.push({ type: 'CNAME', host: sub, value: target, priority: '-' }));
             } else {
-                // If no CNAME, check A and AAAA
                 const ips = await dns.resolve4(subFqdn).catch(() => []);
                 ips.forEach(ip => records.push({ type: 'A', host: sub, value: ip, priority: '-' }));
 
@@ -165,7 +167,7 @@ app.post('/api/register', async (req, res) => {
         plugins: data.plugins || [],
         users: data.users || [],
         updates_count: data.pending_updates || 0,
-        security_engine: data.security_engine || 'Multi-Layer Defense',
+        security_engine: 'Multi-Layer Defense',
         performance: data.performance || { queries: 28, load_time: '0.28s', memory: '18 MB' },
         ssl: liveSSL,
         dns_records: liveDNS,
@@ -181,7 +183,7 @@ app.post('/api/register', async (req, res) => {
     };
 
     saveDatabase();
-    console.log(`✨ [SITE REGISTERED] ${data.site_name} (${cleanHost}) | ${liveDNS.length} DNS Records`);
+    console.log(`✨ [SITE REGISTERED] ${data.site_name} (${cleanHost})`);
     res.json({ success: true });
 });
 
@@ -213,7 +215,7 @@ app.post('/api/add-domain', async (req, res) => {
     };
 
     saveDatabase();
-    console.log(`🏷️ [DOMAIN ADDED] ${cleanHost} | ${liveDNS.length} DNS Records`);
+    console.log(`🏷️ [DOMAIN ADDED] ${cleanHost}`);
     res.json({ success: true, domain: standaloneDomains[cleanHost] });
 });
 
@@ -225,12 +227,12 @@ app.post('/api/delete-domain', (req, res) => {
         delete standaloneDomains[cleanHost];
         delete standaloneDomains[domain_name];
         saveDatabase();
-        console.log(`🗑️ [DOMAIN DELETED] ${cleanHost}`);
+        console.log(`🗑️ [DOMAIN PERMANENTLY REMOVED] ${cleanHost}`);
     }
     res.json({ success: true });
 });
 
-// REMOTE USER MANAGEMENT
+// USER MANAGEMENT
 app.post('/api/create-user', async (req, res) => {
     const { site_url, username, email, role, password } = req.body;
     try {
@@ -273,7 +275,7 @@ app.post('/api/delete-user', async (req, res) => {
     }
 });
 
-// REMOTE UPDATER & BACKUP PROXIES
+// REMOTE UPDATER & BACKUPS
 app.post('/api/trigger-update', async (req, res) => {
     const { site_url } = req.body;
     try {
@@ -325,31 +327,39 @@ app.post('/api/trigger-rollback', async (req, res) => {
     }
 });
 
-// SECURITY & AUDIT EVENT RECEIVER
+// SECURITY & ATTACK EVENT PIPELINE
 app.post('/api/event', (req, res) => {
     const authHeader = req.headers['x-hub-secret'];
     if (authHeader !== SHARED_SECRET) return res.status(403).json({ error: 'Unauthorized' });
 
     const { site_url, site_name, event, details, type, timestamp } = req.body;
+    const cleanHost = (site_url || '').replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
+
     const record = {
         id: Date.now(),
-        site_url,
-        site_name: site_name || site_url,
+        site_url: site_url || cleanHost,
+        domain: cleanHost,
+        site_name: site_name || cleanHost,
         event,
         details,
         type: type || 'SECURITY',
         timestamp: timestamp || new Date().toISOString()
     };
 
-    if (type === 'AUDIT') auditLogs.unshift(record);
-    else securityEvents.unshift(record);
+    if (type === 'AUDIT') {
+        auditLogs.unshift(record);
+        if (auditLogs.length > 200) auditLogs.pop();
+    } else {
+        securityEvents.unshift(record);
+        if (securityEvents.length > 200) securityEvents.pop();
+    }
 
-    console.log(`🚨 [SECURITY EVENT RECEIVED] ${event} on ${site_name}`);
+    console.log(`🚨 [LIVE INCIDENT LOGGED] ${event} on ${site_name || cleanHost}`);
     saveDatabase();
     res.json({ success: true });
 });
 
-// DASHBOARD DATA ENDPOINT
+// DASHBOARD API
 app.get('/api/dashboard-data', (req, res) => {
     const siteList = Object.values(monitoredSites);
     const domainList = Object.values(standaloneDomains);
