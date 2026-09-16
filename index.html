@@ -62,7 +62,7 @@
                 <h2 class="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
                     Monitors <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 </h2>
-                <p class="text-xs text-slate-400 mt-0.5">Real-time uptime, response latency &amp; WordPress telemetry</p>
+                <p class="text-xs text-slate-400 mt-0.5">Real-time HTTP uptime, response latency &amp; outage telemetry</p>
             </div>
 
             <div class="flex items-center gap-2.5">
@@ -104,7 +104,7 @@
             <!-- Right Column -->
             <div class="space-y-4">
                 <div class="bg-[#080d17] border border-slate-800 p-5 rounded-2xl space-y-4">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Current Status</h3>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Current Fleet Status</h3>
                     <div class="flex items-center justify-between text-center">
                         <div>
                             <div class="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto text-sm font-bold">
@@ -117,8 +117,8 @@
                             <div class="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-sm font-bold">
                                 <i class="fa-solid fa-circle-down"></i>
                             </div>
-                            <div class="text-lg font-extrabold text-white mt-1" id="stat-down-count">0</div>
-                            <span class="text-[10px] text-slate-400 font-semibold uppercase">Down</span>
+                            <div class="text-lg font-extrabold text-rose-400 mt-1" id="stat-down-count">0</div>
+                            <span class="text-[10px] text-rose-400 font-semibold uppercase">Down</span>
                         </div>
                         <div>
                             <div class="w-10 h-10 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center mx-auto text-sm font-bold">
@@ -148,7 +148,7 @@
 
                 <div class="bg-[#080d17] border border-slate-800 p-4 rounded-2xl space-y-2">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-virus text-rose-400"></i> Fleet WAF Log</span>
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-virus text-rose-400"></i> Fleet Event Log</span>
                         <span id="waf-log-badge" class="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 text-[10px] font-mono font-bold">0</span>
                     </h3>
                     <div id="events-container" class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1"></div>
@@ -168,7 +168,7 @@
                 </h3>
                 <button type="button" onclick="closeAddDomainModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
-            <p class="text-xs text-slate-400">Add any domain without WordPress to automatically scan all DNS records and monitor SSL.</p>
+            <p class="text-xs text-slate-400">Add any domain without WordPress to automatically monitor uptime, scan DNS, and check SSL.</p>
             <div>
                 <label class="text-[11px] font-semibold text-slate-300 block mb-1">Domain Name</label>
                 <input id="input-domain-name" type="text" placeholder="e.g. yourdomain.co.uk" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500">
@@ -235,9 +235,18 @@
                             <i class="fa-solid fa-magnifying-glass-chart"></i> SEO &amp; Analytics
                         </button>
                         <button type="button" onclick="switchTab('tab-sec')" id="btn-tab-sec" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 cursor-pointer">
-                            <i class="fa-solid fa-shield-halved"></i> WAF &amp; Attacks (<span id="drawer-tab-sec-count">0</span>)
+                            <i class="fa-solid fa-shield-halved"></i> Events &amp; Outages (<span id="drawer-tab-sec-count">0</span>)
                         </button>
                     </div>
+                </div>
+
+                <!-- OUTAGE ALERT BANNER (Shown if entity is DOWN) -->
+                <div id="drawer-outage-banner" style="display: none;" class="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs space-y-1">
+                    <div class="font-bold text-rose-400 flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation text-sm animate-pulse"></i>
+                        <span id="drawer-outage-title">OUTAGE IN PROGRESS</span>
+                    </div>
+                    <p class="text-slate-300 text-[11px]" id="drawer-outage-msg">Server returned error code. Check server files or permissions.</p>
                 </div>
 
                 <!-- TAB 1: THEME & OVERVIEW (WP Only) -->
@@ -400,12 +409,12 @@
                             <span class="text-xs font-bold text-emerald-400">Multi-Layer WAF Active</span>
                         </div>
                         <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
-                            <span class="text-[10px] text-slate-400 uppercase font-semibold block">Brute-Force Limit</span>
-                            <span class="text-xs font-bold text-emerald-400">5 Attempts / 15m Throttled</span>
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold block">Health Monitor</span>
+                            <span class="text-xs font-bold text-indigo-400">Active Pings: 15s Cycle</span>
                         </div>
                     </div>
                     <div class="flex items-center justify-between mt-2">
-                        <h4 class="text-xs font-bold uppercase text-slate-400">Live Incident Log for this Entity</h4>
+                        <h4 class="text-xs font-bold uppercase text-slate-400">Incident &amp; Outage Stream</h4>
                         <span class="text-[11px] text-slate-500 font-mono" id="drawer-events-count-label">0 events</span>
                     </div>
                     <div id="drawer-site-events" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-1"></div>
@@ -415,7 +424,7 @@
 
             <div class="border-t border-slate-800 pt-3 mt-6 text-[11px] text-slate-500 flex justify-between items-center">
                 <span>Flotek Sentinel v10.0</span>
-                <span>Cloud Heartbeat: Active</span>
+                <span>Real-Time Health Engine: Active</span>
             </div>
 
         </div>
@@ -423,7 +432,6 @@
 
     <!-- JAVASCRIPT ENGINE -->
     <script>
-        // Load initial state from browser persistent cache if available
         var localCachedData = null;
         try {
             var rawCache = localStorage.getItem('flotek_fleet_cache');
@@ -455,15 +463,18 @@
                 .trim();
         };
 
-        window.generateUptimeBars = function() {
+        // Real-time Uptime History Bar Generator (Green for Up, Red for Outage)
+        window.generateUptimeBars = function(history) {
+            var historyArray = Array.isArray(history) && history.length > 0 ? history : Array(20).fill(1);
             var bars = '';
-            for (var i = 0; i < 20; i++) {
-                bars += '<span class="h-4 w-1 rounded-sm bg-emerald-400"></span>';
+            for (var i = 0; i < historyArray.length; i++) {
+                var isUp = historyArray[i] === 1;
+                var colorClass = isUp ? 'bg-emerald-400' : 'bg-rose-500 animate-pulse';
+                bars += '<span class="h-4 w-1 rounded-sm ' + colorClass + '"></span>';
             }
             return '<div class="flex items-center gap-0.5">' + bars + '</div>';
         };
 
-        // Real-time Fleet Category Switching
         window.switchFleetCategory = function(category) {
             var webContainer = document.getElementById('websites-fleet-container');
             var domContainer = document.getElementById('domains-fleet-container');
@@ -558,22 +569,30 @@
             for (var i = 0; i < sites.length; i++) {
                 var site = sites[i];
                 var cleanName = window.decodeHtml(site.name || 'WordPress Site');
+                var isDown = site.status === 'OFFLINE';
                 var updateCount = site.updates_count || 0;
                 var siteEvents = window.getSiteSecurityEvents(site);
                 var eventCount = siteEvents.length;
 
-                var dotColor = eventCount > 0 ? 'bg-rose-400 shadow-rose-400/50' : 'bg-emerald-400 shadow-emerald-400/50';
-                var updateBadge = updateCount > 0 ? '<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-md border border-amber-500/20">' + updateCount + ' updates</span>' : '';
+                // Status indicators
+                var dotColor = isDown ? 'bg-rose-500 shadow-rose-500/80 animate-pulse' : (eventCount > 0 ? 'bg-amber-400 shadow-amber-400/50' : 'bg-emerald-400 shadow-emerald-400/50');
+                
+                var downBadge = isDown ? '<span class="px-2 py-0.5 bg-rose-500/20 text-rose-300 text-[10px] font-bold rounded-md border border-rose-500/40 flex items-center gap-1 animate-pulse"><i class="fa-solid fa-circle-exclamation text-[9px]"></i> DOWN (' + (site.http_code || 403) + ')</span>' : '';
+                var updateBadge = (!isDown && updateCount > 0) ? '<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-md border border-amber-500/20">' + updateCount + ' updates</span>' : '';
                 var alertBadge = eventCount > 0 ? '<span class="px-2 py-0.5 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-md border border-rose-500/20 flex items-center gap-1"><i class="fa-solid fa-shield-virus text-[9px]"></i> ' + eventCount + ' alerts</span>' : '';
+                
                 var targetStr = site.url || site.domain;
+                var uptimeDisplay = isDown ? '<span class="text-xs font-bold text-rose-400 mono">' + (site.uptime_pct || 0) + '%</span>' : '<span class="text-xs font-bold text-emerald-400 mono">' + (site.uptime_pct || 100) + '%</span>';
+                var latencyDisplay = isDown ? '<span class="text-xs font-mono text-rose-400">' + (site.latency || 0) + 'ms</span>' : '<span class="text-xs font-mono text-slate-400">' + (site.latency || 42) + 'ms</span>';
 
-                html += '<div onclick="openDrawer(\'' + targetStr + '\')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">' +
+                html += '<div onclick="openDrawer(\'' + targetStr + '\')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border ' + (isDown ? 'border-rose-500/50' : 'border-slate-800/80 hover:border-slate-700') + ' p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">' +
                     '<div class="flex items-center gap-3 min-w-0">' +
                         '<div class="w-3 h-3 rounded-full ' + dotColor + ' shrink-0 shadow-sm"></div>' +
                         '<div class="min-w-0">' +
                             '<div class="flex items-center gap-2 flex-wrap">' +
                                 '<h4 class="font-bold text-sm text-white group-hover:text-emerald-300 transition truncate">' + cleanName + '</h4>' +
                                 '<span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">' + (site.tag || 'wordpress site') + '</span>' +
+                                downBadge +
                                 updateBadge +
                                 alertBadge +
                             '</div>' +
@@ -581,10 +600,10 @@
                         '</div>' +
                     '</div>' +
                     '<div class="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">' +
-                        '<span class="text-[11px] text-slate-500 flex items-center gap-1"><i class="fa-solid fa-rotate text-[9px]"></i> 30s</span>' +
-                        window.generateUptimeBars() +
-                        '<span class="text-xs font-bold text-emerald-400 mono">100%</span>' +
-                        '<span class="text-xs font-mono text-slate-400">' + (site.latency || 42) + 'ms</span>' +
+                        '<span class="text-[11px] text-slate-500 flex items-center gap-1"><i class="fa-solid fa-rotate text-[9px]"></i> 15s</span>' +
+                        window.generateUptimeBars(site.uptime_history) +
+                        uptimeDisplay +
+                        latencyDisplay +
                         '<div class="text-slate-600 group-hover:text-slate-300"><i class="fa-solid fa-chevron-right text-xs"></i></div>' +
                     '</div>' +
                 '</div>';
@@ -604,19 +623,22 @@
             var html = '';
             for (var i = 0; i < domains.length; i++) {
                 var d = domains[i];
+                var isDown = d.status === 'OFFLINE';
                 var cleanName = window.decodeHtml(d.name || d.domain);
                 var hasSsl = d.ssl && d.ssl.valid;
                 var sslText = hasSsl ? (d.ssl.days_left + 'd SSL') : 'No SSL';
                 var sslClass = hasSsl ? 'text-emerald-400' : 'text-slate-500';
                 var dnsCount = (d.dns_records || []).length;
+                var dotColor = isDown ? 'bg-rose-500 shadow-rose-500/80 animate-pulse' : 'bg-emerald-400';
 
-                html += '<div onclick="openDrawer(\'' + d.domain + '\')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">' +
+                html += '<div onclick="openDrawer(\'' + d.domain + '\')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border ' + (isDown ? 'border-rose-500/50' : 'border-slate-800/80 hover:border-slate-700') + ' p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">' +
                     '<div class="flex items-center gap-3 min-w-0">' +
-                        '<div class="w-3 h-3 rounded-full bg-emerald-400 shrink-0"></div>' +
+                        '<div class="w-3 h-3 rounded-full ' + dotColor + ' shrink-0"></div>' +
                         '<div class="min-w-0">' +
                             '<div class="flex items-center gap-2 flex-wrap">' +
                                 '<h4 class="font-bold text-sm text-white group-hover:text-indigo-300 transition truncate">' + cleanName + '</h4>' +
                                 '<span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">' + (d.registrar || 'Authoritative DNS') + '</span>' +
+                                (isDown ? '<span class="px-2 py-0.5 bg-rose-500/20 text-rose-300 text-[10px] font-bold rounded-md border border-rose-500/40">DOWN</span>' : '') +
                             '</div>' +
                             '<span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">' + d.domain + '</span>' +
                         '</div>' +
@@ -644,7 +666,9 @@
             var list = events.slice(0, 10);
             for (var i = 0; i < list.length; i++) {
                 var e = list[i];
-                var color = e.type === 'AUDIT' ? 'text-indigo-300' : 'text-rose-400';
+                var isOutage = e.type === 'OUTAGE';
+                var isRecovery = e.type === 'RECOVERY';
+                var color = isOutage ? 'text-rose-400' : (isRecovery ? 'text-emerald-400' : (e.type === 'AUDIT' ? 'text-indigo-300' : 'text-rose-400'));
                 var cleanSiteName = window.decodeHtml(e.site_name || e.domain || '');
                 var timeStr = 'Recent';
                 try {
@@ -653,7 +677,10 @@
 
                 html += '<div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[11px] flex items-center justify-between">' +
                     '<div>' +
-                        '<div class="font-bold ' + color + '">' + (e.event || 'SECURITY_ALERT') + '</div>' +
+                        '<div class="font-bold ' + color + ' flex items-center gap-1.5">' +
+                            (isOutage ? '<i class="fa-solid fa-triangle-exclamation text-[10px] animate-pulse"></i> ' : (isRecovery ? '<i class="fa-solid fa-circle-check text-[10px]"></i> ' : '')) +
+                            (e.event || 'INCIDENT_LOG') +
+                        '</div>' +
                         '<div class="text-slate-500 text-[10px]">' + cleanSiteName + '</div>' +
                     '</div>' +
                     '<span class="text-[10px] text-slate-400 mono">' + timeStr + '</span>' +
@@ -674,7 +701,6 @@
             window.renderDomains(filteredDomains);
         };
 
-        // Fully Isolated Drawer Telemetry
         window.openDrawer = function(identifier, isBackgroundSync) {
             window.activeSiteUrl = identifier;
             var cleanIdentifier = window.normalizeDomain(identifier);
@@ -712,7 +738,32 @@
                 drawerUrl.querySelector('span').innerText = site.url || site.domain || cleanIdentifier;
             }
 
-            // 1. DYNAMICALLY SHOW/HIDE TABS ACCORDING TO ENTITY TYPE
+            // Real-time Status Pill
+            var isDown = site.status === 'OFFLINE';
+            var statusPill = document.getElementById('drawer-status-pill');
+            if (statusPill) {
+                if (isDown) {
+                    statusPill.className = "px-2 py-0.5 bg-rose-500/20 text-rose-300 text-[10px] font-bold rounded-full border border-rose-500/40 animate-pulse";
+                    statusPill.innerText = "OFFLINE (" + (site.http_code || 403) + " " + (site.error_message || "ERROR") + ")";
+                } else {
+                    statusPill.className = "px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20";
+                    statusPill.innerText = "ONLINE (200 OK)";
+                }
+            }
+
+            // Outage diagnostic banner
+            var outageBanner = document.getElementById('drawer-outage-banner');
+            if (outageBanner) {
+                if (isDown) {
+                    outageBanner.style.display = 'block';
+                    window.setTxt('drawer-outage-title', 'OUTAGE DETECTED (HTTP ' + (site.http_code || 403) + ')');
+                    window.setTxt('drawer-outage-msg', 'Server response: ' + (site.error_message || 'Access Denied / Forbidden') + '. Possible causes: renamed index.php, server permissions error, or web server failure.');
+                } else {
+                    outageBanner.style.display = 'none';
+                }
+            }
+
+            // Tab visibility
             var wpTabButtons = document.querySelectorAll('.wp-only-tab');
             for (var k = 0; k < wpTabButtons.length; k++) {
                 if (isWebsite) {
@@ -729,7 +780,6 @@
                 drawerDelBtn.style.display = isWebsite ? 'none' : 'flex';
             }
 
-            // 2. AUTOMATIC DEFAULT TAB ASSIGNMENT
             if (!isBackgroundSync) {
                 var targetDefaultTab = isWebsite ? 'tab-overview' : 'tab-dns';
                 window.switchTab(targetDefaultTab);
@@ -742,7 +792,6 @@
                 }
             }
 
-            // 3. POPULATE TELEMETRY
             if (isWebsite) {
                 window.setTxt('drawer-theme-name', site.theme ? site.theme.name : 'Active Theme');
                 window.setTxt('drawer-theme-ver', site.theme ? ('v' + site.theme.version) : 'v1.0');
@@ -822,7 +871,6 @@
                 }
             }
 
-            // SSL Certificate Status
             var hasSSL = site.ssl && site.ssl.valid;
             window.setTxt('drawer-ssl-days', hasSSL ? (site.ssl.days_left + ' Days Remaining') : 'No Certificate');
             window.setTxt('drawer-ssl-issuer', 'Issuer: ' + (site.ssl ? site.ssl.issuer : 'No SSL (Domain Only)'));
@@ -837,7 +885,6 @@
                 }
             }
 
-            // DNS Records Table
             var dnsRecords = site.dns_records || [];
             window.setTxt('drawer-dns-count', dnsRecords.length);
             var dnsTableBody = document.getElementById('drawer-dns-table-body');
@@ -860,7 +907,6 @@
                 }
             }
 
-            // Incident Stream
             var siteEvents = window.getSiteSecurityEvents(site);
             window.setTxt('drawer-tab-sec-count', siteEvents.length);
             window.setTxt('drawer-events-count-label', siteEvents.length + ' events');
@@ -873,7 +919,8 @@
                     var sEventsHtml = '';
                     for (var seIdx = 0; seIdx < siteEvents.length; seIdx++) {
                         var se = siteEvents[seIdx];
-                        var seColor = se.type === 'AUDIT' ? 'text-indigo-400' : 'text-rose-400';
+                        var isOutage = se.type === 'OUTAGE';
+                        var seColor = isOutage ? 'text-rose-400' : (se.type === 'RECOVERY' ? 'text-emerald-400' : (se.type === 'AUDIT' ? 'text-indigo-400' : 'text-rose-400'));
                         
                         var detailsStr = '';
                         if (se.details && typeof se.details === 'object') {
@@ -887,7 +934,7 @@
 
                         sEventsHtml += '<div class="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs space-y-1">' +
                             '<div class="flex justify-between items-center font-bold ' + seColor + '">' +
-                                '<span><i class="fa-solid fa-triangle-exclamation mr-1"></i> ' + se.event + '</span>' +
+                                '<span>' + (isOutage ? '<i class="fa-solid fa-triangle-exclamation mr-1 animate-pulse"></i> ' : '') + se.event + '</span>' +
                                 '<span class="text-[10px] text-slate-500 mono">' + new Date(se.timestamp).toLocaleTimeString() + '</span>' +
                             '</div>' +
                             '<div class="text-[11px] text-slate-300">' + detailsStr + '</div>' +
@@ -1118,19 +1165,31 @@
 
         window.renderAll = function() {
             try {
-                var siteCount = (window.globalData.sites || []).length;
-                var domainCount = (window.globalData.domains || []).length;
+                var sites = window.globalData.sites || [];
+                var domains = window.globalData.domains || [];
                 var totalEvents = (window.globalData.events || []).length;
 
-                window.setTxt('site-count-badge', siteCount);
-                window.setTxt('domain-count-badge', domainCount);
-                window.setTxt('stat-up-count', siteCount + domainCount);
-                window.setTxt('stat-down-count', '0');
+                var upCount = 0;
+                var downCount = 0;
+
+                for (var s = 0; s < sites.length; s++) {
+                    if (sites[s].status === 'OFFLINE') downCount++;
+                    else upCount++;
+                }
+                for (var d = 0; d < domains.length; d++) {
+                    if (domains[d].status === 'OFFLINE') downCount++;
+                    else upCount++;
+                }
+
+                window.setTxt('site-count-badge', sites.length);
+                window.setTxt('domain-count-badge', domains.length);
+                window.setTxt('stat-up-count', upCount);
+                window.setTxt('stat-down-count', downCount);
                 window.setTxt('stat-incidents-count', totalEvents + ' Incidents');
                 window.setTxt('waf-log-badge', totalEvents);
 
-                window.renderWebsites(window.globalData.sites);
-                window.renderDomains(window.globalData.domains);
+                window.renderWebsites(sites);
+                window.renderDomains(domains);
                 window.renderEvents([].concat(window.globalData.events || [], window.globalData.audit_logs || []));
 
                 if (window.activeSiteUrl) {
@@ -1151,7 +1210,6 @@
                 if (data.events) window.globalData.events = data.events;
                 if (data.audit_logs) window.globalData.audit_logs = data.audit_logs;
 
-                // Persist live fleet state in client storage
                 try {
                     localStorage.setItem('flotek_fleet_cache', JSON.stringify(window.globalData));
                 } catch(e) {}
