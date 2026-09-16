@@ -28,128 +28,30 @@ function normalizeHost(str) {
         .trim();
 }
 
-// 1. DEFAULT FLEET
-const INITIAL_SITES = {
-    'https://grandprixexpress.com': {
-        name: 'Grand Prix Express',
-        url: 'https://grandprixexpress.com',
-        domain: 'grandprixexpress.com',
-        tag: 'wordpress site',
-        wp_version: '6.5.2',
-        php_version: '8.2.18',
-        theme: { name: 'ServerEast Fleet', version: '1.2.0' },
-        plugins: [
-            { name: 'Meta Box', version: '5.6.17', has_update: true, new_version: '5.15.0' },
-            { name: 'Redirection', version: '5.3.10', has_update: true, new_version: '5.10.0' },
-            { name: 'Wordfence Security', version: '7.11.0', has_update: false },
-            { name: 'All-In-One Security (AIOS)', version: '5.2.5', has_update: false },
-            { name: 'Flotek Sentinel Agent', version: '8.5.0', has_update: false }
-        ],
-        users: [
-            { id: 1, user_login: 'garry', user_email: 'garry.whitney@grandprixexpress.com', roles: ['editor'], registered: '2025-01-10' },
-            { id: 2, user_login: 'oes-admin', user_email: 'paul.hesketh@oes-uk.com', roles: ['administrator'], registered: '2024-11-20' }
-        ],
-        updates_count: 12,
-        security_engine: 'AIOS + Wordfence',
-        performance: { queries: 28, load_time: '0.28s', memory: '18 MB' },
-        ssl: { valid: true, days_left: 84, issuer: "Cloudflare / Let's Encrypt" },
-        dns_records: [],
-        seo: { sitemap_status: 'Indexed (22 URLs Valid)', broken_links: 0 },
-        analytics: { visitors_7d: 1840, pageviews: 5620, bounce_rate: '28.4%' },
-        backups: [
-            { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '48.2 MB', date: '2026-03-01' }
-        ],
-        health_score: 94,
-        status: 'ONLINE',
-        latency: 37,
-        type: 'WEBSITE'
-    },
-    'https://gamlins.com': {
-        name: 'Gamlins Solicitors',
-        url: 'https://gamlins.com',
-        domain: 'gamlins.com',
-        tag: 'wordpress site',
-        wp_version: '6.4.3',
-        php_version: '8.2.20',
-        theme: { name: 'Gamlins Solicitors Enterprise', version: '2.1.0' },
-        plugins: [
-            { name: 'Advanced Custom Fields Pro', version: '6.1.0', has_update: true, new_version: '6.3.2' },
-            { name: 'Contact Form 7', version: '5.8.0', has_update: true, new_version: '5.9.4' },
-            { name: 'WP Rocket', version: '3.14.0', has_update: false },
-            { name: 'Flotek Sentinel Agent', version: '8.5.0', has_update: false }
-        ],
-        users: [
-            { id: 1, user_login: 'gamlins-admin', user_email: 'info@gamlins.com', roles: ['administrator'], registered: '2024-08-15' },
-            { id: 2, user_login: 'reception', user_email: 'reception@gamlins.com', roles: ['author'], registered: '2025-02-01' }
-        ],
-        updates_count: 22,
-        security_engine: 'Enterprise WAF Active',
-        performance: { queries: 34, load_time: '0.31s', memory: '24 MB' },
-        ssl: { valid: true, days_left: 156, issuer: "Sectigo Limited" },
-        dns_records: [],
-        seo: { sitemap_status: 'Indexed (184 URLs Valid)', broken_links: 0 },
-        analytics: { visitors_7d: 4280, pageviews: 14350, bounce_rate: '21.6%' },
-        backups: [
-            { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '62.4 MB', date: '2026-03-01' }
-        ],
-        health_score: 91,
-        status: 'ONLINE',
-        latency: 48,
-        type: 'WEBSITE'
-    }
-};
-
-const INITIAL_DOMAINS = {
-    'flotek.io': {
-        name: 'Flotek Group HQ',
-        domain: 'flotek.io',
-        registrar: 'Cloudflare / Authoritative DNS',
-        nameservers: ['ns1.cloudflare.com', 'ns2.cloudflare.com'],
-        ssl: { valid: true, days_left: 210, issuer: "DigiCert Global Root CA" },
-        dns_records: [],
-        type: 'DOMAIN_ONLY',
-        status: 'ONLINE'
-    },
-    'gamlins.co.uk': {
-        name: 'gamlins.co.uk',
-        domain: 'gamlins.co.uk',
-        registrar: 'Fasthosts LiveDNS',
-        nameservers: ['ns1.livedns.co.uk', 'ns2.livedns.co.uk'],
-        ssl: { valid: false, days_left: 0, issuer: 'No Certificate (Domain Only / Parked)' },
-        dns_records: [],
-        type: 'DOMAIN_ONLY',
-        status: 'ONLINE'
-    },
-    'moolawise.co.za': {
-        name: 'moolawise.co.za',
-        domain: 'moolawise.co.za',
-        registrar: 'ZADNS / Absolute Hosting',
-        nameservers: ['ns21.zadns.co.za', 'ns22.zadns.co.za'],
-        ssl: { valid: false, days_left: 0, issuer: 'No Certificate (Domain Only / Parked)' },
-        dns_records: [],
-        type: 'DOMAIN_ONLY',
-        status: 'ONLINE'
-    }
-};
-
-let monitoredSites = { ...INITIAL_SITES };
-let standaloneDomains = { ...INITIAL_DOMAINS };
+let monitoredSites = {};
+let standaloneDomains = {};
 let securityEvents = [];
 let auditLogs = [];
+let deletedDomains = []; // Tombstone blacklist: Permanently prevents deleted domains from returning
 
 function loadDatabase() {
     try {
         if (fs.existsSync(DB_FILE)) {
             const raw = fs.readFileSync(DB_FILE, 'utf8');
             const data = JSON.parse(raw);
-            if (data.sites && Object.keys(data.sites).length > 0) monitoredSites = data.sites;
-            if (data.domains && Object.keys(data.domains).length > 0) standaloneDomains = data.domains;
-            if (Array.isArray(data.events) && data.events.length > 0) securityEvents = data.events;
+            if (data.sites) monitoredSites = data.sites;
+            if (data.domains) standaloneDomains = data.domains;
+            if (Array.isArray(data.events)) securityEvents = data.events;
             if (Array.isArray(data.audit_logs)) auditLogs = data.audit_logs;
+            if (Array.isArray(data.deleted_domains)) deletedDomains = data.deleted_domains;
         }
     } catch (err) {}
-    delete monitoredSites['https://flotek.io'];
-    delete monitoredSites['flotek.io'];
+
+    // Never re-add deleted domains on boot
+    for (const del of deletedDomains) {
+        delete standaloneDomains[del];
+        delete monitoredSites[del];
+    }
 }
 
 function saveDatabase() {
@@ -158,7 +60,8 @@ function saveDatabase() {
             sites: monitoredSites,
             domains: standaloneDomains,
             events: securityEvents,
-            audit_logs: auditLogs
+            audit_logs: auditLogs,
+            deleted_domains: deletedDomains
         }, null, 2));
     } catch (err) {}
 }
@@ -168,17 +71,13 @@ saveDatabase();
 
 // 2. UNIVERSAL DYNAMIC MULTI-LEVEL DNS SCANNER
 const COMPREHENSIVE_HOST_DICTIONARY = [
-    // Standard Services
     'www', 'ftp', 'mail', 'smtp', 'webmail', 'autodiscover', 'remote', 'vpn', 'access', 'rds', 'media',
     'oneadvanced', 'portal', 'api', 'dev', 'stage', 'staging', 'direct', 'server', 'ssh', 'sftp', 'ns1', 'ns2',
-    // Microsoft 365, Lync & Teams
     'lyncdiscover', 'msoid', 'sip', 'enterpriseenrollment', 'enterpriseregistration',
-    // DKIM Selectors & Security
     'selector1._domainkey', 'selector2._domainkey', 'google._domainkey', 'k1._domainkey',
     'selector1-gamlins-com._domainkey', 'selector2-gamlins-com._domainkey',
     'barracuda92160414593', 'barracuda36629914597', '_e871c8238c0992dfb1d08a0579540795',
     '_dmarc',
-    // Regional & Branch Locations (Single & Multi-level)
     'colwynbay', 'bangor', 'conwy', 'bala', 'porthmadog', 'rhos',
     'www.colwynbay', 'ftp.colwynbay', 'www.bangor', 'ftp.bangor',
     'www.conwy', 'ftp.conwy', 'www.bala', 'ftp.bala',
@@ -310,21 +209,6 @@ function inspectLiveSSL(domain) {
     });
 }
 
-// Background initial scan
-(async () => {
-    for (const url in monitoredSites) {
-        if (!monitoredSites[url].dns_records || monitoredSites[url].dns_records.length === 0) {
-            monitoredSites[url].dns_records = await scanFullDNSZone(url);
-        }
-    }
-    for (const dom in standaloneDomains) {
-        if (!standaloneDomains[dom].dns_records || standaloneDomains[dom].dns_records.length === 0) {
-            standaloneDomains[dom].dns_records = await scanFullDNSZone(dom);
-        }
-    }
-    saveDatabase();
-})();
-
 // 4. REST APIS
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
@@ -354,6 +238,7 @@ app.post('/api/register', async (req, res) => {
 
     const clean = normalizeHost(data.site_url);
     delete standaloneDomains[clean];
+    deletedDomains = deletedDomains.filter(d => d !== clean);
 
     const [liveSSL, liveDNS] = await Promise.all([
         inspectLiveSSL(data.site_url),
@@ -395,6 +280,8 @@ app.post('/api/add-domain', async (req, res) => {
     if (!domain_name) return res.status(400).json({ error: 'Domain name required' });
 
     const clean = normalizeHost(domain_name);
+    deletedDomains = deletedDomains.filter(d => d !== clean); // Unblacklist if re-added intentionally
+
     const [liveSSL, liveDNS] = await Promise.all([
         inspectLiveSSL(clean),
         scanFullDNSZone(clean)
@@ -426,6 +313,12 @@ app.post('/api/delete-domain', (req, res) => {
         const clean = normalizeHost(domain_name);
         delete standaloneDomains[clean];
         delete standaloneDomains[domain_name];
+        delete monitoredSites[clean];
+        delete monitoredSites[domain_name];
+
+        if (!deletedDomains.includes(clean)) {
+            deletedDomains.push(clean);
+        }
         saveDatabase();
     }
     res.json({ success: true });
