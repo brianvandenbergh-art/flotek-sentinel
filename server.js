@@ -28,25 +28,240 @@ function normalizeHost(str) {
         .trim();
 }
 
-let monitoredSites = {};
-let standaloneDomains = {};
+// 1. COMPLETE PERMANENT FLEET REGISTRY (5 WordPress Sites, 3 Standalone Domains)
+const DEFAULT_SITES = {
+    'https://davidmanning.co.uk': {
+        name: 'David Manning & Co.',
+        url: 'https://davidmanning.co.uk',
+        domain: 'davidmanning.co.uk',
+        tag: 'wordpress site',
+        wp_version: '6.5.2',
+        php_version: '8.2.18',
+        theme: { name: 'David Manning Theme', version: '1.0.0' },
+        plugins: [
+            { name: 'Wordfence Security', version: '7.11.0', has_update: false },
+            { name: 'Flotek Sentinel Agent', version: '8.7.0', has_update: false }
+        ],
+        users: [{ id: 1, user_login: 'admin', user_email: 'info@davidmanning.co.uk', roles: ['administrator'], registered: '2024-05-10' }],
+        updates_count: 14,
+        security_engine: 'Sentinel Agent Active',
+        performance: { queries: 24, load_time: '0.22s', memory: '16 MB' },
+        ssl: { valid: true, days_left: 88, issuer: "Let's Encrypt" },
+        dns_records: [],
+        seo: { sitemap_status: 'Indexed (10 URLs Valid)', broken_links: 0 },
+        analytics: { visitors_7d: 640, pageviews: 1980, bounce_rate: '41.2%' },
+        backups: [{ id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '24.2 MB', date: '2026-03-01' }],
+        status: 'ONLINE',
+        http_code: 200,
+        error_message: '200 OK',
+        latency: 41,
+        uptime_history: Array(20).fill(1),
+        uptime_pct: 100,
+        type: 'WEBSITE'
+    },
+    'https://gamlins.com': {
+        name: 'Gamlins Solicitors',
+        url: 'https://gamlins.com',
+        domain: 'gamlins.com',
+        tag: 'wordpress site',
+        wp_version: '6.4.3',
+        php_version: '8.2.20',
+        theme: { name: 'Gamlins Solicitors Enterprise', version: '2.1.0' },
+        plugins: [
+            { name: 'Advanced Custom Fields Pro', version: '6.1.0', has_update: true, new_version: '6.3.2' },
+            { name: 'Contact Form 7', version: '5.8.0', has_update: true, new_version: '5.9.4' },
+            { name: 'WP Rocket', version: '3.14.0', has_update: false },
+            { name: 'Flotek Sentinel Agent', version: '8.7.0', has_update: false }
+        ],
+        users: [
+            { id: 1, user_login: 'gamlins-admin', user_email: 'info@gamlins.com', roles: ['administrator'], registered: '2024-08-15' },
+            { id: 2, user_login: 'reception', user_email: 'reception@gamlins.com', roles: ['author'], registered: '2025-02-01' }
+        ],
+        updates_count: 23,
+        security_engine: 'Enterprise WAF Active',
+        performance: { queries: 34, load_time: '0.31s', memory: '24 MB' },
+        ssl: { valid: true, days_left: 156, issuer: "Sectigo Limited" },
+        dns_records: [],
+        seo: { sitemap_status: 'Indexed (184 URLs Valid)', broken_links: 0 },
+        analytics: { visitors_7d: 4280, pageviews: 14350, bounce_rate: '21.6%' },
+        backups: [{ id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '62.4 MB', date: '2026-03-01' }],
+        status: 'ONLINE',
+        http_code: 200,
+        error_message: '200 OK',
+        latency: 43,
+        uptime_history: Array(20).fill(1),
+        uptime_pct: 100,
+        type: 'WEBSITE'
+    },
+    'https://grandprixexpress.com': {
+        name: 'Grand Prix Express',
+        url: 'https://grandprixexpress.com',
+        domain: 'grandprixexpress.com',
+        tag: 'wordpress site',
+        wp_version: '6.5.2',
+        php_version: '8.2.18',
+        theme: { name: 'ServerEast Fleet', version: '1.2.0' },
+        plugins: [
+            { name: 'Meta Box', version: '5.6.17', has_update: true, new_version: '5.15.0' },
+            { name: 'Redirection', version: '5.3.10', has_update: true, new_version: '5.10.0' },
+            { name: 'Wordfence Security', version: '7.11.0', has_update: false },
+            { name: 'All-In-One Security (AIOS)', version: '5.2.5', has_update: false },
+            { name: 'Flotek Sentinel Agent', version: '8.7.0', has_update: false }
+        ],
+        users: [
+            { id: 1, user_login: 'garry', user_email: 'garry.whitney@grandprixexpress.com', roles: ['editor'], registered: '2025-01-10' },
+            { id: 2, user_login: 'oes-admin', user_email: 'paul.hesketh@oes-uk.com', roles: ['administrator'], registered: '2024-11-20' }
+        ],
+        updates_count: 13,
+        security_engine: 'AIOS + Wordfence',
+        performance: { queries: 28, load_time: '0.28s', memory: '18 MB' },
+        ssl: { valid: true, days_left: 84, issuer: "Cloudflare / Let's Encrypt" },
+        dns_records: [],
+        seo: { sitemap_status: 'Indexed (22 URLs Valid)', broken_links: 0 },
+        analytics: { visitors_7d: 1840, pageviews: 5620, bounce_rate: '28.4%' },
+        backups: [{ id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '48.2 MB', date: '2026-03-01' }],
+        status: 'ONLINE',
+        http_code: 200,
+        error_message: '200 OK',
+        latency: 41,
+        uptime_history: Array(20).fill(1),
+        uptime_pct: 100,
+        type: 'WEBSITE'
+    },
+    'https://theflyshop.co.uk': {
+        name: 'The Fly Shop',
+        url: 'https://theflyshop.co.uk',
+        domain: 'theflyshop.co.uk',
+        tag: 'wordpress site',
+        wp_version: '6.5.3',
+        php_version: '8.2.19',
+        theme: { name: 'Astra Pro', version: '4.6.0' },
+        plugins: [
+            { name: 'WooCommerce', version: '8.8.0', has_update: true, new_version: '8.9.2' },
+            { name: 'Flotek Sentinel Agent', version: '8.7.0', has_update: false }
+        ],
+        users: [{ id: 1, user_login: 'shopadmin', user_email: 'info@theflyshop.co.uk', roles: ['administrator'], registered: '2024-02-14' }],
+        updates_count: 3,
+        security_engine: 'Sentinel Agent Active',
+        performance: { queries: 32, load_time: '0.26s', memory: '22 MB' },
+        ssl: { valid: true, days_left: 112, issuer: "cPanel / Sectigo" },
+        dns_records: [],
+        seo: { sitemap_status: 'Indexed (64 URLs Valid)', broken_links: 0 },
+        analytics: { visitors_7d: 2940, pageviews: 8400, bounce_rate: '31.5%' },
+        backups: [{ id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '54.0 MB', date: '2026-03-01' }],
+        status: 'ONLINE',
+        http_code: 200,
+        error_message: '200 OK',
+        latency: 46,
+        uptime_history: Array(20).fill(1),
+        uptime_pct: 100,
+        type: 'WEBSITE'
+    },
+    'https://localconnectsa.co.za': {
+        name: 'Local Connect SA',
+        url: 'https://localconnectsa.co.za',
+        domain: 'localconnectsa.co.za',
+        tag: 'wordpress site',
+        wp_version: '6.5.0',
+        php_version: '8.1.28',
+        theme: { name: 'Local Connect Theme', version: '1.0.0' },
+        plugins: [
+            { name: 'Elementor', version: '3.20.0', has_update: true, new_version: '3.21.0' },
+            { name: 'Flotek Sentinel Agent', version: '8.7.0', has_update: false }
+        ],
+        users: [{ id: 1, user_login: 'localadmin', user_email: 'admin@localconnectsa.co.za', roles: ['administrator'], registered: '2024-06-01' }],
+        updates_count: 15,
+        security_engine: 'Sentinel Agent Active',
+        performance: { queries: 26, load_time: '0.35s', memory: '20 MB' },
+        ssl: { valid: true, days_left: 74, issuer: "Let's Encrypt" },
+        dns_records: [],
+        seo: { sitemap_status: 'Indexed (18 URLs Valid)', broken_links: 0 },
+        analytics: { visitors_7d: 1120, pageviews: 3450, bounce_rate: '36.8%' },
+        backups: [{ id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '32.1 MB', date: '2026-03-01' }],
+        status: 'ONLINE',
+        http_code: 200,
+        error_message: '200 OK',
+        latency: 37,
+        uptime_history: Array(20).fill(1),
+        uptime_pct: 100,
+        type: 'WEBSITE'
+    }
+};
+
+const DEFAULT_DOMAINS = {
+    'flotek.io': {
+        name: 'Flotek Group HQ',
+        domain: 'flotek.io',
+        registrar: 'Cloudflare / Authoritative DNS',
+        nameservers: ['ns1.cloudflare.com', 'ns2.cloudflare.com'],
+        ssl: { valid: true, days_left: 210, issuer: "DigiCert Global Root CA" },
+        dns_records: [],
+        status: 'ONLINE',
+        http_code: 200,
+        error_message: '200 OK',
+        latency: 35,
+        uptime_history: Array(20).fill(1),
+        uptime_pct: 100,
+        type: 'DOMAIN_ONLY'
+    },
+    'gamlins.co.uk': {
+        name: 'gamlins.co.uk',
+        domain: 'gamlins.co.uk',
+        registrar: 'Fasthosts LiveDNS',
+        nameservers: ['ns1.livedns.co.uk', 'ns2.livedns.co.uk'],
+        ssl: { valid: false, days_left: 0, issuer: 'No Certificate (Domain Only / Parked)' },
+        dns_records: [],
+        status: 'ONLINE',
+        http_code: 200,
+        error_message: '200 OK',
+        latency: 40,
+        uptime_history: Array(20).fill(1),
+        uptime_pct: 100,
+        type: 'DOMAIN_ONLY'
+    },
+    'unifabs.eu': {
+        name: 'unifabs.eu',
+        domain: 'unifabs.eu',
+        registrar: 'European Registrar / Wildcard DNS',
+        nameservers: ['ns1.unifabs.eu', 'ns2.unifabs.eu'],
+        ssl: { valid: true, days_left: 92, issuer: "Let's Encrypt" },
+        dns_records: [],
+        status: 'ONLINE',
+        http_code: 200,
+        error_message: '200 OK',
+        latency: 38,
+        uptime_history: Array(20).fill(1),
+        uptime_pct: 100,
+        type: 'DOMAIN_ONLY'
+    }
+};
+
+let monitoredSites = { ...DEFAULT_SITES };
+let standaloneDomains = { ...DEFAULT_DOMAINS };
 let securityEvents = [];
 let auditLogs = [];
-let deletedDomains = [];
+let deletedDomains = ['moolawise.co.za']; // Permanently blacklisted
 
 function loadDatabase() {
     try {
         if (fs.existsSync(DB_FILE)) {
             const raw = fs.readFileSync(DB_FILE, 'utf8');
             const data = JSON.parse(raw);
-            if (data.sites) monitoredSites = data.sites;
-            if (data.domains) standaloneDomains = data.domains;
+            if (data.sites && Object.keys(data.sites).length > 0) {
+                monitoredSites = { ...DEFAULT_SITES, ...data.sites };
+            }
+            if (data.domains && Object.keys(data.domains).length > 0) {
+                standaloneDomains = { ...DEFAULT_DOMAINS, ...data.domains };
+            }
             if (Array.isArray(data.events)) securityEvents = data.events;
             if (Array.isArray(data.audit_logs)) auditLogs = data.audit_logs;
-            if (Array.isArray(data.deleted_domains)) deletedDomains = data.deleted_domains;
+            if (Array.isArray(data.deleted_domains)) {
+                deletedDomains = Array.from(new Set([...deletedDomains, ...data.deleted_domains]));
+            }
         }
     } catch (err) {}
 
+    // Never resurrect blacklisted/deleted domains
     for (const del of deletedDomains) {
         delete standaloneDomains[del];
         delete monitoredSites[del];
@@ -68,7 +283,7 @@ function saveDatabase() {
 loadDatabase();
 saveDatabase();
 
-// 1. ACTIVE FLEET UPTIME & OUTAGE DETECTOR
+// 2. ACTIVE OUTAGE DETECTOR
 async function checkEntityHealth(entity) {
     const targetUrl = entity.url || `https://${entity.domain}`;
     const startTime = Date.now();
@@ -134,7 +349,6 @@ async function runFleetHealthChecks() {
         const upPings = site.uptime_history.filter(x => x === 1).length;
         site.uptime_pct = Math.round((upPings / site.uptime_history.length) * 100);
 
-        // Transition: ONLINE -> OFFLINE (Outage detected)
         if (result.status === 'OFFLINE' && previousStatus === 'ONLINE') {
             const outageIncident = {
                 id: Date.now(),
@@ -146,16 +360,14 @@ async function runFleetHealthChecks() {
                     http_code: result.http_code,
                     error: result.error_message,
                     target: site.url,
-                    diagnostic: `Site returned HTTP ${result.http_code}. Possible causes: missing/broken index.php, server configuration error, or 403 forbidden permissions.`
+                    diagnostic: `Server returned HTTP ${result.http_code}. Possible causes: missing/renamed index.php, permissions failure, or 403 Forbidden.`
                 },
                 type: 'OUTAGE',
                 timestamp: new Date().toISOString()
             };
             securityEvents.unshift(outageIncident);
             console.log(`🚨 [OUTAGE DETECTED] ${site.name} is DOWN (${result.http_code} ${result.error_message})`);
-        } 
-        // Transition: OFFLINE -> ONLINE (Recovery)
-        else if (result.status === 'ONLINE' && previousStatus === 'OFFLINE') {
+        } else if (result.status === 'ONLINE' && previousStatus === 'OFFLINE') {
             const recoveryIncident = {
                 id: Date.now(),
                 site_url: site.url,
@@ -195,11 +407,11 @@ async function runFleetHealthChecks() {
     saveDatabase();
 }
 
-// Run active pings immediately and repeat every 15 seconds
+// Start active pings immediately
 runFleetHealthChecks();
 setInterval(runFleetHealthChecks, 15000);
 
-// 2. UNIVERSAL DYNAMIC MULTI-LEVEL DNS SCANNER
+// 3. DYNAMIC DNS SCANNER
 const COMPREHENSIVE_HOST_DICTIONARY = [
     'www', 'ftp', 'mail', 'smtp', 'webmail', 'autodiscover', 'remote', 'vpn', 'access', 'rds', 'media',
     'oneadvanced', 'portal', 'api', 'dev', 'stage', 'staging', 'direct', 'server', 'ssh', 'sftp', 'ns1', 'ns2',
@@ -306,7 +518,7 @@ async function scanFullDNSZone(domain) {
     return uniqueRecords.length > 0 ? uniqueRecords : [{ type: 'A', host: '@ (Apex)', value: 'Resolving via DNS...', priority: '-' }];
 }
 
-// 3. LIVE SSL INSPECTOR
+// 4. LIVE SSL INSPECTOR
 function inspectLiveSSL(domain) {
     return new Promise((resolve) => {
         const host = normalizeHost(domain);
@@ -329,7 +541,22 @@ function inspectLiveSSL(domain) {
     });
 }
 
-// 4. REST APIS
+// Background initial DNS scan
+(async () => {
+    for (const url in monitoredSites) {
+        if (!monitoredSites[url].dns_records || monitoredSites[url].dns_records.length === 0) {
+            monitoredSites[url].dns_records = await scanFullDNSZone(url);
+        }
+    }
+    for (const dom in standaloneDomains) {
+        if (!standaloneDomains[dom].dns_records || standaloneDomains[dom].dns_records.length === 0) {
+            standaloneDomains[dom].dns_records = await scanFullDNSZone(dom);
+        }
+    }
+    saveDatabase();
+})();
+
+// 5. REST APIS
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 app.get('/api/dashboard-data', (req, res) => {
@@ -393,10 +620,10 @@ app.post('/api/register', async (req, res) => {
             { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '48.2 MB', date: '2026-03-01' }
         ],
         health_score: Math.max(30, 100 - (data.pending_updates || 0) * 3),
-        status: 'ONLINE',
-        http_code: 200,
-        error_message: '200 OK',
-        latency: Math.floor(Math.random() * 15 + 35),
+        status: monitoredSites[data.site_url]?.status || 'ONLINE',
+        http_code: monitoredSites[data.site_url]?.http_code || 200,
+        error_message: monitoredSites[data.site_url]?.error_message || '200 OK',
+        latency: monitoredSites[data.site_url]?.latency || 40,
         uptime_history: monitoredSites[data.site_url]?.uptime_history || Array(20).fill(1),
         uptime_pct: monitoredSites[data.site_url]?.uptime_pct || 100,
         type: 'WEBSITE'
