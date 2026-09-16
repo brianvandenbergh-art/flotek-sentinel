@@ -283,7 +283,7 @@ function saveDatabase() {
 loadDatabase();
 saveDatabase();
 
-// 2. ACTIVE OUTAGE DETECTOR
+// 2. ACTIVE REAL-TIME OUTAGE DETECTOR
 async function checkEntityHealth(entity) {
     const targetUrl = entity.url || `https://${entity.domain}`;
     const startTime = Date.now();
@@ -411,7 +411,7 @@ async function runFleetHealthChecks() {
 runFleetHealthChecks();
 setInterval(runFleetHealthChecks, 15000);
 
-// 3. DYNAMIC DNS SCANNER
+// 3. UNIVERSAL DYNAMIC DNS SCANNER
 const COMPREHENSIVE_HOST_DICTIONARY = [
     'www', 'ftp', 'mail', 'smtp', 'webmail', 'autodiscover', 'remote', 'vpn', 'access', 'rds', 'media',
     'oneadvanced', 'portal', 'api', 'dev', 'stage', 'staging', 'direct', 'server', 'ssh', 'sftp', 'ns1', 'ns2',
@@ -670,15 +670,26 @@ app.post('/api/add-domain', async (req, res) => {
     res.json({ success: true, domain: standaloneDomains[clean] });
 });
 
+// UNIFIED PERMANENT DELETION ROUTE (Websites & Domains)
 app.post('/api/delete-domain', (req, res) => {
     const { domain_name } = req.body;
     if (domain_name) {
         const clean = normalizeHost(domain_name);
+
+        // Delete from standalone domains
         delete standaloneDomains[clean];
         delete standaloneDomains[domain_name];
+
+        // Delete from monitored websites
         delete monitoredSites[clean];
         delete monitoredSites[domain_name];
+        for (const key in monitoredSites) {
+            if (normalizeHost(key) === clean) {
+                delete monitoredSites[key];
+            }
+        }
 
+        // Add to permanent deletion blocklist
         if (!deletedDomains.includes(clean)) {
             deletedDomains.push(clean);
         }
