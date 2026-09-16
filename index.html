@@ -15,7 +15,6 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #070a12; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
         
-        /* Force tab visibility without CSS class conflicts */
         .wp-tab-hidden { display: none !important; }
         .wp-tab-visible { display: flex !important; }
     </style>
@@ -85,10 +84,10 @@
                 <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-[#080d17] border border-slate-800 p-3 rounded-2xl">
                     <div class="flex gap-1.5 text-xs">
                         <button type="button" onclick="switchFleetCategory('websites')" id="btn-fleet-websites" class="fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer">
-                            WordPress Sites (<span id="site-count-badge">2</span>)
+                            WordPress Sites (<span id="site-count-badge">0</span>)
                         </button>
                         <button type="button" onclick="switchFleetCategory('domains')" id="btn-fleet-domains" class="fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition cursor-pointer">
-                            Domains Only (<span id="domain-count-badge">3</span>)
+                            Domains Only (<span id="domain-count-badge">0</span>)
                         </button>
                     </div>
 
@@ -111,7 +110,7 @@
                             <div class="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto text-sm font-bold">
                                 <i class="fa-solid fa-circle-up"></i>
                             </div>
-                            <div class="text-lg font-extrabold text-white mt-1" id="stat-up-count">5</div>
+                            <div class="text-lg font-extrabold text-white mt-1" id="stat-up-count">0</div>
                             <span class="text-[10px] text-slate-400 font-semibold uppercase">Up</span>
                         </div>
                         <div>
@@ -143,14 +142,14 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-400">Active Incidents:</span>
-                        <span class="font-bold text-rose-400" id="stat-incidents-count">2 Incidents</span>
+                        <span class="font-bold text-rose-400" id="stat-incidents-count">0 Incidents</span>
                     </div>
                 </div>
 
                 <div class="bg-[#080d17] border border-slate-800 p-4 rounded-2xl space-y-2">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
                         <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-virus text-rose-400"></i> Fleet WAF Log</span>
-                        <span id="waf-log-badge" class="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 text-[10px] font-mono font-bold">2</span>
+                        <span id="waf-log-badge" class="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 text-[10px] font-mono font-bold">0</span>
                     </h3>
                     <div id="events-container" class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1"></div>
                 </div>
@@ -424,7 +423,14 @@
 
     <!-- JAVASCRIPT ENGINE -->
     <script>
-        window.globalData = { sites: [], domains: [], events: [], audit_logs: [] };
+        // Load initial state from browser persistent cache if available
+        var localCachedData = null;
+        try {
+            var rawCache = localStorage.getItem('flotek_fleet_cache');
+            if (rawCache) localCachedData = JSON.parse(rawCache);
+        } catch (e) {}
+
+        window.globalData = localCachedData || { sites: [], domains: [], events: [], audit_logs: [] };
         window.activeSiteUrl = '';
         window.currentActiveTab = 'tab-overview';
 
@@ -502,28 +508,23 @@
             window.currentActiveTab = 'tab-overview';
         };
 
-        // Tab Switching Engine
         window.switchTab = function(tabId) {
             window.currentActiveTab = tabId;
 
-            // Hide all tab contents
             var tabs = document.querySelectorAll('.tab-content');
             for (var i = 0; i < tabs.length; i++) {
                 tabs[i].style.display = 'none';
             }
 
-            // Reset all tab button styles to unselected
             var tabBtns = document.querySelectorAll('.tab-btn');
             for (var j = 0; j < tabBtns.length; j++) {
                 tabBtns[j].classList.remove('bg-indigo-600', 'text-white', 'font-bold');
                 tabBtns[j].classList.add('bg-slate-900', 'text-slate-400', 'font-semibold');
             }
 
-            // Show target content
             var activeContent = document.getElementById(tabId);
             if (activeContent) activeContent.style.display = 'block';
 
-            // Highlight target button
             var activeBtn = document.getElementById('btn-' + tabId);
             if (activeBtn) {
                 activeBtn.classList.remove('bg-slate-900', 'text-slate-400', 'font-semibold');
@@ -681,7 +682,6 @@
             var site = null;
             var isWebsite = false;
 
-            // Strict lookup: Check websites first
             var sites = window.globalData.sites || [];
             for (var i = 0; i < sites.length; i++) {
                 if (window.normalizeDomain(sites[i].url) === cleanIdentifier || window.normalizeDomain(sites[i].domain) === cleanIdentifier) {
@@ -691,7 +691,6 @@
                 }
             }
 
-            // Check standalone domains
             if (!site) {
                 var domains = window.globalData.domains || [];
                 for (var j = 0; j < domains.length; j++) {
@@ -735,7 +734,6 @@
                 var targetDefaultTab = isWebsite ? 'tab-overview' : 'tab-dns';
                 window.switchTab(targetDefaultTab);
             } else {
-                // If background sync runs, guarantee domain isn't stuck on a WP tab
                 var wpOnlyTabIds = ['tab-overview', 'tab-wp', 'tab-vault', 'tab-users', 'tab-seo'];
                 if (!isWebsite && wpOnlyTabIds.indexOf(window.currentActiveTab) !== -1) {
                     window.switchTab('tab-dns');
@@ -753,16 +751,14 @@
                 window.setTxt('drawer-memory', perf.memory || '18 MB');
                 window.setTxt('drawer-db-size', '42 Tables (48.2 MB)');
 
-                // Distinct SEO Metrics
                 var analytics = site.analytics || { visitors_7d: 1200, pageviews: 4100, bounce_rate: '30.0%' };
-                var seo = site.seo || { sitemap_status: 'Indexed (42 URLs Valid)', broken_links: 0 };
+                var seo = site.seo || { sitemap_status: 'Indexed', broken_links: 0 };
                 window.setTxt('drawer-seo-visitors', (analytics.visitors_7d || 1200).toLocaleString());
                 window.setTxt('drawer-seo-views', (analytics.pageviews || 4100).toLocaleString());
                 window.setTxt('drawer-seo-bounce', analytics.bounce_rate || '30.0%');
                 var seoStatusEl = document.getElementById('drawer-seo-sitemap');
                 if (seoStatusEl) seoStatusEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + (seo.sitemap_status || 'Indexed');
 
-                // Plugins
                 var plugins = site.plugins || [];
                 window.setTxt('drawer-tab-plugin-count', plugins.length);
                 window.setTxt('drawer-plugins-summary', plugins.length + ' Installed Plugins');
@@ -786,7 +782,6 @@
                     pluginsContainer.innerHTML = phtml;
                 }
 
-                // Users
                 var users = site.users || [];
                 window.setTxt('drawer-tab-user-count', users.length);
                 var usersContainer = document.getElementById('drawer-users-list');
@@ -809,7 +804,6 @@
                     usersContainer.innerHTML = uhtml;
                 }
 
-                // Backups
                 var backups = site.backups || [];
                 var backupsContainer = document.getElementById('drawer-backups-list');
                 if (backupsContainer) {
@@ -949,6 +943,9 @@
                 window.globalData.domains = (window.globalData.domains || []).filter(function(d) {
                     return window.normalizeDomain(d.domain) !== window.normalizeDomain(domain);
                 });
+                try {
+                    localStorage.setItem('flotek_fleet_cache', JSON.stringify(window.globalData));
+                } catch(e) {}
                 window.renderAll();
                 window.refreshData();
             } catch (e) {}
@@ -1153,6 +1150,11 @@
                 if (data.domains) window.globalData.domains = data.domains;
                 if (data.events) window.globalData.events = data.events;
                 if (data.audit_logs) window.globalData.audit_logs = data.audit_logs;
+
+                // Persist live fleet state in client storage
+                try {
+                    localStorage.setItem('flotek_fleet_cache', JSON.stringify(window.globalData));
+                } catch(e) {}
             } catch (err) {}
 
             window.renderAll();
