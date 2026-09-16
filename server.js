@@ -1,6 +1,6 @@
 /**
  * Flotek Sentinel - Enterprise Fleet Command Hub
- * Universal Dynamic DNS Zone Discovery & SSL Telemetry Engine
+ * Active HTTP/HTTPS Outage Detector, Dynamic DNS & Live Telemetry Engine
  */
 
 const express = require('express');
@@ -32,7 +32,7 @@ let monitoredSites = {};
 let standaloneDomains = {};
 let securityEvents = [];
 let auditLogs = [];
-let deletedDomains = []; // Tombstone blacklist: Permanently prevents deleted domains from returning
+let deletedDomains = [];
 
 function loadDatabase() {
     try {
@@ -47,7 +47,6 @@ function loadDatabase() {
         }
     } catch (err) {}
 
-    // Never re-add deleted domains on boot
     for (const del of deletedDomains) {
         delete standaloneDomains[del];
         delete monitoredSites[del];
@@ -68,6 +67,137 @@ function saveDatabase() {
 
 loadDatabase();
 saveDatabase();
+
+// 1. ACTIVE FLEET UPTIME & OUTAGE DETECTOR
+async function checkEntityHealth(entity) {
+    const targetUrl = entity.url || `https://${entity.domain}`;
+    const startTime = Date.now();
+
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const response = await fetch(targetUrl, {
+            method: 'GET',
+            headers: {
+                'User-Agent': 'Flotek-Sentinel-Monitor/10.0 (+https://flotek.io)'
+            },
+            signal: controller.signal,
+            redirect: 'follow'
+        });
+        clearTimeout(timeoutId);
+
+        const latency = Date.now() - startTime;
+        const isSuccess = response.status >= 200 && response.status < 400;
+
+        return {
+            status: isSuccess ? 'ONLINE' : 'OFFLINE',
+            http_code: response.status,
+            error_message: isSuccess ? '200 OK' : `${response.status} ${response.statusText || 'Error'}`,
+            latency: latency
+        };
+    } catch (err) {
+        const latency = Date.now() - startTime;
+        let errMsg = err.name === 'AbortError' ? 'Connection Timeout (5s)' : err.message;
+        if (errMsg.includes('ECONNREFUSED')) errMsg = 'Connection Refused';
+        if (errMsg.includes('ENOTFOUND')) errMsg = 'DNS Lookup Failed';
+        if (errMsg.includes('certificate')) errMsg = 'SSL Handshake Failed';
+
+        return {
+            status: 'OFFLINE',
+            http_code: err.name === 'AbortError' ? 408 : 503,
+            error_message: errMsg,
+            latency: latency
+        };
+    }
+}
+
+async function runFleetHealthChecks() {
+    const allSites = Object.values(monitoredSites);
+    const allDomains = Object.values(standaloneDomains);
+
+    for (const site of allSites) {
+        const result = await checkEntityHealth(site);
+        const previousStatus = site.status || 'ONLINE';
+
+        site.status = result.status;
+        site.http_code = result.http_code;
+        site.error_message = result.error_message;
+        site.latency = result.latency;
+
+        if (!Array.isArray(site.uptime_history)) {
+            site.uptime_history = Array(19).fill(1);
+        }
+        site.uptime_history.push(result.status === 'ONLINE' ? 1 : 0);
+        if (site.uptime_history.length > 20) site.uptime_history.shift();
+
+        const upPings = site.uptime_history.filter(x => x === 1).length;
+        site.uptime_pct = Math.round((upPings / site.uptime_history.length) * 100);
+
+        // Transition: ONLINE -> OFFLINE (Outage detected)
+        if (result.status === 'OFFLINE' && previousStatus === 'ONLINE') {
+            const outageIncident = {
+                id: Date.now(),
+                site_url: site.url,
+                domain: site.domain,
+                site_name: site.name,
+                event: `OUTAGE_DETECTED_HTTP_${result.http_code}`,
+                details: {
+                    http_code: result.http_code,
+                    error: result.error_message,
+                    target: site.url,
+                    diagnostic: `Site returned HTTP ${result.http_code}. Possible causes: missing/broken index.php, server configuration error, or 403 forbidden permissions.`
+                },
+                type: 'OUTAGE',
+                timestamp: new Date().toISOString()
+            };
+            securityEvents.unshift(outageIncident);
+            console.log(`🚨 [OUTAGE DETECTED] ${site.name} is DOWN (${result.http_code} ${result.error_message})`);
+        } 
+        // Transition: OFFLINE -> ONLINE (Recovery)
+        else if (result.status === 'ONLINE' && previousStatus === 'OFFLINE') {
+            const recoveryIncident = {
+                id: Date.now(),
+                site_url: site.url,
+                domain: site.domain,
+                site_name: site.name,
+                event: 'SERVICE_RESTORED_200_OK',
+                details: {
+                    http_code: 200,
+                    status: 'Service fully operational',
+                    response_time: `${result.latency}ms`
+                },
+                type: 'RECOVERY',
+                timestamp: new Date().toISOString()
+            };
+            securityEvents.unshift(recoveryIncident);
+            console.log(`✅ [SERVICE RESTORED] ${site.name} is back ONLINE`);
+        }
+    }
+
+    for (const dom of allDomains) {
+        const result = await checkEntityHealth(dom);
+        dom.status = result.status;
+        dom.http_code = result.http_code;
+        dom.error_message = result.error_message;
+        dom.latency = result.latency;
+
+        if (!Array.isArray(dom.uptime_history)) {
+            dom.uptime_history = Array(19).fill(1);
+        }
+        dom.uptime_history.push(result.status === 'ONLINE' ? 1 : 0);
+        if (dom.uptime_history.length > 20) dom.uptime_history.shift();
+
+        const upPings = dom.uptime_history.filter(x => x === 1).length;
+        dom.uptime_pct = Math.round((upPings / dom.uptime_history.length) * 100);
+    }
+
+    saveDatabase();
+}
+
+// Run active pings immediately and repeat every 15 seconds
+runFleetHealthChecks();
+setInterval(runFleetHealthChecks, 15000);
 
 // 2. UNIVERSAL DYNAMIC MULTI-LEVEL DNS SCANNER
 const COMPREHENSIVE_HOST_DICTIONARY = [
@@ -101,7 +231,6 @@ async function scanFullDNSZone(domain) {
         ]).catch(() => []);
     };
 
-    // 1. Wildcard DNS detection
     const wildcardProbeHost = `_sentinel_wildcard_check_${Date.now()}.${host}`;
     const wildcardProbeIps = await safeResolve(dns.resolve4, wildcardProbeHost);
     const wildcardIp = wildcardProbeIps.length > 0 ? wildcardProbeIps[0] : null;
@@ -110,7 +239,6 @@ async function scanFullDNSZone(domain) {
         records.push({ type: 'A', host: '* (Wildcard)', value: wildcardIp, priority: '-' });
     }
 
-    // 2. Query Apex Records (@)
     try {
         const a = await safeResolve(dns.resolve4, host);
         a.forEach(ip => records.push({ type: 'A', host: '@ (Apex)', value: ip, priority: '-' }));
@@ -128,18 +256,15 @@ async function scanFullDNSZone(domain) {
         ns.forEach(item => records.push({ type: 'NS', host: '@', value: item, priority: '-' }));
     } catch (e) {}
 
-    // 3. Probing Host Dictionary (A, AAAA, CNAME, MX, TXT)
     await Promise.all(COMPREHENSIVE_HOST_DICTIONARY.map(async (sub) => {
         const fqdn = `${sub}.${host}`;
 
-        // CNAME query
         const cnames = await safeResolve(dns.resolveCname, fqdn);
         if (cnames.length > 0) {
             cnames.forEach(target => records.push({ type: 'CNAME', host: sub, value: target, priority: '-' }));
             return;
         }
 
-        // A Record
         const ips = await safeResolve(dns.resolve4, fqdn);
         ips.forEach(ip => {
             if (!wildcardIp || ip !== wildcardIp) {
@@ -147,22 +272,18 @@ async function scanFullDNSZone(domain) {
             }
         });
 
-        // AAAA Record (IPv6)
         const v6 = await safeResolve(dns.resolve6, fqdn);
         v6.forEach(ip => records.push({ type: 'AAAA', host: sub, value: ip, priority: '-' }));
 
-        // Subdomain & Branch MX Routing
         const mxs = await safeResolve(dns.resolveMx, fqdn);
         mxs.forEach(m => records.push({ type: 'MX', host: sub, value: m.exchange, priority: m.priority }));
 
-        // Subdomain TXT
         if (sub.includes('_dmarc') || sub.includes('_domainkey')) {
             const txts = await safeResolve(dns.resolveTxt, fqdn);
             txts.forEach(t => records.push({ type: 'TXT', host: sub, value: Array.isArray(t) ? t.join('') : t, priority: '-' }));
         }
     }));
 
-    // 4. SRV Records Probing
     await Promise.all(SRV_PROBES.map(async (srv) => {
         const srvFqdn = `${srv}.${host}`;
         const srvs = await safeResolve(dns.resolveSrv, srvFqdn);
@@ -174,7 +295,6 @@ async function scanFullDNSZone(domain) {
         }));
     }));
 
-    // 5. De-duplicate and Sort
     const seen = new Set();
     const uniqueRecords = records.filter(r => {
         const key = `${r.type}|${r.host}|${r.value}|${r.priority}`;
@@ -219,13 +339,20 @@ app.get('/api/dashboard-data', (req, res) => {
         'Expires': '0'
     });
 
+    const siteList = Object.values(monitoredSites);
+    const domainList = Object.values(standaloneDomains);
+    const upCount = siteList.filter(s => s.status === 'ONLINE').length + domainList.filter(d => d.status === 'ONLINE').length;
+    const downCount = siteList.filter(s => s.status === 'OFFLINE').length + domainList.filter(d => d.status === 'OFFLINE').length;
+
     res.json({
         success: true,
-        sites: Object.values(monitoredSites),
-        domains: Object.values(standaloneDomains),
+        sites: siteList,
+        domains: domainList,
         events: securityEvents,
         audit_logs: auditLogs,
-        fleet_health: 99
+        up_count: upCount,
+        down_count: downCount,
+        fleet_health: Math.max(0, 100 - (downCount * 25))
     });
 });
 
@@ -267,7 +394,11 @@ app.post('/api/register', async (req, res) => {
         ],
         health_score: Math.max(30, 100 - (data.pending_updates || 0) * 3),
         status: 'ONLINE',
+        http_code: 200,
+        error_message: '200 OK',
         latency: Math.floor(Math.random() * 15 + 35),
+        uptime_history: monitoredSites[data.site_url]?.uptime_history || Array(20).fill(1),
+        uptime_pct: monitoredSites[data.site_url]?.uptime_pct || 100,
         type: 'WEBSITE'
     };
 
@@ -280,7 +411,7 @@ app.post('/api/add-domain', async (req, res) => {
     if (!domain_name) return res.status(400).json({ error: 'Domain name required' });
 
     const clean = normalizeHost(domain_name);
-    deletedDomains = deletedDomains.filter(d => d !== clean); // Unblacklist if re-added intentionally
+    deletedDomains = deletedDomains.filter(d => d !== clean);
 
     const [liveSSL, liveDNS] = await Promise.all([
         inspectLiveSSL(clean),
@@ -299,8 +430,13 @@ app.post('/api/add-domain', async (req, res) => {
         nameservers: nameservers,
         ssl: liveSSL,
         dns_records: liveDNS,
-        type: 'DOMAIN_ONLY',
-        status: 'ONLINE'
+        status: 'ONLINE',
+        http_code: 200,
+        error_message: '200 OK',
+        latency: 40,
+        uptime_history: Array(20).fill(1),
+        uptime_pct: 100,
+        type: 'DOMAIN_ONLY'
     };
 
     saveDatabase();
@@ -349,7 +485,7 @@ app.post('/api/event', (req, res) => {
     res.json({ success: true, record });
 });
 
-// WordPress Remote Proxy Actions
+// Proxy actions for Remote Management
 app.post('/api/create-user', async (req, res) => {
     const { site_url, username, email, role, password } = req.body;
     try {
