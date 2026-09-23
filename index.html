@@ -149,9 +149,13 @@
                 <div class="bg-[#080d17] border border-slate-800 p-4 rounded-2xl space-y-2">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
                         <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-virus text-rose-400"></i> Fleet Event Log</span>
-                        <span id="waf-log-badge" class="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 text-[10px] font-mono font-bold">0</span>
+                        <span class="flex items-center gap-2">
+                            <button type="button" onclick="toggleArchivedEvents()" class="text-[10px] text-slate-400 hover:text-white font-semibold cursor-pointer">Archive (<span id="archive-log-badge">0</span>)</button>
+                            <span id="waf-log-badge" class="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 text-[10px] font-mono font-bold">0</span>
+                        </span>
                     </h3>
                     <div id="events-container" class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1"></div>
+                    <div id="archived-events-container" style="display: none;" class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1 border-t border-slate-800 pt-2"></div>
                 </div>
             </div>
 
@@ -439,7 +443,7 @@
             if (rawCache) localCachedData = JSON.parse(rawCache);
         } catch (e) {}
 
-        window.globalData = localCachedData || { sites: [], domains: [], events: [], audit_logs: [] };
+        window.globalData = localCachedData || { sites: [], domains: [], events: [], audit_logs: [], archived_events: [] };
         window.activeSiteUrl = '';
         window.currentActiveTab = 'tab-overview';
 
@@ -448,6 +452,22 @@
             var txt = document.createElement('textarea');
             txt.innerHTML = str;
             return txt.value;
+        };
+
+        window.escapeHtml = function(value) {
+            var str = value === undefined || value === null ? '' : String(value);
+            return str.replace(/[&<>"']/g, function(ch) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[ch];
+            });
+        };
+
+        window.eventLabel = function(event) {
+            var details = event && event.details;
+            if (details && typeof details === 'object') {
+                if (details.diagnostic) return details.diagnostic;
+                if (details.error) return details.error;
+            }
+            return event && event.type === 'RECOVERY' ? 'Service restored.' : 'Review event evidence.';
         };
 
         window.setTxt = function(id, val) {
@@ -697,6 +717,77 @@
             container.innerHTML = html;
         };
 
+        window.acknowledgeEvent = async function(eventId) {
+            try {
+                var res = await fetch('/api/events/' + encodeURIComponent(eventId) + '/acknowledge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ acknowledged_by: 'dashboard' })
+                });
+                var result = await res.json();
+                if (!res.ok || !result.success) throw new Error(result.error || 'Could not archive event');
+
+                var move = function(list) {
+                    return (list || []).filter(function(event) { return String(event.id) !== String(eventId); });
+                };
+                window.globalData.events = move(window.globalData.events);
+                window.globalData.audit_logs = move(window.globalData.audit_logs);
+                window.globalData.archived_events = [result.event].concat(window.globalData.archived_events || []);
+                window.renderAll();
+            } catch (error) {
+                alert('Could not acknowledge alert: ' + error.message);
+            }
+        };
+
+        window.restoreArchivedEvent = async function(eventId) {
+            try {
+                var res = await fetch('/api/events/' + encodeURIComponent(eventId) + '/restore', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                var result = await res.json();
+                if (!res.ok || !result.success) throw new Error(result.error || 'Could not restore event');
+                window.globalData.archived_events = (window.globalData.archived_events || []).filter(function(event) {
+                    return String(event.id) !== String(eventId);
+                });
+                if (result.event.original_collection === 'audit_logs') {
+                    window.globalData.audit_logs = [result.event].concat(window.globalData.audit_logs || []);
+                } else {
+                    window.globalData.events = [result.event].concat(window.globalData.events || []);
+                }
+                window.renderAll();
+            } catch (error) {
+                alert('Could not restore archived alert: ' + error.message);
+            }
+        };
+
+        window.toggleArchivedEvents = function() {
+            var container = document.getElementById('archived-events-container');
+            if (!container) return;
+            container.style.display = container.style.display === 'none' ? 'block' : 'none';
+            window.renderArchivedEvents();
+        };
+
+        window.renderArchivedEvents = function() {
+            var container = document.getElementById('archived-events-container');
+            if (!container) return;
+            var archived = window.globalData.archived_events || [];
+            if (!archived.length) {
+                container.innerHTML = '<div class="text-slate-500 text-[11px] p-2 text-center">No acknowledged alerts.</div>';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < Math.min(archived.length, 25); i++) {
+                var event = archived[i];
+                html += '<div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[11px] flex items-center justify-between gap-2">' +
+                    '<div class="min-w-0"><div class="font-bold text-slate-300 truncate">' + window.escapeHtml(event.event || 'ARCHIVED_EVENT') + '</div>' +
+                    '<div class="text-slate-500 text-[10px] truncate">' + window.escapeHtml(event.site_name || event.domain || '') + ' · ' + window.escapeHtml(window.eventLabel(event)) + '</div></div>' +
+                    '<button type="button" onclick="restoreArchivedEvent(\'' + window.escapeHtml(event.id) + '\')" class="shrink-0 text-[10px] text-indigo-300 hover:text-white font-semibold cursor-pointer">Restore</button>' +
+                    '</div>';
+            }
+            container.innerHTML = html;
+        };
+
         window.renderEvents = function(events) {
             var container = document.getElementById('events-container');
             if (!container) return;
@@ -719,15 +810,16 @@
                     timeStr = new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 } catch (err) {}
 
-                html += '<div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[11px] flex items-center justify-between">' +
-                    '<div>' +
+                html += '<div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[11px] flex items-center justify-between gap-2">' +
+                    '<div class="min-w-0">' +
                         '<div class="font-bold ' + color + ' flex items-center gap-1.5">' +
                             (isOutage ? '<i class="fa-solid fa-triangle-exclamation text-[10px] animate-pulse"></i> ' : (isRecovery ? '<i class="fa-solid fa-circle-check text-[10px]"></i> ' : '')) +
-                            (e.event || 'INCIDENT_LOG') +
+                            window.escapeHtml(e.event || 'INCIDENT_LOG') +
                         '</div>' +
-                        '<div class="text-slate-500 text-[10px]">' + cleanSiteName + '</div>' +
+                        '<div class="text-slate-500 text-[10px] truncate">' + window.escapeHtml(cleanSiteName) + ' · ' + window.escapeHtml(window.eventLabel(e)) + '</div>' +
                     '</div>' +
-                    '<span class="text-[10px] text-slate-400 mono">' + timeStr + '</span>' +
+                    '<div class="flex items-center gap-2 shrink-0"><span class="text-[10px] text-slate-400 mono">' + timeStr + '</span>' +
+                    '<button type="button" onclick="event.stopPropagation(); acknowledgeEvent(\'' + window.escapeHtml(e.id) + '\')" class="text-[10px] text-amber-300 hover:text-white font-semibold cursor-pointer">Acknowledge</button></div>' +
                 '</div>';
             }
             container.innerHTML = html;
@@ -801,7 +893,10 @@
                 if (isDown) {
                     outageBanner.style.display = 'block';
                     window.setTxt('drawer-outage-title', 'OUTAGE DETECTED (HTTP ' + (site.http_code || 403) + ')');
-                    window.setTxt('drawer-outage-msg', 'Server response: ' + (site.error_message || 'Access Denied / Forbidden') + '. Possible causes: renamed index.php, server permissions error, or web server failure.');
+                    var diagnostic = site.diagnostic && site.diagnostic.summary
+                        ? site.diagnostic.summary
+                        : ('Server response: ' + (site.error_message || 'Unknown HTTP failure') + '. The cause has not been confirmed.');
+                    window.setTxt('drawer-outage-msg', diagnostic);
                 } else {
                     outageBanner.style.display = 'none';
                 }
@@ -975,7 +1070,7 @@
                         if (se.details && typeof se.details === 'object') {
                             var dKeys = Object.keys(se.details);
                             for (var dk = 0; dk < dKeys.length; dk++) {
-                                detailsStr += '<span class="mr-3 font-mono text-[10px] text-slate-400">' + dKeys[dk] + ': <strong class="text-slate-200">' + se.details[dKeys[dk]] + '</strong></span>';
+                                detailsStr += dKeys[dk] + ': ' + se.details[dKeys[dk]] + ' · ';
                             }
                         } else {
                             detailsStr = String(se.details || '');
@@ -983,10 +1078,11 @@
 
                         sEventsHtml += '<div class="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs space-y-1">' +
                             '<div class="flex justify-between items-center font-bold ' + seColor + '">' +
-                                '<span>' + (isOutage ? '<i class="fa-solid fa-triangle-exclamation mr-1 animate-pulse"></i> ' : '') + se.event + '</span>' +
+                                '<span>' + (isOutage ? '<i class="fa-solid fa-triangle-exclamation mr-1 animate-pulse"></i> ' : '') + window.escapeHtml(se.event) + '</span>' +
                                 '<span class="text-[10px] text-slate-500 mono">' + new Date(se.timestamp).toLocaleTimeString() + '</span>' +
                             '</div>' +
-                            '<div class="text-[11px] text-slate-300">' + detailsStr + '</div>' +
+                            '<div class="text-[11px] text-slate-300">' + window.escapeHtml(detailsStr) + '</div>' +
+                            '<button type="button" onclick="acknowledgeEvent(\'' + window.escapeHtml(se.id) + '\')" class="text-[10px] text-amber-300 hover:text-white font-semibold cursor-pointer">Acknowledge &amp; archive</button>' +
                         '</div>';
                     }
                     eventsContainer.innerHTML = sEventsHtml;
@@ -1192,7 +1288,8 @@
             try {
                 var sites = window.globalData.sites || [];
                 var domains = window.globalData.domains || [];
-                var totalEvents = (window.globalData.events || []).length;
+                var totalEvents = (window.globalData.events || []).length + (window.globalData.audit_logs || []).length;
+                var archivedEvents = window.globalData.archived_events || [];
 
                 var upCount = 0;
                 var downCount = 0;
@@ -1212,10 +1309,12 @@
                 window.setTxt('stat-down-count', downCount);
                 window.setTxt('stat-incidents-count', totalEvents + ' Incidents');
                 window.setTxt('waf-log-badge', totalEvents);
+                window.setTxt('archive-log-badge', archivedEvents.length);
 
                 window.renderWebsites(sites);
                 window.renderDomains(domains);
                 window.renderEvents([].concat(window.globalData.events || [], window.globalData.audit_logs || []));
+                window.renderArchivedEvents();
 
                 if (window.activeSiteUrl) {
                     window.openDrawer(window.activeSiteUrl, true);
@@ -1234,6 +1333,7 @@
                 if (data.domains) window.globalData.domains = data.domains;
                 if (data.events) window.globalData.events = data.events;
                 if (data.audit_logs) window.globalData.audit_logs = data.audit_logs;
+                if (data.archived_events) window.globalData.archived_events = data.archived_events;
 
                 try {
                     localStorage.setItem('flotek_fleet_cache', JSON.stringify(window.globalData));
