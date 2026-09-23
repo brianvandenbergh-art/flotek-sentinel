@@ -9,6 +9,9 @@ const path = require('path');
 const fs = require('fs');
 const tls = require('tls');
 const dns = require('dns').promises;
+const net = require('net');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
@@ -240,7 +243,11 @@ let monitoredSites = { ...DEFAULT_SITES };
 let standaloneDomains = { ...DEFAULT_DOMAINS };
 let securityEvents = [];
 let auditLogs = [];
+let archivedEvents = [];
 let deletedDomains = ['moolawise.co.za']; // Permanently blacklisted
+const execFileAsync = promisify(execFile);
+const DNS_SCAN_INTERVAL_MS = 5 * 60 * 1000;
+let lastDnsScanAt = 0;
 
 function loadDatabase() {
     try {
@@ -255,6 +262,7 @@ function loadDatabase() {
             }
             if (Array.isArray(data.events)) securityEvents = data.events;
             if (Array.isArray(data.audit_logs)) auditLogs = data.audit_logs;
+            if (Array.isArray(data.archived_events)) archivedEvents = data.archived_events;
             if (Array.isArray(data.deleted_domains)) {
                 deletedDomains = Array.from(new Set([...deletedDomains, ...data.deleted_domains]));
             }
@@ -275,6 +283,7 @@ function saveDatabase() {
             domains: standaloneDomains,
             events: securityEvents,
             audit_logs: auditLogs,
+            archived_events: archivedEvents,
             deleted_domains: deletedDomains
         }, null, 2));
     } catch (err) {}
@@ -283,133 +292,257 @@ function saveDatabase() {
 loadDatabase();
 saveDatabase();
 
-// 2. ACTIVE REAL-TIME OUTAGE DETECTOR
-async function checkEntityHealth(entity) {
+// 2. ACTIVE SERVER, HTTP AND WORDPRESS HEALTH DETECTOR
+function normalizeErrorMessage(error) {
+    let message = error && error.message ? error.message : String(error || 'Unknown error');
+    if (message.includes('ECONNREFUSED')) return 'Connection refused by target';
+    if (message.includes('ENOTFOUND')) return 'DNS lookup failed';
+    if (message.toLowerCase().includes('certificate')) return 'SSL handshake failed';
+    return message.slice(0, 240);
+}
+
+async function checkHttpHealth(entity) {
     const targetUrl = entity.url || `https://${entity.domain}`;
     const startTime = Date.now();
+    let controller;
+    let timeoutId;
 
     try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-
+        controller = new AbortController();
+        timeoutId = setTimeout(() => controller.abort(), 7000);
         const response = await fetch(targetUrl, {
             method: 'GET',
-            headers: {
-                'User-Agent': 'Flotek-Sentinel-Monitor/10.0 (+https://flotek.io)'
-            },
+            headers: { 'User-Agent': 'Flotek-Sentinel-Monitor/11.0 (+https://flotek.io)' },
             signal: controller.signal,
             redirect: 'follow'
         });
-        clearTimeout(timeoutId);
-
         const latency = Date.now() - startTime;
         const isSuccess = response.status >= 200 && response.status < 400;
-
         return {
             status: isSuccess ? 'ONLINE' : 'OFFLINE',
             http_code: response.status,
-            error_message: isSuccess ? '200 OK' : `${response.status} ${response.statusText || 'Error'}`,
-            latency: latency
+            error_message: isSuccess ? `${response.status} ${response.statusText || 'OK'}` : `${response.status} ${response.statusText || 'HTTP error'}`,
+            latency
         };
     } catch (err) {
-        const latency = Date.now() - startTime;
-        let errMsg = err.name === 'AbortError' ? 'Connection Timeout (5s)' : err.message;
-        if (errMsg.includes('ECONNREFUSED')) errMsg = 'Connection Refused';
-        if (errMsg.includes('ENOTFOUND')) errMsg = 'DNS Lookup Failed';
-        if (errMsg.includes('certificate')) errMsg = 'SSL Handshake Failed';
-
         return {
             status: 'OFFLINE',
             http_code: err.name === 'AbortError' ? 408 : 503,
-            error_message: errMsg,
-            latency: latency
+            error_message: err.name === 'AbortError' ? 'HTTP request timed out after 7s' : normalizeErrorMessage(err),
+            latency: Date.now() - startTime
         };
+    } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+    }
+}
+
+function tcpProbe(address, port, timeoutMs = 2500) {
+    return new Promise(resolve => {
+        const socket = net.createConnection({ host: address, port, timeout: timeoutMs });
+        let settled = false;
+        const finish = result => {
+            if (settled) return;
+            settled = true;
+            socket.destroy();
+            resolve(result);
+        };
+        socket.once('connect', () => finish({ reachable: true, method: 'tcp', address, port }));
+        socket.once('timeout', () => finish({ reachable: false, method: 'tcp', address, port, error: 'TCP connection timed out' }));
+        socket.once('error', error => finish({ reachable: false, method: 'tcp', address, port, error: normalizeErrorMessage(error) }));
+    });
+}
+
+async function pingAddress(address) {
+    try {
+        await execFileAsync('ping', process.platform === 'win32'
+            ? ['-n', '1', '-w', '2500', address]
+            : ['-c', '1', '-W', '2', address], { timeout: 3500, maxBuffer: 1024 * 32 });
+        return { reachable: true, method: 'icmp', address };
+    } catch (error) {
+        return { reachable: false, method: 'icmp', address, error: normalizeErrorMessage(error) };
+    }
+}
+
+async function checkServerReachability(host) {
+    const addresses = [];
+    try { addresses.push(...await dns.resolve4(host)); } catch (e) {}
+    try { addresses.push(...await dns.resolve6(host)); } catch (e) {}
+    const uniqueAddresses = Array.from(new Set(addresses)).slice(0, 4);
+
+    if (uniqueAddresses.length === 0) {
+        return { reachable: false, state: 'DNS_UNRESOLVED', error: 'No A or AAAA address resolved', addresses: [] };
+    }
+
+    for (const address of uniqueAddresses) {
+        const icmp = await pingAddress(address);
+        if (icmp.reachable) {
+            return { ...icmp, state: 'REACHABLE', addresses: uniqueAddresses };
+        }
+        const tlsProbe = await tcpProbe(address, 443);
+        if (tlsProbe.reachable) {
+            return { ...tlsProbe, state: 'REACHABLE', addresses: uniqueAddresses };
+        }
+        const httpProbe = await tcpProbe(address, 80);
+        if (httpProbe.reachable) {
+            return { ...httpProbe, state: 'REACHABLE', addresses: uniqueAddresses };
+        }
+    }
+
+    return {
+        reachable: false,
+        state: 'SERVER_UNREACHABLE',
+        addresses: uniqueAddresses,
+        error: 'ICMP and TCP probes could not reach the resolved server'
+    };
+}
+
+async function checkWordPressAgent(entity) {
+    if (!entity.url || entity.type === 'DOMAIN_ONLY') return { reachable: false, reason: 'Not a WordPress monitor' };
+    const endpoint = `${entity.url.replace(/\/+$/, '')}/wp-json/flotek/v1/health`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4500);
+    try {
+        const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: { 'X-Hub-Secret': SHARED_SECRET, 'User-Agent': 'Flotek-Sentinel-Monitor/11.0' },
+            signal: controller.signal,
+            redirect: 'follow'
+        });
+        let body = null;
+        try { body = await response.json(); } catch (e) {}
+        return { reachable: response.ok, http_code: response.status, body, reason: response.ok ? null : `${response.status} ${response.statusText || 'Agent error'}` };
+    } catch (error) {
+        return { reachable: false, reason: normalizeErrorMessage(error) };
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
+
+async function checkEntityHealth(entity) {
+    const host = normalizeHost(entity.url || entity.domain);
+    const [http, server] = await Promise.all([checkHttpHealth(entity), checkServerReachability(host)]);
+    let agent = null;
+
+    // Only ask the WordPress agent for evidence when the public HTTP check failed.
+    // This prevents the outage message from guessing about files on every normal ping.
+    if (http.status === 'OFFLINE' && server.state === 'REACHABLE' && entity.type !== 'DOMAIN_ONLY') {
+        agent = await checkWordPressAgent(entity);
+    }
+
+    let cause = 'none';
+    let summary = 'HTTP endpoint responded successfully.';
+    const dnsChanged = entity.dns_changes && (
+        (entity.dns_changes.added && entity.dns_changes.added.length) ||
+        (entity.dns_changes.removed && entity.dns_changes.removed.length)
+    );
+    if (http.status === 'OFFLINE') {
+        if (server.state === 'DNS_UNRESOLVED') {
+            cause = dnsChanged ? 'dns_change_correlated' : 'dns_resolution_failure';
+            summary = dnsChanged
+                ? `DNS changed and now no A or AAAA address resolves for ${host}. Removed records: ${entity.dns_changes.removed.map(record => record.type + ' ' + record.host + ' ' + record.value).join(', ') || 'none'}.`
+                : `DNS did not resolve ${host} to an A or AAAA address; the web server could not be reached.`;
+        } else if (server.state === 'SERVER_UNREACHABLE') {
+            cause = dnsChanged ? 'dns_change_and_server_unreachable' : 'server_unreachable';
+            summary = dnsChanged
+                ? `DNS changed and the resolved server (${(server.addresses || []).join(', ')}) is now unreachable. Added: ${entity.dns_changes.added.length}; removed: ${entity.dns_changes.removed.length}. File changes were not checked because the server could not be reached.`
+                : `The resolved server (${(server.addresses || []).join(', ')}) did not answer ICMP or TCP probes. File changes were not checked because the server could not be reached.`;
+        } else if (agent && agent.reachable && agent.body && agent.body.file_audit && agent.body.file_audit.changes && agent.body.file_audit.changes.length) {
+            cause = 'verified_file_change';
+            summary = `The server is reachable, but WordPress reported file changes: ${agent.body.file_audit.changes.map(change => change.path + ' (' + change.change + ')').join(', ')}.`;
+        } else if (agent && agent.reachable) {
+            cause = 'wordpress_runtime_failure';
+            summary = dnsChanged
+                ? `The server is reachable and the Sentinel agent responded, but the public HTTP endpoint returned ${http.http_code}. DNS also changed since the last scan; review the DNS diff before treating this as a file issue.`
+                : `The server is reachable and the Sentinel agent responded, but the public HTTP endpoint returned ${http.http_code}. This is an application/web-server response, not proof of a file change.`;
+        } else {
+            cause = http.http_code >= 500 ? 'http_server_error' : 'http_request_failure';
+            summary = `The server was reachable, but the public HTTP endpoint returned ${http.http_code} (${http.error_message}). No file change was confirmed.`;
+        }
+    }
+
+    return {
+        ...http,
+        server_reachability: server,
+        agent_health: agent,
+        diagnostic: { cause, summary, checked_at: new Date().toISOString() }
+    };
+}
+
+function updateUptime(entity, result) {
+    if (!Array.isArray(entity.uptime_history)) entity.uptime_history = Array(19).fill(1);
+    entity.uptime_history.push(result.status === 'ONLINE' ? 1 : 0);
+    if (entity.uptime_history.length > 20) entity.uptime_history.shift();
+    const upPings = entity.uptime_history.filter(x => x === 1).length;
+    entity.uptime_pct = Math.round((upPings / entity.uptime_history.length) * 100);
+}
+
+function addIncident(entity, result, previousStatus) {
+    if (result.status === 'OFFLINE' && previousStatus === 'ONLINE') {
+        const outageIncident = {
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            site_url: entity.url || `https://${entity.domain}`,
+            domain: entity.domain,
+            site_name: entity.name,
+            event: `OUTAGE_DETECTED_${result.diagnostic.cause.toUpperCase()}`,
+            details: {
+                http_code: result.http_code,
+                error: result.error_message,
+                target: entity.url || `https://${entity.domain}`,
+                cause: result.diagnostic.cause,
+                diagnostic: result.diagnostic.summary,
+                server_reachability: result.server_reachability,
+                agent_health: result.agent_health || 'Not queried'
+            },
+            type: 'OUTAGE',
+            timestamp: new Date().toISOString()
+        };
+        securityEvents.unshift(outageIncident);
+        console.log(`🚨 [OUTAGE DETECTED] ${entity.name} - ${result.diagnostic.summary}`);
+    } else if (result.status === 'ONLINE' && previousStatus === 'OFFLINE') {
+        securityEvents.unshift({
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            site_url: entity.url || `https://${entity.domain}`,
+            domain: entity.domain,
+            site_name: entity.name,
+            event: 'SERVICE_RESTORED',
+            details: {
+                http_code: result.http_code,
+                status: 'Service fully operational',
+                response_time: `${result.latency}ms`,
+                previous_cause: entity.diagnostic ? entity.diagnostic.cause : 'unknown'
+            },
+            type: 'RECOVERY',
+            timestamp: new Date().toISOString()
+        });
+        console.log(`✅ [SERVICE RESTORED] ${entity.name} is back ONLINE`);
     }
 }
 
 async function runFleetHealthChecks() {
-    const allSites = Object.values(monitoredSites);
-    const allDomains = Object.values(standaloneDomains);
-
-    for (const site of allSites) {
-        const result = await checkEntityHealth(site);
-        const previousStatus = site.status || 'ONLINE';
-
-        site.status = result.status;
-        site.http_code = result.http_code;
-        site.error_message = result.error_message;
-        site.latency = result.latency;
-
-        if (!Array.isArray(site.uptime_history)) {
-            site.uptime_history = Array(19).fill(1);
+    const entities = [...Object.values(monitoredSites), ...Object.values(standaloneDomains)];
+    await Promise.all(entities.map(async entity => {
+        const result = await checkEntityHealth(entity);
+        const previousStatus = entity.status || 'ONLINE';
+        entity.status = result.status;
+        entity.http_code = result.http_code;
+        entity.error_message = result.error_message;
+        entity.latency = result.latency;
+        entity.server_reachability = result.server_reachability;
+        entity.diagnostic = result.diagnostic;
+        entity.last_check_at = new Date().toISOString();
+        if (result.agent_health) entity.agent_health = result.agent_health;
+        if (result.agent_health && result.agent_health.body && result.agent_health.body.file_audit) {
+            entity.file_audit = result.agent_health.body.file_audit;
         }
-        site.uptime_history.push(result.status === 'ONLINE' ? 1 : 0);
-        if (site.uptime_history.length > 20) site.uptime_history.shift();
-
-        const upPings = site.uptime_history.filter(x => x === 1).length;
-        site.uptime_pct = Math.round((upPings / site.uptime_history.length) * 100);
-
-        if (result.status === 'OFFLINE' && previousStatus === 'ONLINE') {
-            const outageIncident = {
-                id: Date.now(),
-                site_url: site.url,
-                domain: site.domain,
-                site_name: site.name,
-                event: `OUTAGE_DETECTED_HTTP_${result.http_code}`,
-                details: {
-                    http_code: result.http_code,
-                    error: result.error_message,
-                    target: site.url,
-                    diagnostic: `Server returned HTTP ${result.http_code}. Possible causes: missing/renamed index.php, permissions failure, or 403 Forbidden.`
-                },
-                type: 'OUTAGE',
-                timestamp: new Date().toISOString()
-            };
-            securityEvents.unshift(outageIncident);
-            console.log(`🚨 [OUTAGE DETECTED] ${site.name} is DOWN (${result.http_code} ${result.error_message})`);
-        } else if (result.status === 'ONLINE' && previousStatus === 'OFFLINE') {
-            const recoveryIncident = {
-                id: Date.now(),
-                site_url: site.url,
-                domain: site.domain,
-                site_name: site.name,
-                event: 'SERVICE_RESTORED_200_OK',
-                details: {
-                    http_code: 200,
-                    status: 'Service fully operational',
-                    response_time: `${result.latency}ms`
-                },
-                type: 'RECOVERY',
-                timestamp: new Date().toISOString()
-            };
-            securityEvents.unshift(recoveryIncident);
-            console.log(`✅ [SERVICE RESTORED] ${site.name} is back ONLINE`);
-        }
-    }
-
-    for (const dom of allDomains) {
-        const result = await checkEntityHealth(dom);
-        dom.status = result.status;
-        dom.http_code = result.http_code;
-        dom.error_message = result.error_message;
-        dom.latency = result.latency;
-
-        if (!Array.isArray(dom.uptime_history)) {
-            dom.uptime_history = Array(19).fill(1);
-        }
-        dom.uptime_history.push(result.status === 'ONLINE' ? 1 : 0);
-        if (dom.uptime_history.length > 20) dom.uptime_history.shift();
-
-        const upPings = dom.uptime_history.filter(x => x === 1).length;
-        dom.uptime_pct = Math.round((upPings / dom.uptime_history.length) * 100);
-    }
-
+        updateUptime(entity, result);
+        addIncident(entity, result, previousStatus);
+    }));
     saveDatabase();
 }
 
-// Start active pings immediately
-runFleetHealthChecks();
-setInterval(runFleetHealthChecks, 15000);
+// Start active server and HTTP pings immediately.
+runFleetHealthChecks().catch(error => console.error('[health-check]', error.message));
+setInterval(() => runFleetHealthChecks().catch(error => console.error('[health-check]', error.message)), 15000);
 
 // 3. UNIVERSAL DYNAMIC DNS SCANNER
 const COMPREHENSIVE_HOST_DICTIONARY = [
@@ -432,7 +565,7 @@ const SRV_PROBES = [
     '_autodiscover._tcp'
 ];
 
-async function scanFullDNSZone(domain) {
+async function scanKnownDNSZone(domain) {
     const host = normalizeHost(domain);
     const records = [];
 
@@ -518,6 +651,163 @@ async function scanFullDNSZone(domain) {
     return uniqueRecords.length > 0 ? uniqueRecords : [{ type: 'A', host: '@ (Apex)', value: 'Resolving via DNS...', priority: '-' }];
 }
 
+// Node's legacy per-type probes miss valid records such as CAA, SOA, DS,
+// DNSKEY, NAPTR, TLSA, HTTPS and SVCB. Resolve the apex and common discovered
+// names with resolveAny plus explicit record types. DNS has no safe universal
+// zone-enumeration API, so the result is labelled as resolver-visible rather
+// than pretending that an empty probe means the zone is empty.
+const EXTENDED_DNS_TYPES = ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'SOA', 'CAA', 'SRV', 'NAPTR', 'DS', 'DNSKEY', 'TLSA', 'HTTPS', 'SVCB', 'PTR'];
+
+function stringifyDnsValue(value) {
+    if (value === undefined || value === null) return '-';
+    if (Array.isArray(value)) return value.join('');
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+}
+
+function mapDnsRecord(record, host, typeOverride) {
+    const type = typeOverride || record.type || 'UNKNOWN';
+    let value = '-';
+    let priority = '-';
+    if (type === 'A' || type === 'AAAA') value = record.address || record.value || record;
+    else if (type === 'CNAME' || type === 'NS' || type === 'PTR') value = record.value || record;
+    else if (type === 'MX') { value = record.exchange; priority = record.priority; }
+    else if (type === 'TXT') value = stringifyDnsValue(record.entries || record.value);
+    else if (type === 'SOA') value = `${record.nsname} | ${record.hostmaster} | serial ${record.serial}`;
+    else if (type === 'CAA') { value = `${record.tag} ${record.value}`; priority = record.flags; }
+    else if (type === 'SRV') { value = `${record.name}:${record.port} (weight ${record.weight})`; priority = record.priority; }
+    else if (type === 'NAPTR') value = `${record.order} ${record.preference} "${record.flags}" "${record.service}" "${record.regexp}" ${record.replacement}`;
+    else if (type === 'DS') value = `${record.keyTag} ${record.algorithm} ${record.digestType} ${record.digest}`;
+    else if (type === 'DNSKEY') value = `${record.flags} ${record.protocol} ${record.algorithm} ${record.key}`;
+    else if (type === 'TLSA') value = `${record.certUsage} ${record.selector} ${record.matchingType} ${record.certificate}`;
+    else if (type === 'HTTPS' || type === 'SVCB') value = `${record.priority} ${record.name} ${stringifyDnsValue(record.alpn || record.params || record.value)}`;
+    else value = stringifyDnsValue(record.value || record);
+
+    return {
+        type,
+        host,
+        value: stringifyDnsValue(value),
+        priority: priority === undefined ? '-' : priority,
+        ttl: record.ttl || null
+    };
+}
+
+async function resolveDnsName(name, includeExtendedTypes) {
+    const records = [];
+    const seen = new Set();
+    const push = record => {
+        const key = `${record.type}|${record.host}|${record.value}|${record.priority}`;
+        if (!seen.has(key)) {
+            seen.add(key);
+            records.push(record);
+        }
+    };
+
+    try {
+        const anyRecords = await Promise.race([
+            dns.resolveAny(name),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2500))
+        ]);
+        for (const record of anyRecords || []) push(mapDnsRecord(record, name, record.type));
+    } catch (e) {}
+
+    const typesToProbe = includeExtendedTypes
+        ? EXTENDED_DNS_TYPES
+        : ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'SRV', 'CAA', 'HTTPS', 'SVCB'];
+    await Promise.all(typesToProbe.map(async type => {
+        try {
+            const values = await Promise.race([
+                dns.resolve(name, type),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1800))
+            ]);
+            for (const value of values || []) push(mapDnsRecord(value, name, type));
+        } catch (e) {}
+    }));
+
+    return records;
+}
+
+async function scanFullDNSZone(domain) {
+    const host = normalizeHost(domain);
+    const candidateNames = Array.from(new Set([
+        host,
+        ...COMPREHENSIVE_HOST_DICTIONARY.map(label => `${label}.${host}`)
+    ]));
+    const chunks = await Promise.all(candidateNames.map((name, index) => resolveDnsName(name, index === 0)));
+    const records = chunks.flat();
+    const seen = new Set();
+    const uniqueRecords = records.filter(record => {
+        const key = `${record.type}|${record.host}|${record.value}|${record.priority}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+
+    return uniqueRecords.length ? uniqueRecords : [{
+        type: 'A',
+        host: '@ (Apex)',
+        value: 'No resolver-visible records returned',
+        priority: '-'
+    }];
+}
+
+function canonicalDnsRecord(record) {
+    return `${record.type}|${record.host}|${record.value}|${record.priority}`;
+}
+
+function compareDnsRecords(previous, current) {
+    const oldSet = new Set((previous || []).map(canonicalDnsRecord));
+    const newSet = new Set((current || []).map(canonicalDnsRecord));
+    return {
+        added: (current || []).filter(record => !oldSet.has(canonicalDnsRecord(record))),
+        removed: (previous || []).filter(record => !newSet.has(canonicalDnsRecord(record)))
+    };
+}
+
+async function refreshEntityDNS(entity) {
+    const previous = Array.isArray(entity.dns_records) ? entity.dns_records : [];
+    const current = await scanFullDNSZone(entity.domain || entity.url);
+    const changes = entity.dns_scanner_version === 2
+        ? compareDnsRecords(previous, current)
+        : { added: [], removed: [] };
+    entity.dns_records = current;
+    entity.dns_scanner_version = 2;
+    entity.dns_last_checked = new Date().toISOString();
+    entity.dns_scan = {
+        coverage: 'Apex plus resolver-visible common/discovered hostnames; DNS does not provide safe universal zone enumeration',
+        record_count: current.length
+    };
+    entity.dns_changes = changes;
+
+    // An empty legacy snapshot is not treated as a deletion storm on first scan.
+    if (previous.length > 0 && (changes.added.length || changes.removed.length)) {
+        securityEvents.unshift({
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            site_url: entity.url || `https://${entity.domain}`,
+            domain: entity.domain,
+            site_name: entity.name,
+            event: 'DNS_CHANGE_DETECTED',
+            details: {
+                added: changes.added,
+                removed: changes.removed,
+                diagnostic: `${changes.added.length} record(s) added and ${changes.removed.length} record(s) removed since the last DNS scan.`,
+                dns_last_checked: entity.dns_last_checked
+            },
+            type: 'DNS',
+            timestamp: new Date().toISOString()
+        });
+    }
+}
+
+async function runFleetDNSChecks() {
+    const entities = [...Object.values(monitoredSites), ...Object.values(standaloneDomains)];
+    await Promise.all(entities.map(entity => refreshEntityDNS(entity).catch(error => {
+        entity.dns_scan_error = normalizeErrorMessage(error);
+    })));
+    lastDnsScanAt = Date.now();
+    saveDatabase();
+}
+
 // 4. LIVE SSL INSPECTOR
 function inspectLiveSSL(domain) {
     return new Promise((resolve) => {
@@ -541,23 +831,19 @@ function inspectLiveSSL(domain) {
     });
 }
 
-// Background initial DNS scan
-(async () => {
-    for (const url in monitoredSites) {
-        if (!monitoredSites[url].dns_records || monitoredSites[url].dns_records.length === 0) {
-            monitoredSites[url].dns_records = await scanFullDNSZone(url);
-        }
-    }
-    for (const dom in standaloneDomains) {
-        if (!standaloneDomains[dom].dns_records || standaloneDomains[dom].dns_records.length === 0) {
-            standaloneDomains[dom].dns_records = await scanFullDNSZone(dom);
-        }
-    }
-    saveDatabase();
-})();
+// Always refresh the DNS snapshot on startup so older incomplete snapshots are
+// upgraded. Repeat less often than the HTTP ping because DNS answers are
+// cached and a full multi-type scan is intentionally more expensive.
+runFleetDNSChecks().catch(error => console.error('[dns-scan]', error.message));
+setInterval(() => runFleetDNSChecks().catch(error => console.error('[dns-scan]', error.message)), DNS_SCAN_INTERVAL_MS);
 
 // 5. REST APIS
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/', (req, res) => {
+    // The uploaded dashboard is HTML even when it is named index.php.
+    // Support both names so deployment does not fail on a harmless extension mismatch.
+    const dashboardFile = fs.existsSync(path.join(__dirname, 'index.html')) ? 'index.html' : 'index.php';
+    res.sendFile(path.join(__dirname, dashboardFile));
+});
 
 app.get('/api/dashboard-data', (req, res) => {
     res.set({
@@ -577,10 +863,53 @@ app.get('/api/dashboard-data', (req, res) => {
         domains: domainList,
         events: securityEvents,
         audit_logs: auditLogs,
+        archived_events: archivedEvents,
         up_count: upCount,
         down_count: downCount,
         fleet_health: Math.max(0, 100 - (downCount * 25))
     });
+});
+
+// Acknowledging an alert removes it from the active stream without deleting it.
+// The complete record, including the original evidence, is retained in the archive.
+app.post('/api/events/:id/acknowledge', (req, res) => {
+    const id = String(req.params.id);
+    const collections = [
+        { name: 'events', list: securityEvents },
+        { name: 'audit_logs', list: auditLogs }
+    ];
+    let found = null;
+    let source = null;
+    for (const collection of collections) {
+        const index = collection.list.findIndex(event => String(event.id) === id);
+        if (index !== -1) {
+            found = collection.list.splice(index, 1)[0];
+            source = collection.name;
+            break;
+        }
+    }
+    if (!found) return res.status(404).json({ success: false, error: 'Active event not found' });
+
+    found.acknowledged_at = new Date().toISOString();
+    found.acknowledged_by = req.body && req.body.acknowledged_by ? String(req.body.acknowledged_by).slice(0, 120) : 'dashboard';
+    found.original_collection = source;
+    archivedEvents.unshift(found);
+    saveDatabase();
+    res.json({ success: true, event: found });
+});
+
+app.post('/api/events/:id/restore', (req, res) => {
+    const id = String(req.params.id);
+    const index = archivedEvents.findIndex(event => String(event.id) === id);
+    if (index === -1) return res.status(404).json({ success: false, error: 'Archived event not found' });
+
+    const restored = archivedEvents.splice(index, 1)[0];
+    delete restored.acknowledged_at;
+    delete restored.acknowledged_by;
+    const target = restored.original_collection === 'audit_logs' ? auditLogs : securityEvents;
+    target.unshift(restored);
+    saveDatabase();
+    res.json({ success: true, event: restored });
 });
 
 app.post('/api/register', async (req, res) => {
@@ -616,6 +945,8 @@ app.post('/api/register', async (req, res) => {
         dns_records: liveDNS,
         seo: data.seo || { sitemap_status: 'Indexed', broken_links: 0 },
         analytics: data.analytics || { visitors_7d: 1200, pageviews: 4100, bounce_rate: '30.0%' },
+        file_audit: data.file_audit || monitoredSites[data.site_url]?.file_audit || null,
+        agent_version: data.agent_version || monitoredSites[data.site_url]?.agent_version || null,
         backups: monitoredSites[data.site_url]?.backups || [
             { id: 1, filename: 'db-backup-latest.sql', location: '/wp-content/flotek-backups/db-backup-latest.sql', filesize: '48.2 MB', date: '2026-03-01' }
         ],
