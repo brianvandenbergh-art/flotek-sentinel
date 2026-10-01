@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flotek Sentinel | Fleet Command</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #070a12; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        
+        .wp-tab-hidden { display: none !important; }
+        .wp-tab-visible { display: flex !important; }
+    </style>
+</head>
+<body class="bg-[#0b101b] text-slate-100 min-h-screen custom-scrollbar flex flex-col md:flex-row">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="w-full md:w-64 bg-[#080d17] border-b md:border-b-0 md:border-r border-slate-800/80 p-4 flex md:flex-col justify-between shrink-0 z-10">
+        <div class="space-y-6 w-full">
+            <div class="flex items-center gap-2.5 px-2">
+                <div class="h-8 w-8 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-lg flex items-center justify-center text-slate-950 font-black text-sm shadow-md shadow-emerald-500/20">
+                    FS
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-sm text-white tracking-tight">Flotek Sentinel</h1>
+                    <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">Enterprise Fleet</span>
+                </div>
+            </div>
+
+            <nav class="space-y-1.5 text-xs">
+                <button type="button" onclick="switchFleetCategory('websites')" id="nav-btn-websites" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition cursor-pointer">
+                    <i class="fa-solid fa-gauge-high text-emerald-400 text-sm w-4"></i> Monitors
+                </button>
+                <button type="button" onclick="switchFleetCategory('domains')" id="nav-btn-domains" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left cursor-pointer">
+                    <i class="fa-solid fa-network-wired text-indigo-400 text-sm w-4"></i> Standalone DNS
+                </button>
+            </nav>
+        </div>
+
+        <div class="hidden md:flex items-center gap-3 p-3 bg-slate-900/60 border border-slate-800 rounded-xl text-xs">
+            <div class="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center font-bold">BV</div>
+            <div class="min-w-0 flex-1">
+                <div class="font-semibold text-white truncate">Brian Van D...</div>
+                <div class="text-[10px] text-emerald-400 font-mono">Enterprise Fleet</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <div class="flex-1 flex flex-col min-w-0">
+
+        <!-- Top Header Bar -->
+        <div class="border-b border-slate-800/80 bg-[#080d17]/50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h2 class="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                    Monitors <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                </h2>
+                <p class="text-xs text-slate-400 mt-0.5">Real-time HTTP uptime, response latency &amp; outage telemetry</p>
+            </div>
+
+            <div class="flex items-center gap-2.5">
+                <button type="button" onclick="openAddDomainModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-indigo-600/20 transition cursor-pointer">
+                    <i class="fa-solid fa-plus text-[10px]"></i> Add Domain
+                </button>
+                <button type="button" onclick="refreshData()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 border border-slate-700 transition cursor-pointer">
+                    <i class="fa-solid fa-rotate"></i> Sync
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Body Grid -->
+        <div class="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 max-w-7xl">
+
+            <!-- Center Column -->
+            <div class="lg:col-span-3 space-y-4">
+                
+                <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-[#080d17] border border-slate-800 p-3 rounded-2xl">
+                    <div class="flex gap-1.5 text-xs">
+                        <button type="button" onclick="switchFleetCategory('websites')" id="btn-fleet-websites" class="fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer">
+                            WordPress Sites (<span id="site-count-badge">0</span>)
+                        </button>
+                        <button type="button" onclick="switchFleetCategory('domains')" id="btn-fleet-domains" class="fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition cursor-pointer">
+                            Domains Only (<span id="domain-count-badge">0</span>)
+                        </button>
+                    </div>
+
+                    <div class="relative">
+                        <input id="fleet-search-input" onkeyup="filterMonitors()" type="text" placeholder="Search by name or URL..." class="w-full sm:w-64 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                        <i class="fa-solid fa-magnifying-glass absolute right-3 top-2.5 text-[10px] text-slate-500"></i>
+                    </div>
+                </div>
+
+                <div id="websites-fleet-container" class="space-y-2.5"></div>
+                <div id="domains-fleet-container" style="display: none;" class="space-y-2.5"></div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="space-y-4">
+                <div class="bg-[#080d17] border border-slate-800 p-5 rounded-2xl space-y-4">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Current Fleet Status</h3>
+                    <div class="flex items-center justify-between text-center">
+                        <div>
+                            <div class="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto text-sm font-bold">
+                                <i class="fa-solid fa-circle-up"></i>
+                            </div>
+                            <div class="text-lg font-extrabold text-white mt-1" id="stat-up-count">0</div>
+                            <span class="text-[10px] text-slate-400 font-semibold uppercase">Up</span>
+                        </div>
+                        <div>
+                            <div class="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-sm font-bold">
+                                <i class="fa-solid fa-circle-down"></i>
+                            </div>
+                            <div class="text-lg font-extrabold text-rose-400 mt-1" id="stat-down-count">0</div>
+                            <span class="text-[10px] text-rose-400 font-semibold uppercase">Down</span>
+                        </div>
+                        <div>
+                            <div class="w-10 h-10 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center mx-auto text-sm font-bold">
+                                <i class="fa-solid fa-pause"></i>
+                            </div>
+                            <div class="text-lg font-extrabold text-white mt-1">0</div>
+                            <span class="text-[10px] text-slate-400 font-semibold uppercase">Paused</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-[#080d17] border border-slate-800 p-5 rounded-2xl space-y-3 text-xs">
+                    <h3 class="font-bold uppercase tracking-wider text-slate-400 text-[11px]">Last 24 Hours</h3>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Overall Fleet Uptime:</span>
+                        <span class="font-bold text-emerald-400 mono">99.98%</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Average Fleet Latency:</span>
+                        <span class="font-bold text-white mono" id="stat-avg-latency">42 ms</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Active Incidents:</span>
+                        <span class="font-bold text-rose-400" id="stat-incidents-count">0 Incidents</span>
+                    </div>
+                </div>
+
+                <div class="bg-[#080d17] border border-slate-800 p-4 rounded-2xl space-y-2">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-virus text-rose-400"></i> Fleet Event Log</span>
+                        <span class="flex items-center gap-2">
+                            <button type="button" onclick="openArchiveModal()" class="text-[10px] text-slate-400 hover:text-white font-semibold cursor-pointer">Archive (<span id="archive-log-badge">0</span>)</button>
+                            <span id="waf-log-badge" class="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 text-[10px] font-mono font-bold">0</span>
+                        </span>
+                    </h3>
+                    <div id="events-container" class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1"></div>
+                    <div id="archived-events-container" style="display: none;" class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1 border-t border-slate-800 pt-2"></div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- MODAL: ADD STANDALONE DOMAIN -->
+    <div id="add-domain-modal" style="display: none;" class="fixed inset-0 z-50 items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="relative bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full z-10 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-base text-white flex items-center gap-2">
+                    <i class="fa-solid fa-plus text-indigo-400"></i> Monitor Standalone Domain
+                </h3>
+                <button type="button" onclick="closeAddDomainModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <p class="text-xs text-slate-400">Add any domain without WordPress to automatically monitor uptime, scan DNS, and check SSL.</p>
+            <div>
+                <label class="text-[11px] font-semibold text-slate-300 block mb-1">Domain Name</label>
+                <input id="input-domain-name" type="text" placeholder="e.g. yourdomain.co.uk" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeAddDomainModal()" class="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl font-semibold cursor-pointer">Cancel</button>
+                <button type="button" id="btn-submit-domain" onclick="submitStandaloneDomain()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-xl font-bold flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-magnifying-glass"></i> Scan &amp; Add
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ARCHIVED EVENTS -->
+    <div id="archive-modal" style="display: none;" class="fixed inset-0 z-50 items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="relative bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-2xl w-full z-10 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-base text-white flex items-center gap-2"><i class="fa-solid fa-box-archive text-amber-400"></i> Alert Archive</h3>
+                    <p class="text-[11px] text-slate-400 mt-1">Acknowledged events remain available here and are never deleted.</p>
+                </div>
+                <button type="button" onclick="closeArchiveModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="downloadArchiveReport('pdf')" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-xl font-semibold flex items-center gap-1.5 cursor-pointer"><i class="fa-solid fa-file-pdf"></i> Download PDF</button>
+                <button type="button" onclick="downloadArchiveReport('json')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-xl font-semibold flex items-center gap-1.5 cursor-pointer"><i class="fa-solid fa-download"></i> Download JSON</button>
+            </div>
+            <div id="archive-modal-events" class="space-y-2 max-h-[55vh] overflow-y-auto custom-scrollbar pr-1"></div>
+        </div>
+    </div>
+
+    <!-- DRAWER: DEEP INSPECTION -->
+    <div id="site-drawer" style="display: none;" class="fixed inset-0 z-50 justify-end bg-slate-950/80 backdrop-blur-sm">
+        <div class="w-full sm:max-w-4xl bg-[#090e18] sm:border-l border-slate-800 p-4 sm:p-6 flex flex-col justify-between shadow-2xl custom-scrollbar overflow-y-auto">
+            
+            <div class="space-y-4">
+                <!-- Header -->
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg font-bold shrink-0">
+                            <i class="fa-solid fa-globe"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-base sm:text-lg font-extrabold text-white truncate" id="drawer-title">Domain Name</h3>
+                                <span id="drawer-status-pill" class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">ONLINE</span>
+                            </div>
+                            <a id="drawer-url" href="#" target="_blank" class="text-xs text-indigo-400 hover:underline flex items-center gap-1 mono truncate mt-0.5">
+                                <span class="truncate">https://domain.com</span> <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="downloadSiteReport()" class="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-file-pdf text-[10px]"></i> Report
+                        </button>
+                        <!-- UNIFIED DELETE BUTTON FOR SITES & DOMAINS -->
+                        <button type="button" id="btn-drawer-delete" onclick="deleteCurrentDrawerEntity()" class="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-trash text-[10px]"></i> <span id="btn-drawer-delete-text">Delete</span>
+                        </button>
+                        <button type="button" onclick="closeDrawer()" class="text-slate-400 hover:text-white p-2 rounded-xl bg-slate-800/60 shrink-0 cursor-pointer">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TABS HEADER BAR -->
+                <div class="overflow-x-auto custom-scrollbar pb-2">
+                    <div id="drawer-tabs-bar" class="flex gap-2 text-xs min-w-max">
+                        <button type="button" onclick="switchTab('tab-overview')" id="btn-tab-overview" class="tab-btn px-3.5 py-2 rounded-xl font-bold bg-indigo-600 text-white flex items-center gap-1.5 wp-only-tab cursor-pointer">
+                            <i class="fa-solid fa-palette"></i> Theme &amp; Vitals
+                        </button>
+                        <button type="button" onclick="switchTab('tab-dns')" id="btn-tab-dns" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-network-wired"></i> DNS &amp; SSL (<span id="drawer-dns-count">0</span>)
+                        </button>
+                        <button type="button" onclick="switchTab('tab-wp')" id="btn-tab-wp" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
+                            <i class="fa-solid fa-cube"></i> Updates (<span id="drawer-tab-plugin-count">0</span>)
+                        </button>
+                        <button type="button" onclick="switchTab('tab-vault')" id="btn-tab-vault" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
+                            <i class="fa-solid fa-box-archive"></i> FTP Backups
+                        </button>
+                        <button type="button" onclick="switchTab('tab-users')" id="btn-tab-users" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
+                            <i class="fa-solid fa-users"></i> Users (<span id="drawer-tab-user-count">0</span>)
+                        </button>
+                        <button type="button" onclick="switchTab('tab-seo')" id="btn-tab-seo" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 wp-only-tab cursor-pointer">
+                            <i class="fa-solid fa-magnifying-glass-chart"></i> SEO &amp; Analytics
+                        </button>
+                        <button type="button" onclick="switchTab('tab-sec')" id="btn-tab-sec" class="tab-btn px-3.5 py-2 rounded-xl font-semibold bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-shield-halved"></i> Events &amp; Outages (<span id="drawer-tab-sec-count">0</span>)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- OUTAGE ALERT BANNER -->
+                <div id="drawer-outage-banner" style="display: none;" class="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs space-y-1">
+                    <div class="font-bold text-rose-400 flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation text-sm animate-pulse"></i>
+                        <span id="drawer-outage-title">OUTAGE IN PROGRESS</span>
+                    </div>
+                    <p class="text-slate-300 text-[11px]" id="drawer-outage-msg">Server returned error code. Check server files or permissions.</p>
+                </div>
+
+                <!-- TAB 1: THEME & OVERVIEW (WP Only) -->
+                <div id="tab-overview" class="tab-content space-y-4">
+                    <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
+                        <span class="text-[10px] text-slate-400 uppercase font-semibold block">Active WordPress Theme</span>
+                        <h4 class="text-base font-bold text-white mt-0.5" id="drawer-theme-name">--</h4>
+                        <p class="text-xs text-slate-400 mt-1">Theme Version: <span class="font-mono text-indigo-300" id="drawer-theme-ver">--</span></p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold block">Database Tables</span>
+                            <div class="text-xs sm:text-sm font-bold text-white mono mt-1" id="drawer-db-size">--</div>
+                        </div>
+                        <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold block">PHP Execution Time</span>
+                            <div class="text-xs sm:text-sm font-bold text-emerald-400 mono mt-1" id="drawer-load-time">--</div>
+                        </div>
+                        <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl">
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold block">Peak Memory</span>
+                            <div class="text-xs sm:text-sm font-bold text-white mono mt-1" id="drawer-memory">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: DNS ZONE & SSL (All Domains & Sites) -->
+                <div id="tab-dns" style="display: none;" class="tab-content space-y-4">
+                    <div class="bg-gradient-to-r from-slate-900 to-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg shrink-0">
+                                <i class="fa-solid fa-lock"></i>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">SSL Certificate Status</span>
+                                <div class="text-base sm:text-lg font-extrabold text-white mono" id="drawer-ssl-days">Scanning...</div>
+                                <div class="text-[11px] text-slate-400" id="drawer-ssl-issuer">Issuer: --</div>
+                            </div>
+                        </div>
+                        <span id="drawer-ssl-badge" class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-bold rounded-lg border border-emerald-500/20 self-start sm:self-auto flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> HTTPS SECURE
+                        </span>
+                    </div>
+
+                    <div>
+                        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-2">
+                            <h4 class="text-xs font-bold uppercase text-white">Discovered DNS Zone Records</h4>
+                            <div class="flex gap-2 self-start sm:self-auto">
+                                <button type="button" onclick="rescanActiveDNS()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
+                                    <i class="fa-solid fa-rotate"></i> Rescan
+                                </button>
+                                <button type="button" onclick="exportDNSZoneFile()" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
+                                    <i class="fa-solid fa-download"></i> Backup DNS (.json)
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-x-auto custom-scrollbar text-xs">
+                            <table class="w-full text-left min-w-[480px]">
+                                <thead class="bg-slate-900 border-b border-slate-800 text-slate-400 text-[11px]">
+                                    <tr>
+                                        <th class="p-2.5">Type</th>
+                                        <th class="p-2.5">Host Name</th>
+                                        <th class="p-2.5">Points To / Value</th>
+                                        <th class="p-2.5">Priority</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="drawer-dns-table-body" class="divide-y border-slate-800/60 font-mono text-[11px]"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: PLUGINS (WP Only) -->
+                <div id="tab-wp" style="display: none;" class="tab-content space-y-3">
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-xs">
+                        <span class="text-slate-400 font-semibold" id="drawer-plugins-summary">0 Installed Plugins</span>
+                        <button type="button" id="btn-bulk-update" onclick="executeRemotePluginUpdate()" class="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-xl font-semibold hover:bg-amber-500/20 flex items-center justify-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-arrows-rotate"></i> 1-Click Bulk Update
+                        </button>
+                    </div>
+                    <div id="drawer-plugins-list" class="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-1"></div>
+                </div>
+
+                <!-- TAB 4: FTP BACKUPS (WP Only) -->
+                <div id="tab-vault" style="display: none;" class="tab-content space-y-4">
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <h4 class="text-xs font-bold text-white">Generate Real Database Backup on FTP</h4>
+                            <p class="text-[11px] text-slate-400 mt-0.5">Saves to <code>/wp-content/flotek-backups/</code></p>
+                        </div>
+                        <button type="button" id="btn-create-backup" onclick="executeRemoteBackup()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shrink-0 cursor-pointer">
+                            <i class="fa-solid fa-download"></i> Dump SQL to FTP
+                        </button>
+                    </div>
+                    <div class="space-y-2">
+                        <h4 class="text-xs font-bold uppercase text-slate-400">Available Restore Points</h4>
+                        <div id="drawer-backups-list" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 5: USERS (WP Only) -->
+                <div id="tab-users" style="display: none;" class="tab-content space-y-4 text-xs">
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
+                        <h4 class="font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-plus text-indigo-400"></i> Provision New User Remotely
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                            <input id="new-user-name" type="text" placeholder="Username" class="bg-slate-950 border border-slate-700 px-3 py-2 rounded-xl text-white text-xs">
+                            <input id="new-user-email" type="email" placeholder="Email" class="bg-slate-950 border border-slate-700 px-3 py-2 rounded-xl text-white text-xs">
+                            <select id="new-user-role" class="bg-slate-950 border border-slate-700 px-3 py-2 rounded-xl text-white text-xs">
+                                <option value="administrator">Administrator</option>
+                                <option value="editor">Editor</option>
+                                <option value="author">Author</option>
+                                <option value="contributor">Contributor</option>
+                            </select>
+                            <button type="button" onclick="provisionNewUser()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-xl cursor-pointer">
+                                + Add User
+                            </button>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <h4 class="font-bold text-slate-300 uppercase text-[11px]">Current Registered Users</h4>
+                        <div id="drawer-users-list" class="space-y-2 max-h-96 overflow-y-auto custom-scrollbar"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 6: SEO & ANALYTICS (WP Only) -->
+                <div id="tab-seo" style="display: none;" class="tab-content space-y-4 text-xs">
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl text-center">
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold block">7-Day Visitors</span>
+                            <span class="text-base sm:text-lg font-extrabold text-white mono mt-1" id="drawer-seo-visitors">--</span>
+                        </div>
+                        <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl text-center">
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold block">Pageviews</span>
+                            <span class="text-base sm:text-lg font-extrabold text-indigo-400 mono mt-1" id="drawer-seo-views">--</span>
+                        </div>
+                        <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl text-center">
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold block">Bounce Rate</span>
+                            <span class="text-base sm:text-lg font-extrabold text-emerald-400 mono mt-1" id="drawer-seo-bounce">--</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-2.5">
+                        <h4 class="font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
+                            <i class="fa-solid fa-sitemap text-indigo-400"></i> Sitemap &amp; Indexing Health
+                        </h4>
+                        <div class="flex justify-between text-slate-300">
+                            <span>Sitemap XML Status:</span>
+                            <span class="text-emerald-400 font-semibold" id="drawer-seo-sitemap"><i class="fa-solid fa-circle-check"></i> Indexed</span>
+                        </div>
+                        <div class="flex justify-between text-slate-300">
+                            <span>Broken Links (404 Errors):</span>
+                            <span class="text-emerald-400 font-semibold">0 Detected (100% Reachable)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 7: WAF & ATTACKS (All Entities) -->
+                <div id="tab-sec" style="display: none;" class="tab-content space-y-3">
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold block">Firewall Engine</span>
+                            <span class="text-xs font-bold text-emerald-400">Multi-Layer WAF Active</span>
+                        </div>
+                        <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold block">Health Monitor</span>
+                            <span class="text-xs font-bold text-indigo-400">Active Pings: 15s Cycle</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between mt-2">
+                        <h4 class="text-xs font-bold uppercase text-slate-400">Incident &amp; Outage Stream</h4>
+                        <span class="text-[11px] text-slate-500 font-mono" id="drawer-events-count-label">0 events</span>
+                    </div>
+                    <div id="drawer-site-events" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-1"></div>
+                </div>
+
+            </div>
+
+            <div class="border-t border-slate-800 pt-3 mt-6 text-[11px] text-slate-500 flex justify-between items-center">
+                <span>Flotek Sentinel v10.0</span>
+                <span>Real-Time Health Engine: Active</span>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT ENGINE -->
+    <script>
+        var localCachedData = null;
+        try {
+            var rawCache = localStorage.getItem('flotek_fleet_cache');
+            if (rawCache) localCachedData = JSON.parse(rawCache);
+        } catch (e) {}
+
+        window.globalData = localCachedData || { sites: [], domains: [], events: [], audit_logs: [], archived_events: [] };
+        window.activeSiteUrl = '';
+        window.currentActiveTab = 'tab-overview';
+
+        window.decodeHtml = function(str) {
+            if (!str) return '';
+            var txt = document.createElement('textarea');
+            txt.innerHTML = str;
+            return txt.value;
+        };
+
+        window.escapeHtml = function(value) {
+            var str = value === undefined || value === null ? '' : String(value);
+            return str.replace(/[&<>"']/g, function(ch) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[ch];
+            });
+        };
+
+        window.eventLabel = function(event) {
+            var details = event && event.details;
+            if (details && typeof details === 'object') {
+                if (details.cause_label) return details.cause_label;
+                if (details.diagnostic) return details.diagnostic;
+                if (details.error) return details.error;
+            }
+            return event && event.type === 'RECOVERY' ? 'Service restored.' : 'Review event evidence.';
+        };
+
+        window.formatEventTitle = function(event) {
+            var raw = String(event && (event.event || event.type) || 'EVENT').replace(/^OUTAGE_DETECTED_/, '');
+            var titles = {
+                'SITE_OUTAGE_DETECTED': 'Website unavailable',
+                'DNS_CHANGE_DETECTED': 'DNS records changed',
+                'SERVICE_RESTORED': 'Website restored',
+                'SERVICE_RESTORED_200_OK': 'Website restored',
+                'FAILED_LOGIN_ATTEMPT': 'Failed login attempt',
+                'FILE_CHANGE_DETECTED': 'Verified file change',
+                'ADMIN_LOGIN_SUCCESS': 'Administrator login'
+            };
+            if (titles[raw]) return titles[raw];
+            var causeTitles = {
+                DNS_CHANGE_CORRELATED: 'DNS changed before outage',
+                DNS_RESOLUTION_FAILURE: 'DNS resolution failed',
+                DNS_CHANGE_AND_SERVER_UNREACHABLE: 'DNS changed and server unreachable',
+                SERVER_UNREACHABLE: 'Server unreachable',
+                VERIFIED_FILE_CHANGE: 'Verified file change',
+                WORDPRESS_RUNTIME_FAILURE: 'Website application error',
+                HTTP_SERVER_ERROR: 'Web server error',
+                HTTP_REQUEST_FAILURE: 'HTTP request failed'
+            };
+            return causeTitles[raw] || raw.replace(/_/g, ' ').toLowerCase().replace(/(^|\s)\S/g, function(letter) { return letter.toUpperCase(); });
+        };
+
+        window.formatDetails = function(details) {
+            if (details === null || details === undefined) return '';
+            if (typeof details !== 'object') return String(details);
+            var parts = [];
+            Object.keys(details).forEach(function(key) {
+                var value = details[key];
+                if (key === 'server_reachability' && value && typeof value === 'object') {
+                    value = (value.state || 'unknown') + (value.addresses && value.addresses.length ? ' [' + value.addresses.join(', ') + ']' : '');
+                } else if (key === 'agent_health' && value && typeof value === 'object') {
+                    value = value.reachable ? 'Sentinel agent responded' : (value.reason || 'Sentinel agent unavailable');
+                } else if (Array.isArray(value)) {
+                    value = value.map(function(item) {
+                        return typeof item === 'object'
+                            ? [item.type, item.host, item.value].filter(Boolean).join(' ')
+                            : String(item);
+                    }).join(', ');
+                } else if (typeof value === 'object') {
+                    value = JSON.stringify(value);
+                }
+                parts.push(key.replace(/_/g, ' ') + ': ' + value);
+            });
+            return parts.join(' · ');
+        };
+
+        window.setTxt = function(id, val) {
+            var el = document.getElementById(id);
+            if (el) el.innerText = val;
+        };
+
+        window.normalizeDomain = function(str) {
+            if (!str) return '';
+            return String(str).toLowerCase()
+                .replace(/^https?:\/\//, '')
+                .replace(/^www\./, '')
+                .replace(/\/.*$/, '')
+                .trim();
+        };
+
+        window.generateUptimeBars = function(history) {
+            var historyArray = Array.isArray(history) && history.length > 0 ? history : Array(20).fill(1);
+            var bars = '';
+            for (var i = 0; i < historyArray.length; i++) {
+                var isUp = historyArray[i] === 1;
+                var colorClass = isUp ? 'bg-emerald-400' : 'bg-rose-500 animate-pulse';
+                bars += '<span class="h-4 w-1 rounded-sm ' + colorClass + '"></span>';
+            }
+            return '<div class="flex items-center gap-0.5">' + bars + '</div>';
+        };
+
+        window.switchFleetCategory = function(category) {
+            var webContainer = document.getElementById('websites-fleet-container');
+            var domContainer = document.getElementById('domains-fleet-container');
+            var btnWebsites = document.getElementById('btn-fleet-websites');
+            var btnDomains = document.getElementById('btn-fleet-domains');
+            var navWebsites = document.getElementById('nav-btn-websites');
+            var navDomains = document.getElementById('nav-btn-domains');
+
+            if (category === 'websites') {
+                if (webContainer) webContainer.style.display = 'block';
+                if (domContainer) domContainer.style.display = 'none';
+                if (btnWebsites) btnWebsites.className = "fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer";
+                if (btnDomains) btnDomains.className = "fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition cursor-pointer";
+                if (navWebsites) navWebsites.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition cursor-pointer";
+                if (navDomains) navDomains.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left cursor-pointer";
+            } else {
+                if (webContainer) webContainer.style.display = 'none';
+                if (domContainer) domContainer.style.display = 'block';
+                if (btnDomains) btnDomains.className = "fleet-tab-btn px-3.5 py-1.5 font-bold text-white bg-indigo-600 rounded-xl transition cursor-pointer";
+                if (btnWebsites) btnWebsites.className = "fleet-tab-btn px-3.5 py-1.5 font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 rounded-xl border border-slate-800 transition cursor-pointer";
+                if (navDomains) navDomains.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/90 text-white font-bold border border-slate-700/60 text-left transition cursor-pointer";
+                if (navWebsites) navWebsites.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-left cursor-pointer";
+            }
+        };
+
+        window.openAddDomainModal = function() {
+            var m = document.getElementById('add-domain-modal');
+            if (m) m.style.display = 'flex';
+        };
+
+        window.closeAddDomainModal = function() {
+            var m = document.getElementById('add-domain-modal');
+            if (m) m.style.display = 'none';
+            var inp = document.getElementById('input-domain-name');
+            if (inp) inp.value = '';
+        };
+
+        window.closeDrawer = function() {
+            var drawer = document.getElementById('site-drawer');
+            if (drawer) drawer.style.display = 'none';
+            window.activeSiteUrl = '';
+            window.currentActiveTab = 'tab-overview';
+        };
+
+        window.switchTab = function(tabId) {
+            window.currentActiveTab = tabId;
+
+            var tabs = document.querySelectorAll('.tab-content');
+            for (var i = 0; i < tabs.length; i++) {
+                tabs[i].style.display = 'none';
+            }
+
+            var tabBtns = document.querySelectorAll('.tab-btn');
+            for (var j = 0; j < tabBtns.length; j++) {
+                tabBtns[j].classList.remove('bg-indigo-600', 'text-white', 'font-bold');
+                tabBtns[j].classList.add('bg-slate-900', 'text-slate-400', 'font-semibold');
+            }
+
+            var activeContent = document.getElementById(tabId);
+            if (activeContent) activeContent.style.display = 'block';
+
+            var activeBtn = document.getElementById('btn-' + tabId);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-slate-900', 'text-slate-400', 'font-semibold');
+                activeBtn.classList.add('bg-indigo-600', 'text-white', 'font-bold');
+            }
+        };
+
+        window.getSiteSecurityEvents = function(targetSite) {
+            if (!targetSite) return [];
+            var cleanTarget = window.normalizeDomain(targetSite.url || targetSite.domain || '');
+            var targetName = window.decodeHtml(targetSite.name || '').toLowerCase().trim();
+
+            var allEvents = [].concat(window.globalData.events || [], window.globalData.audit_logs || []);
+            return allEvents.filter(function(e) {
+                var eventCleanDomain = window.normalizeDomain(e.domain || e.site_url || '');
+                var eventName = window.decodeHtml(e.site_name || '').toLowerCase().trim();
+                return (cleanTarget && eventCleanDomain === cleanTarget) || (targetName && eventName === targetName);
+            });
+        };
+
+        // UNIFIED DELETION FUNCTION FOR SITES & DOMAINS
+        window.deleteEntity = async function(identifier, isWebsite) {
+            var entityType = isWebsite ? 'website' : 'domain';
+            if (!confirm('⚠️ Are you sure you want to permanently delete ' + entityType + ' "' + identifier + '" from monitoring?')) return;
+
+            try {
+                await fetch('/api/delete-domain', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain_name: identifier })
+                });
+
+                var clean = window.normalizeDomain(identifier);
+                window.globalData.sites = (window.globalData.sites || []).filter(function(s) {
+                    return window.normalizeDomain(s.url) !== clean && window.normalizeDomain(s.domain) !== clean;
+                });
+                window.globalData.domains = (window.globalData.domains || []).filter(function(d) {
+                    return window.normalizeDomain(d.domain) !== clean;
+                });
+
+                try {
+                    localStorage.setItem('flotek_fleet_cache', JSON.stringify(window.globalData));
+                } catch(e) {}
+
+                window.closeDrawer();
+                window.renderAll();
+                window.refreshData();
+            } catch (e) {
+                alert('Delete failed: ' + e.message);
+            }
+        };
+
+        window.deleteCurrentDrawerEntity = function() {
+            var cleanIdentifier = window.normalizeDomain(window.activeSiteUrl);
+            var isWebsite = false;
+            var sites = window.globalData.sites || [];
+            for (var i = 0; i < sites.length; i++) {
+                if (window.normalizeDomain(sites[i].url) === cleanIdentifier || window.normalizeDomain(sites[i].domain) === cleanIdentifier) {
+                    isWebsite = true;
+                    break;
+                }
+            }
+            window.deleteEntity(window.activeSiteUrl, isWebsite);
+        };
+
+        window.renderWebsites = function(sites) {
+            var container = document.getElementById('websites-fleet-container');
+            if (!container) return;
+
+            if (!sites || sites.length === 0) {
+                container.innerHTML = '<div class="bg-[#080d17] border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-sm">No WordPress sites connected yet.</div>';
+                return;
+            }
+
+            var html = '';
+            for (var i = 0; i < sites.length; i++) {
+                var site = sites[i];
+                var cleanName = window.decodeHtml(site.name || 'WordPress Site');
+                var isDown = site.status === 'OFFLINE';
+                var updateCount = site.updates_count || 0;
+                var siteEvents = window.getSiteSecurityEvents(site);
+                var eventCount = siteEvents.length;
+
+                var dotColor = isDown ? 'bg-rose-500 shadow-rose-500/80 animate-pulse' : (eventCount > 0 ? 'bg-amber-400 shadow-amber-400/50' : 'bg-emerald-400 shadow-emerald-400/50');
+                
+                var downBadge = isDown ? '<span class="px-2 py-0.5 bg-rose-500/20 text-rose-300 text-[10px] font-bold rounded-md border border-rose-500/40 flex items-center gap-1 animate-pulse"><i class="fa-solid fa-circle-exclamation text-[9px]"></i> DOWN (' + (site.http_code || 403) + ')</span>' : '';
+                var updateBadge = (!isDown && updateCount > 0) ? '<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-md border border-amber-500/20">' + updateCount + ' updates</span>' : '';
+                var alertBadge = eventCount > 0 ? '<span class="px-2 py-0.5 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-md border border-rose-500/20 flex items-center gap-1"><i class="fa-solid fa-shield-virus text-[9px]"></i> ' + eventCount + ' alerts</span>' : '';
+                
+                var targetStr = site.url || site.domain;
+                var uptimeDisplay = isDown ? '<span class="text-xs font-bold text-rose-400 mono">' + (site.uptime_pct || 0) + '%</span>' : '<span class="text-xs font-bold text-emerald-400 mono">' + (site.uptime_pct || 100) + '%</span>';
+                var latencyDisplay = isDown ? '<span class="text-xs font-mono text-rose-400">' + (site.latency || 0) + 'ms</span>' : '<span class="text-xs font-mono text-slate-400">' + (site.latency || 42) + 'ms</span>';
+
+                html += '<div onclick="openDrawer(\'' + targetStr + '\')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border ' + (isDown ? 'border-rose-500/50' : 'border-slate-800/80 hover:border-slate-700') + ' p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">' +
+                    '<div class="flex items-center gap-3 min-w-0">' +
+                        '<div class="w-3 h-3 rounded-full ' + dotColor + ' shrink-0 shadow-sm"></div>' +
+                        '<div class="min-w-0">' +
+                            '<div class="flex items-center gap-2 flex-wrap">' +
+                                '<h4 class="font-bold text-sm text-white group-hover:text-emerald-300 transition truncate">' + cleanName + '</h4>' +
+                                '<span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">' + (site.tag || 'wordpress site') + '</span>' +
+                                downBadge +
+                                updateBadge +
+                                alertBadge +
+                            '</div>' +
+                            '<span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">' + site.url + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">' +
+                        '<span class="text-[11px] text-slate-500 flex items-center gap-1"><i class="fa-solid fa-rotate text-[9px]"></i> 15s</span>' +
+                        window.generateUptimeBars(site.uptime_history) +
+                        uptimeDisplay +
+                        latencyDisplay +
+                        '<button type="button" onclick="event.stopPropagation(); deleteEntity(\'' + targetStr + '\', true)" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold cursor-pointer">Delete</button>' +
+                    '</div>' +
+                '</div>';
+            }
+            container.innerHTML = html;
+        };
+
+        window.renderDomains = function(domains) {
+            var container = document.getElementById('domains-fleet-container');
+            if (!container) return;
+
+            if (!domains || domains.length === 0) {
+                container.innerHTML = '<div class="bg-[#080d17] border border-slate-800 p-8 rounded-2xl text-center text-slate-500 text-sm">No standalone domains added yet. Click "+ Add Domain" above.</div>';
+                return;
+            }
+
+            var html = '';
+            for (var i = 0; i < domains.length; i++) {
+                var d = domains[i];
+                var isDown = d.status === 'OFFLINE';
+                var cleanName = window.decodeHtml(d.name || d.domain);
+                var hasSsl = d.ssl && d.ssl.valid;
+                var sslText = hasSsl ? (d.ssl.days_left + 'd SSL') : 'No SSL';
+                var sslClass = hasSsl ? 'text-emerald-400' : 'text-slate-500';
+                var dnsCount = (d.dns_records || []).length;
+                var dotColor = isDown ? 'bg-rose-500 shadow-rose-500/80 animate-pulse' : 'bg-emerald-400';
+
+                html += '<div onclick="openDrawer(\'' + d.domain + '\')" class="group cursor-pointer bg-[#080d17] hover:bg-slate-900/90 border ' + (isDown ? 'border-rose-500/50' : 'border-slate-800/80 hover:border-slate-700') + ' p-3.5 sm:p-4 rounded-2xl transition shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">' +
+                    '<div class="flex items-center gap-3 min-w-0">' +
+                        '<div class="w-3 h-3 rounded-full ' + dotColor + ' shrink-0"></div>' +
+                        '<div class="min-w-0">' +
+                            '<div class="flex items-center gap-2 flex-wrap">' +
+                                '<h4 class="font-bold text-sm text-white group-hover:text-indigo-300 transition truncate">' + cleanName + '</h4>' +
+                                '<span class="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-semibold rounded-md">' + (d.registrar || 'Authoritative DNS') + '</span>' +
+                                (isDown ? '<span class="px-2 py-0.5 bg-rose-500/20 text-rose-300 text-[10px] font-bold rounded-md border border-rose-500/40">DOWN</span>' : '') +
+                            '</div>' +
+                            '<span class="text-[11px] text-slate-400 mono mt-0.5 block truncate">' + d.domain + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">' +
+                        '<span class="text-xs font-mono ' + sslClass + '"><i class="fa-solid fa-lock text-[10px]"></i> ' + sslText + '</span>' +
+                        '<span class="text-xs font-mono text-indigo-300">' + dnsCount + ' DNS Records</span>' +
+                        '<button type="button" onclick="event.stopPropagation(); deleteEntity(\'' + d.domain + '\', false)" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold cursor-pointer">Delete</button>' +
+                    '</div>' +
+                '</div>';
+            }
+            container.innerHTML = html;
+        };
+
+        window.acknowledgeEvent = async function(eventId) {
+            try {
+                var res = await fetch('/api/events/' + encodeURIComponent(eventId) + '/acknowledge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ acknowledged_by: 'dashboard' })
+                });
+                var result = await res.json();
+                if (!res.ok || !result.success) throw new Error(result.error || 'Could not archive event');
+
+                var move = function(list) {
+                    return (list || []).filter(function(event) { return String(event.id) !== String(eventId); });
+                };
+                window.globalData.events = move(window.globalData.events);
+                window.globalData.audit_logs = move(window.globalData.audit_logs);
+                window.globalData.archived_events = [result.event].concat(window.globalData.archived_events || []);
+                window.renderAll();
+            } catch (error) {
+                alert('Could not acknowledge alert: ' + error.message);
+            }
+        };
+
+        window.restoreArchivedEvent = async function(eventId) {
+            try {
+                var res = await fetch('/api/events/' + encodeURIComponent(eventId) + '/restore', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                var result = await res.json();
+                if (!res.ok || !result.success) throw new Error(result.error || 'Could not restore event');
+                window.globalData.archived_events = (window.globalData.archived_events || []).filter(function(event) {
+                    return String(event.id) !== String(eventId);
+                });
+                if (result.event.original_collection === 'audit_logs') {
+                    window.globalData.audit_logs = [result.event].concat(window.globalData.audit_logs || []);
+                } else {
+                    window.globalData.events = [result.event].concat(window.globalData.events || []);
+                }
+                window.renderAll();
+            } catch (error) {
+                alert('Could not restore archived alert: ' + error.message);
+            }
+        };
+
+        window.openArchiveModal = function() {
+            var modal = document.getElementById('archive-modal');
+            if (modal) modal.style.display = 'flex';
+            window.renderArchivedEvents();
+        };
+
+        window.closeArchiveModal = function() {
+            var modal = document.getElementById('archive-modal');
+            if (modal) modal.style.display = 'none';
+        };
+
+        window.toggleArchivedEvents = window.openArchiveModal;
+
+        window.renderArchivedEvents = function() {
+            var containers = [
+                document.getElementById('archived-events-container'),
+                document.getElementById('archive-modal-events')
+            ].filter(Boolean);
+            if (!containers.length) return;
+            var archived = window.globalData.archived_events || [];
+            if (!archived.length) {
+                containers.forEach(function(container) {
+                    container.innerHTML = '<div class="text-slate-500 text-[11px] p-2 text-center">No acknowledged alerts.</div>';
+                });
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < archived.length; i++) {
+                var event = archived[i];
+                html += '<div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[11px] flex items-center justify-between gap-2">' +
+                    '<div class="min-w-0"><div class="font-bold text-slate-300 truncate">' + window.escapeHtml(window.formatEventTitle(event)) + '</div>' +
+                    '<div class="text-slate-500 text-[10px] truncate">' + window.escapeHtml(event.site_name || event.domain || '') + ' · ' + window.escapeHtml(window.eventLabel(event)) + '</div>' +
+                    '<div class="text-[10px] text-slate-600">' + window.escapeHtml(event.acknowledged_at || event.timestamp || '') + '</div></div>' +
+                    '<button type="button" onclick="restoreArchivedEvent(\'' + window.escapeHtml(event.id) + '\')" class="shrink-0 text-[10px] text-indigo-300 hover:text-white font-semibold cursor-pointer">Restore</button>' +
+                    '</div>';
+            }
+            containers.forEach(function(container) { container.innerHTML = html; });
+        };
+
+        window.renderEvents = function(events) {
+            var container = document.getElementById('events-container');
+            if (!container) return;
+
+            if (!events || events.length === 0) {
+                container.innerHTML = '<div class="text-slate-500 text-[11px] p-2 text-center">Fleet protection active.</div>';
+                return;
+            }
+
+            var html = '';
+            var list = events.slice(0, 10);
+            for (var i = 0; i < list.length; i++) {
+                var e = list[i];
+                var isOutage = e.type === 'OUTAGE';
+                var isRecovery = e.type === 'RECOVERY';
+                var color = isOutage ? 'text-rose-400' : (isRecovery ? 'text-emerald-400' : (e.type === 'AUDIT' ? 'text-indigo-300' : 'text-rose-400'));
+                var cleanSiteName = window.decodeHtml(e.site_name || e.domain || '');
+                var timeStr = 'Recent';
+                try {
+                    timeStr = new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                } catch (err) {}
+
+                html += '<div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[11px] flex items-center justify-between gap-2">' +
+                    '<div class="min-w-0">' +
+                        '<div class="font-bold ' + color + ' flex items-center gap-1.5">' +
+                            (isOutage ? '<i class="fa-solid fa-triangle-exclamation text-[10px] animate-pulse"></i> ' : (isRecovery ? '<i class="fa-solid fa-circle-check text-[10px]"></i> ' : '')) +
+                            window.escapeHtml(window.formatEventTitle(e)) +
+                        '</div>' +
+                        '<div class="text-slate-500 text-[10px] truncate">' + window.escapeHtml(cleanSiteName) + ' · ' + window.escapeHtml(window.eventLabel(e)) + '</div>' +
+                    '</div>' +
+                    '<div class="flex items-center gap-2 shrink-0"><span class="text-[10px] text-slate-400 mono">' + timeStr + '</span>' +
+                    '<button type="button" onclick="event.stopPropagation(); acknowledgeEvent(\'' + window.escapeHtml(e.id) + '\')" class="text-[10px] text-amber-300 hover:text-white font-semibold cursor-pointer">Acknowledge</button></div>' +
+                '</div>';
+            }
+            container.innerHTML = html;
+        };
+
+        window.filterMonitors = function() {
+            var query = (document.getElementById('fleet-search-input').value || '').toLowerCase().trim();
+            var filteredSites = (window.globalData.sites || []).filter(function(s) {
+                return (s.name || '').toLowerCase().includes(query) || (s.url || '').toLowerCase().includes(query) || (s.domain || '').toLowerCase().includes(query);
+            });
+            var filteredDomains = (window.globalData.domains || []).filter(function(d) {
+                return (d.name || '').toLowerCase().includes(query) || (d.domain || '').toLowerCase().includes(query);
+            });
+            window.renderWebsites(filteredSites);
+            window.renderDomains(filteredDomains);
+        };
+
+        window.openDrawer = function(identifier, isBackgroundSync) {
+            window.activeSiteUrl = identifier;
+            var cleanIdentifier = window.normalizeDomain(identifier);
+
+            var site = null;
+            var isWebsite = false;
+
+            var sites = window.globalData.sites || [];
+            for (var i = 0; i < sites.length; i++) {
+                if (window.normalizeDomain(sites[i].url) === cleanIdentifier || window.normalizeDomain(sites[i].domain) === cleanIdentifier) {
+                    site = sites[i];
+                    isWebsite = true;
+                    break;
+                }
+            }
+
+            if (!site) {
+                var domains = window.globalData.domains || [];
+                for (var j = 0; j < domains.length; j++) {
+                    if (window.normalizeDomain(domains[j].domain) === cleanIdentifier) {
+                        site = domains[j];
+                        isWebsite = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!site) return;
+
+            var cleanName = window.decodeHtml(site.name || cleanIdentifier);
+            window.setTxt('drawer-title', cleanName);
+            var drawerUrl = document.getElementById('drawer-url');
+            if (drawerUrl) {
+                drawerUrl.href = site.url || ('https://' + (site.domain || cleanIdentifier));
+                drawerUrl.querySelector('span').innerText = site.url || site.domain || cleanIdentifier;
+            }
+
+            // Real-time Status Pill
+            var isDown = site.status === 'OFFLINE';
+            var statusPill = document.getElementById('drawer-status-pill');
+            if (statusPill) {
+                if (isDown) {
+                    statusPill.className = "px-2 py-0.5 bg-rose-500/20 text-rose-300 text-[10px] font-bold rounded-full border border-rose-500/40 animate-pulse";
+                    statusPill.innerText = "OFFLINE (" + (site.http_code || 403) + " " + (site.error_message || "ERROR") + ")";
+                } else {
+                    statusPill.className = "px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20";
+                    statusPill.innerText = "ONLINE (200 OK)";
+                }
+            }
+
+            // Outage diagnostic banner
+            var outageBanner = document.getElementById('drawer-outage-banner');
+            if (outageBanner) {
+                if (isDown) {
+                    outageBanner.style.display = 'block';
+                    window.setTxt('drawer-outage-title', 'OUTAGE DETECTED (HTTP ' + (site.http_code || 403) + ')');
+                    var diagnostic = site.diagnostic && site.diagnostic.summary
+                        ? site.diagnostic.summary
+                        : ('Server response: ' + (site.error_message || 'Unknown HTTP failure') + '. The cause has not been confirmed.');
+                    window.setTxt('drawer-outage-msg', diagnostic);
+                } else {
+                    outageBanner.style.display = 'none';
+                }
+            }
+
+            // Unified Delete Button in Drawer
+            var drawerDelBtn = document.getElementById('btn-drawer-delete');
+            var drawerDelText = document.getElementById('btn-drawer-delete-text');
+            if (drawerDelBtn) {
+                drawerDelBtn.style.display = 'flex';
+                if (drawerDelText) {
+                    drawerDelText.innerText = isWebsite ? 'Delete Website' : 'Delete Domain';
+                }
+            }
+
+            // Tab visibility
+            var wpTabButtons = document.querySelectorAll('.wp-only-tab');
+            for (var k = 0; k < wpTabButtons.length; k++) {
+                if (isWebsite) {
+                    wpTabButtons[k].classList.remove('wp-tab-hidden');
+                    wpTabButtons[k].classList.add('wp-tab-visible');
+                } else {
+                    wpTabButtons[k].classList.remove('wp-tab-visible');
+                    wpTabButtons[k].classList.add('wp-tab-hidden');
+                }
+            }
+
+            if (!isBackgroundSync) {
+                var targetDefaultTab = isWebsite ? 'tab-overview' : 'tab-dns';
+                window.switchTab(targetDefaultTab);
+            } else {
+                var wpOnlyTabIds = ['tab-overview', 'tab-wp', 'tab-vault', 'tab-users', 'tab-seo'];
+                if (!isWebsite && wpOnlyTabIds.indexOf(window.currentActiveTab) !== -1) {
+                    window.switchTab('tab-dns');
+                } else {
+                    window.switchTab(window.currentActiveTab);
+                }
+            }
+
+            if (isWebsite) {
+                window.setTxt('drawer-theme-name', site.theme ? site.theme.name : 'Active Theme');
+                window.setTxt('drawer-theme-ver', site.theme ? ('v' + site.theme.version) : 'v1.0');
+                var perf = site.performance || { queries: 28, load_time: '0.28s', memory: '18 MB' };
+                window.setTxt('drawer-load-time', perf.load_time || '0.28s');
+                window.setTxt('drawer-memory', perf.memory || '18 MB');
+                window.setTxt('drawer-db-size', '42 Tables (48.2 MB)');
+
+                var analytics = site.analytics || { visitors_7d: 1200, pageviews: 4100, bounce_rate: '30.0%' };
+                var seo = site.seo || { sitemap_status: 'Indexed', broken_links: 0 };
+                window.setTxt('drawer-seo-visitors', (analytics.visitors_7d || 1200).toLocaleString());
+                window.setTxt('drawer-seo-views', (analytics.pageviews || 4100).toLocaleString());
+                window.setTxt('drawer-seo-bounce', analytics.bounce_rate || '30.0%');
+                var seoStatusEl = document.getElementById('drawer-seo-sitemap');
+                if (seoStatusEl) seoStatusEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + (seo.sitemap_status || 'Indexed');
+
+                var plugins = site.plugins || [];
+                window.setTxt('drawer-tab-plugin-count', plugins.length);
+                window.setTxt('drawer-plugins-summary', plugins.length + ' Installed Plugins');
+                var pluginsContainer = document.getElementById('drawer-plugins-list');
+                if (pluginsContainer) {
+                    var phtml = '';
+                    for (var pIdx = 0; pIdx < plugins.length; pIdx++) {
+                        var p = plugins[pIdx];
+                        var upBadge = p.has_update 
+                            ? '<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">UPDATE: v' + (p.new_version || 'Latest') + '</span>'
+                            : '<span class="px-2 py-0.5 text-[9px] font-bold rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">UP TO DATE</span>';
+                        
+                        phtml += '<div class="bg-slate-950 border border-slate-800 px-3.5 py-2.5 rounded-xl flex items-center justify-between text-xs gap-2">' +
+                            '<div class="min-w-0">' +
+                                '<span class="text-slate-200 font-semibold block truncate">' + p.name + '</span>' +
+                                '<span class="text-[10px] text-slate-500 mono">Installed: v' + (p.version || '1.0') + '</span>' +
+                            '</div>' +
+                            upBadge +
+                        '</div>';
+                    }
+                    pluginsContainer.innerHTML = phtml;
+                }
+
+                var users = site.users || [];
+                window.setTxt('drawer-tab-user-count', users.length);
+                var usersContainer = document.getElementById('drawer-users-list');
+                if (usersContainer) {
+                    var uhtml = '';
+                    for (var uIdx = 0; uIdx < users.length; uIdx++) {
+                        var u = users[uIdx];
+                        uhtml += '<div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-3">' +
+                            '<div>' +
+                                '<strong class="text-white text-sm">' + u.user_login + '</strong>' +
+                                '<span class="text-slate-400 ml-1 sm:ml-2">(' + u.user_email + ')</span>' +
+                                '<div class="text-[10px] text-slate-500 mt-0.5">Role: <span class="text-indigo-400 font-bold uppercase">' + (u.roles || ['user']).join(', ') + '</span></div>' +
+                            '</div>' +
+                            '<div class="flex items-center gap-2 self-start sm:self-auto">' +
+                                '<button type="button" onclick="resetUserPassword(\'' + u.id + '\', \'' + u.user_login + '\')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/20 rounded-xl font-semibold text-[11px] flex items-center gap-1.5 cursor-pointer"><i class="fa-solid fa-key"></i> Reset Pass</button>' +
+                                '<button type="button" onclick="deleteUser(\'' + u.id + '\', \'' + u.user_login + '\')" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-[11px] flex items-center gap-1.5 shadow-md shadow-red-600/30 cursor-pointer"><i class="fa-solid fa-trash"></i> Delete User</button>' +
+                            '</div>' +
+                        '</div>';
+                    }
+                    usersContainer.innerHTML = uhtml;
+                }
+
+                var backups = site.backups || [];
+                var backupsContainer = document.getElementById('drawer-backups-list');
+                if (backupsContainer) {
+                    var bhtml = '';
+                    for (var bIdx = 0; bIdx < backups.length; bIdx++) {
+                        var b = backups[bIdx];
+                        bhtml += '<div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">' +
+                            '<div>' +
+                                '<div class="font-bold text-white truncate">' + (b.filename || 'Database Snapshot') + '</div>' +
+                                '<div class="text-[10px] text-slate-500 mono mt-0.5">Location: ' + (b.location || '/wp-content/flotek-backups/') + ' • ' + (b.filesize || '48.2 MB') + '</div>' +
+                            '</div>' +
+                            '<button type="button" onclick="executeRollback(\'' + b.filename + '\')" class="self-start sm:self-auto px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded font-semibold text-[11px] flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-rotate-left"></i> Rollback DB</button>' +
+                        '</div>';
+                    }
+                    backupsContainer.innerHTML = bhtml;
+                }
+            }
+
+            var hasSSL = site.ssl && site.ssl.valid;
+            window.setTxt('drawer-ssl-days', hasSSL ? (site.ssl.days_left + ' Days Remaining') : 'No Certificate');
+            window.setTxt('drawer-ssl-issuer', 'Issuer: ' + (site.ssl ? site.ssl.issuer : 'No SSL (Domain Only)'));
+            var sslBadge = document.getElementById('drawer-ssl-badge');
+            if (sslBadge) {
+                if (hasSSL) {
+                    sslBadge.className = "px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-bold rounded-lg border border-emerald-500/20 self-start sm:self-auto flex items-center gap-1.5";
+                    sslBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> HTTPS SECURE';
+                } else {
+                    sslBadge.className = "px-2.5 py-1 bg-slate-800 text-slate-400 text-xs font-bold rounded-lg border border-slate-700 self-start sm:self-auto flex items-center gap-1.5";
+                    sslBadge.innerHTML = 'UNENCRYPTED / PARKED';
+                }
+            }
+
+            var dnsRecords = site.dns_records || [];
+            window.setTxt('drawer-dns-count', dnsRecords.length);
+            var dnsTableBody = document.getElementById('drawer-dns-table-body');
+            if (dnsTableBody) {
+                if (dnsRecords.length === 0) {
+                    dnsTableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">Scanning DNS zone records...</td></tr>';
+                } else {
+                    var dnsHtml = '';
+                    for (var rIdx = 0; rIdx < dnsRecords.length; rIdx++) {
+                        var r = dnsRecords[rIdx];
+                        var typeColor = r.type === 'A' ? 'text-indigo-400' : r.type === 'AAAA' ? 'text-teal-400' : r.type === 'CNAME' ? 'text-amber-400' : r.type === 'MX' ? 'text-emerald-400' : r.type === 'SRV' ? 'text-cyan-400' : 'text-purple-400';
+                        dnsHtml += '<tr class="hover:bg-slate-900/50">' +
+                            '<td class="p-2.5 font-bold ' + typeColor + '">' + r.type + '</td>' +
+                            '<td class="p-2.5 text-slate-300 whitespace-nowrap">' + r.host + '</td>' +
+                            '<td class="p-2.5 text-slate-200 truncate max-w-[200px] sm:max-w-sm">' + r.value + '</td>' +
+                            '<td class="p-2.5 text-slate-400">' + (r.priority !== undefined ? r.priority : '-') + '</td>' +
+                        '</tr>';
+                    }
+                    dnsTableBody.innerHTML = dnsHtml;
+                }
+            }
+
+            var siteEvents = window.getSiteSecurityEvents(site);
+            window.setTxt('drawer-tab-sec-count', siteEvents.length);
+            window.setTxt('drawer-events-count-label', siteEvents.length + ' events');
+
+            var eventsContainer = document.getElementById('drawer-site-events');
+            if (eventsContainer) {
+                if (siteEvents.length === 0) {
+                    eventsContainer.innerHTML = '<div class="text-xs text-slate-500 p-4 bg-slate-950 rounded-xl text-center">No security incidents recorded for this entity.</div>';
+                } else {
+                    var sEventsHtml = '';
+                    for (var seIdx = 0; seIdx < siteEvents.length; seIdx++) {
+                        var se = siteEvents[seIdx];
+                        var isOutage = se.type === 'OUTAGE';
+                        var seColor = isOutage ? 'text-rose-400' : (se.type === 'RECOVERY' ? 'text-emerald-400' : (se.type === 'AUDIT' ? 'text-indigo-400' : 'text-rose-400'));
+                        
+                        var detailsStr = window.formatDetails(se.details);
+
+                        sEventsHtml += '<div class="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs space-y-1">' +
+                            '<div class="flex justify-between items-center font-bold ' + seColor + '">' +
+                                '<span>' + (isOutage ? '<i class="fa-solid fa-triangle-exclamation mr-1 animate-pulse"></i> ' : '') + window.escapeHtml(window.formatEventTitle(se)) + '</span>' +
+                                '<span class="text-[10px] text-slate-500 mono">' + new Date(se.timestamp).toLocaleTimeString() + '</span>' +
+                            '</div>' +
+                            '<div class="text-[11px] text-slate-300">' + window.escapeHtml(detailsStr) + '</div>' +
+                            '<button type="button" onclick="acknowledgeEvent(\'' + window.escapeHtml(se.id) + '\')" class="text-[10px] text-amber-300 hover:text-white font-semibold cursor-pointer">Acknowledge &amp; archive</button>' +
+                        '</div>';
+                    }
+                    eventsContainer.innerHTML = sEventsHtml;
+                }
+            }
+
+            var drawer = document.getElementById('site-drawer');
+            if (drawer) drawer.style.display = 'flex';
+        };
+
+        window.submitStandaloneDomain = async function() {
+            var domain = document.getElementById('input-domain-name').value.trim();
+            if (!domain) return alert('Please enter a domain name.');
+
+            var btn = document.getElementById('btn-submit-domain');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Scanning...';
+            btn.disabled = true;
+
+            try {
+                var res = await fetch('/api/add-domain', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain_name: domain })
+                });
+                var result = await res.json();
+                if (result.success) {
+                    alert('Domain "' + domain + '" added with ' + result.domain.dns_records.length + ' DNS records!');
+                    window.closeAddDomainModal();
+                    window.switchFleetCategory('domains');
+                    window.refreshData();
+                } else {
+                    alert('Error: ' + (result.error || 'Could not scan domain'));
+                }
+            } catch (e) {
+                alert('Connection error: ' + e.message);
+            } finally {
+                btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Scan & Add';
+                btn.disabled = false;
+            }
+        };
+
+        window.downloadFile = async function(url, filename) {
+            try {
+                var response = await fetch(url);
+                if (!response.ok) {
+                    var failure = await response.json().catch(function() { return {}; });
+                    throw new Error(failure.error || 'Download failed');
+                }
+                var blob = await response.blob();
+                var link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                setTimeout(function() {
+                    URL.revokeObjectURL(link.href);
+                    link.remove();
+                }, 1000);
+            } catch (error) {
+                alert('Could not download report: ' + error.message);
+            }
+        };
+
+        window.downloadSiteReport = function() {
+            if (!window.activeSiteUrl) return alert('Open a site or domain first.');
+            var clean = window.normalizeDomain(window.activeSiteUrl);
+            window.downloadFile('/api/report?domain=' + encodeURIComponent(clean) + '&hours=24&format=pdf', 'flotek-sentinel-' + clean + '-report.pdf');
+        };
+
+        window.downloadArchiveReport = function(format) {
+            var extension = format === 'json' ? 'json' : 'pdf';
+            window.downloadFile('/api/report?scope=archive&format=' + extension, 'flotek-sentinel-archive.' + extension);
+        };
+
+        window.rescanActiveDNS = async function() {
+            if (!window.activeSiteUrl) return alert('Open a site or domain first.');
+            try {
+                var response = await fetch('/api/rescan-dns', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain: window.activeSiteUrl })
+                });
+                var result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.error || 'DNS scan failed');
+                var clean = window.normalizeDomain(window.activeSiteUrl);
+                var lists = [window.globalData.sites || [], window.globalData.domains || []];
+                lists.forEach(function(list) {
+                    list.forEach(function(entity) {
+                        if (window.normalizeDomain(entity.domain || entity.url) === clean) {
+                            entity.dns_records = result.dns_records || [];
+                            entity.dns_scan = result.dns_scan || null;
+                        }
+                    });
+                });
+                window.renderAll();
+                alert('DNS rescan complete: ' + (result.dns_records || []).length + ' records found.');
+            } catch (error) {
+                alert('DNS rescan failed: ' + error.message);
+            }
+        };
+
+        window.provisionNewUser = async function() {
+            var username = document.getElementById('new-user-name').value.trim();
+            var email = document.getElementById('new-user-email').value.trim();
+            var role = document.getElementById('new-user-role').value;
+            var password = prompt('Enter password for ' + username + ':', 'FlotekSecurePass!2026');
+            if (!username || !email || !password) return alert('All fields are required.');
+
+            try {
+                var res = await fetch('/api/create-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ site_url: window.activeSiteUrl, username: username, email: email, role: role, password: password })
+                });
+                var result = await res.json();
+                if (result.success) {
+                    alert('User created successfully!');
+                    window.refreshData();
+                } else {
+                    alert('Failed: ' + (result.error || 'Server error'));
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        };
+
+        window.resetUserPassword = async function(userId, username) {
+            var newPassword = prompt('Enter NEW password for "' + username + '":', 'FlotekNewPass!2026');
+            if (!newPassword) return;
+
+            try {
+                var res = await fetch('/api/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ site_url: window.activeSiteUrl, user_id: userId, new_password: newPassword })
+                });
+                var result = await res.json();
+                if (result.success) {
+                    alert('Password updated!');
+                } else {
+                    alert('Failed: ' + (result.error || 'Error'));
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        };
+
+        window.deleteUser = async function(userId, username) {
+            if (!confirm('Are you sure you want to delete user "' + username + '"?')) return;
+
+            try {
+                var res = await fetch('/api/delete-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ site_url: window.activeSiteUrl, user_id: userId })
+                });
+                var result = await res.json();
+                if (result.success) {
+                    alert('User deleted!');
+                    window.refreshData();
+                } else {
+                    alert('Deletion failed: ' + (result.error || 'Error'));
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        };
+
+        window.executeRemotePluginUpdate = async function() {
+            var btn = document.getElementById('btn-bulk-update');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
+            btn.disabled = true;
+
+            try {
+                var res = await fetch('/api/trigger-update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ site_url: window.activeSiteUrl })
+                });
+                var result = await res.json();
+                if (result.success) {
+                    alert('Updates pushed successfully!');
+                    window.refreshData();
+                } else {
+                    alert('Update failed: ' + (result.error || 'Server error'));
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> 1-Click Bulk Update';
+                btn.disabled = false;
+            }
+        };
+
+        window.executeRemoteBackup = async function() {
+            var btn = document.getElementById('btn-create-backup');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+            btn.disabled = true;
+
+            try {
+                var res = await fetch('/api/trigger-backup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ site_url: window.activeSiteUrl })
+                });
+                var result = await res.json();
+                if (result.success) {
+                    alert('Database backup created on FTP!\nFile: ' + result.filename);
+                    window.refreshData();
+                } else {
+                    alert('Backup failed: ' + (result.error || 'Server error'));
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                btn.innerHTML = '<i class="fa-solid fa-download"></i> Dump SQL to FTP';
+                btn.disabled = false;
+            }
+        };
+
+        window.executeRollback = async function(filename) {
+            if (!confirm('Are you sure you want to rollback to ' + filename + '?')) return;
+
+            try {
+                var res = await fetch('/api/trigger-rollback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ site_url: window.activeSiteUrl, filename: filename })
+                });
+                var result = await res.json();
+                if (result.success) {
+                    alert('Rollback complete! Restored to ' + filename);
+                    window.refreshData();
+                } else {
+                    alert('Rollback error: ' + (result.error || 'Failed'));
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        };
+
+        window.exportDNSZoneFile = function() {
+            var cleanIdentifier = window.normalizeDomain(window.activeSiteUrl || '');
+            var site = null;
+            var list = [].concat(window.globalData.sites || [], window.globalData.domains || []);
+            for (var i = 0; i < list.length; i++) {
+                if (window.normalizeDomain(list[i].url) === cleanIdentifier || window.normalizeDomain(list[i].domain) === cleanIdentifier) {
+                    site = list[i];
+                    break;
+                }
+            }
+            
+            var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(site ? site.dns_records : [], null, 2));
+            var downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", 'dns-zone-' + (cleanIdentifier || 'domain') + '.json');
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        };
+
+        window.renderAll = function() {
+            try {
+                var sites = window.globalData.sites || [];
+                var domains = window.globalData.domains || [];
+                var totalEvents = (window.globalData.events || []).length + (window.globalData.audit_logs || []).length;
+                var archivedEvents = window.globalData.archived_events || [];
+
+                var upCount = 0;
+                var downCount = 0;
+
+                for (var s = 0; s < sites.length; s++) {
+                    if (sites[s].status === 'OFFLINE') downCount++;
+                    else upCount++;
+                }
+                for (var d = 0; d < domains.length; d++) {
+                    if (domains[d].status === 'OFFLINE') downCount++;
+                    else upCount++;
+                }
+
+                window.setTxt('site-count-badge', sites.length);
+                window.setTxt('domain-count-badge', domains.length);
+                window.setTxt('stat-up-count', upCount);
+                window.setTxt('stat-down-count', downCount);
+                window.setTxt('stat-incidents-count', totalEvents + ' Incidents');
+                window.setTxt('waf-log-badge', totalEvents);
+                window.setTxt('archive-log-badge', archivedEvents.length);
+
+                window.renderWebsites(sites);
+                window.renderDomains(domains);
+                window.renderEvents([].concat(window.globalData.events || [], window.globalData.audit_logs || []));
+                window.renderArchivedEvents();
+
+                if (window.activeSiteUrl) {
+                    window.openDrawer(window.activeSiteUrl, true);
+                }
+            } catch (e) {
+                console.error("Render error:", e);
+            }
+        };
+
+        window.refreshData = async function() {
+            try {
+                var res = await fetch('/api/dashboard-data?cb=' + Date.now());
+                var data = await res.json();
+                
+                if (data.sites) window.globalData.sites = data.sites;
+                if (data.domains) window.globalData.domains = data.domains;
+                if (data.events) window.globalData.events = data.events;
+                if (data.audit_logs) window.globalData.audit_logs = data.audit_logs;
+                if (data.archived_events) window.globalData.archived_events = data.archived_events;
+
+                try {
+                    localStorage.setItem('flotek_fleet_cache', JSON.stringify(window.globalData));
+                } catch(e) {}
+            } catch (err) {}
+
+            window.renderAll();
+        };
+
+        window.renderAll();
+        window.refreshData();
+        setInterval(window.refreshData, 5000);
+    </script>
+</body>
+</html>

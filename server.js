@@ -8,6 +8,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const tls = require('tls');
+const dnsNative = require('dns');
 const dns = require('dns').promises;
 const net = require('net');
 const { execFile } = require('child_process');
@@ -474,21 +475,41 @@ function updateUptime(entity, result) {
     if (entity.uptime_history.length > 20) entity.uptime_history.shift();
     const upPings = entity.uptime_history.filter(x => x === 1).length;
     entity.uptime_pct = Math.round((upPings / entity.uptime_history.length) * 100);
+
+    // Keep one health sample per minute for reports without writing 15-second
+    // duplicates. The latest 7 days are retained.
+    if (!Array.isArray(entity.health_history)) entity.health_history = [];
+    const minute = Math.floor(Date.now() / 60000);
+    const sample = {
+        minute,
+        timestamp: new Date().toISOString(),
+        status: result.status,
+        http_code: result.http_code,
+        error: result.error_message,
+        latency: result.latency,
+        cause: result.diagnostic ? result.diagnostic.cause : 'none',
+        server_reachable: result.server_reachability ? result.server_reachability.reachable : false
+    };
+    const lastSample = entity.health_history[entity.health_history.length - 1];
+    if (lastSample && lastSample.minute === minute) entity.health_history[entity.health_history.length - 1] = sample;
+    else entity.health_history.push(sample);
+    if (entity.health_history.length > 10080) entity.health_history.shift();
 }
 
-function addIncident(entity, result, previousStatus) {
-    if (result.status === 'OFFLINE' && previousStatus === 'ONLINE') {
+function addIncident(entity, result, previousStatus, confirmedDown) {
+    if (result.status === 'OFFLINE' && previousStatus === 'ONLINE' && confirmedDown) {
         const outageIncident = {
             id: Date.now() + Math.floor(Math.random() * 1000),
             site_url: entity.url || `https://${entity.domain}`,
             domain: entity.domain,
             site_name: entity.name,
-            event: `OUTAGE_DETECTED_${result.diagnostic.cause.toUpperCase()}`,
+            event: 'SITE_OUTAGE_DETECTED',
             details: {
                 http_code: result.http_code,
                 error: result.error_message,
                 target: entity.url || `https://${entity.domain}`,
                 cause: result.diagnostic.cause,
+                cause_label: result.diagnostic.summary,
                 diagnostic: result.diagnostic.summary,
                 server_reachability: result.server_reachability,
                 agent_health: result.agent_health || 'Not queried'
@@ -523,7 +544,14 @@ async function runFleetHealthChecks() {
     await Promise.all(entities.map(async entity => {
         const result = await checkEntityHealth(entity);
         const previousStatus = entity.status || 'ONLINE';
-        entity.status = result.status;
+        entity.failure_streak = result.status === 'OFFLINE' ? (entity.failure_streak || 0) + 1 : 0;
+        const confirmedDown = result.status === 'OFFLINE' && entity.failure_streak >= 2;
+        // Require two consecutive failed checks before changing a site to
+        // OFFLINE. A single timeout is retained as evidence but not promoted
+        // to an outage.
+        entity.status = result.status === 'ONLINE'
+            ? 'ONLINE'
+            : (confirmedDown ? 'OFFLINE' : previousStatus);
         entity.http_code = result.http_code;
         entity.error_message = result.error_message;
         entity.latency = result.latency;
@@ -535,7 +563,7 @@ async function runFleetHealthChecks() {
             entity.file_audit = result.agent_health.body.file_audit;
         }
         updateUptime(entity, result);
-        addIncident(entity, result, previousStatus);
+        addIncident(entity, result, previousStatus, confirmedDown);
     }));
     saveDatabase();
 }
@@ -692,7 +720,7 @@ function mapDnsRecord(record, host, typeOverride) {
     };
 }
 
-async function resolveDnsName(name, includeExtendedTypes) {
+async function resolveDnsName(name, includeExtendedTypes, resolver = dns) {
     const records = [];
     const seen = new Set();
     const push = record => {
@@ -705,7 +733,7 @@ async function resolveDnsName(name, includeExtendedTypes) {
 
     try {
         const anyRecords = await Promise.race([
-            dns.resolveAny(name),
+            resolver.resolveAny(name),
             new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2500))
         ]);
         for (const record of anyRecords || []) push(mapDnsRecord(record, name, record.type));
@@ -717,7 +745,7 @@ async function resolveDnsName(name, includeExtendedTypes) {
     await Promise.all(typesToProbe.map(async type => {
         try {
             const values = await Promise.race([
-                dns.resolve(name, type),
+                resolver.resolve(name, type),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1800))
             ]);
             for (const value of values || []) push(mapDnsRecord(value, name, type));
@@ -729,11 +757,26 @@ async function resolveDnsName(name, includeExtendedTypes) {
 
 async function scanFullDNSZone(domain) {
     const host = normalizeHost(domain);
+    let authoritativeResolver = dns;
+    try {
+        const nameservers = await dns.resolveNs(host);
+        const nameserverAddresses = [];
+        for (const nameserver of nameservers.slice(0, 4)) {
+            try { nameserverAddresses.push(...await dns.resolve4(nameserver)); } catch (e) {}
+            try { nameserverAddresses.push(...await dns.resolve6(nameserver)); } catch (e) {}
+        }
+        if (nameserverAddresses.length) {
+            const resolver = new dnsNative.promises.Resolver();
+            resolver.setServers(Array.from(new Set(nameserverAddresses)));
+            authoritativeResolver = resolver;
+        }
+    } catch (e) {}
+
     const candidateNames = Array.from(new Set([
         host,
         ...COMPREHENSIVE_HOST_DICTIONARY.map(label => `${label}.${host}`)
     ]));
-    const chunks = await Promise.all(candidateNames.map((name, index) => resolveDnsName(name, index === 0)));
+    const chunks = await Promise.all(candidateNames.map((name, index) => resolveDnsName(name, index === 0, authoritativeResolver)));
     const records = chunks.flat();
     const seen = new Set();
     const uniqueRecords = records.filter(record => {
@@ -808,6 +851,146 @@ async function runFleetDNSChecks() {
     saveDatabase();
 }
 
+function findEntityByDomain(domain) {
+    const clean = normalizeHost(domain);
+    return [...Object.values(monitoredSites), ...Object.values(standaloneDomains)]
+        .find(entity => normalizeHost(entity.domain || entity.url) === clean);
+}
+
+function entityEventList(entity) {
+    const clean = normalizeHost(entity.domain || entity.url);
+    return [...securityEvents, ...auditLogs, ...archivedEvents]
+        .filter(event => normalizeHost(event.domain || event.site_url) === clean)
+        .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+}
+
+function buildEntityReport(entity, hours = 24) {
+    const since = Date.now() - (hours * 60 * 60 * 1000);
+    const samples = (entity.health_history || []).filter(sample => new Date(sample.timestamp).getTime() >= since);
+    const downSamples = samples.filter(sample => sample.status === 'OFFLINE');
+    const uptimePercent = samples.length ? Math.round(((samples.length - downSamples.length) / samples.length) * 10000) / 100 : null;
+    const events = entityEventList(entity);
+    const recentEvents = events.filter(event => new Date(event.timestamp || 0).getTime() >= since);
+    const errors = recentEvents.filter(event => event.type !== 'RECOVERY');
+    const dnsChanges = recentEvents.filter(event => event.type === 'DNS' || event.event === 'DNS_CHANGE_DETECTED');
+
+    return {
+        generated_at: new Date().toISOString(),
+        period_hours: hours,
+        entity: {
+            name: entity.name,
+            domain: entity.domain,
+            url: entity.url || `https://${entity.domain}`,
+            type: entity.type,
+            status: entity.status,
+            last_check_at: entity.last_check_at,
+            diagnostic: entity.diagnostic || null
+        },
+        summary: {
+            uptime_percent: uptimePercent,
+            downtime_samples: downSamples.length,
+            estimated_downtime_minutes: downSamples.length,
+            total_health_samples: samples.length,
+            average_latency_ms: samples.length ? Math.round(samples.reduce((sum, sample) => sum + (Number(sample.latency) || 0), 0) / samples.length) : null,
+            errors: errors.length,
+            dns_changes: dnsChanges.length
+        },
+        dns: {
+            records: entity.dns_records || [],
+            changes: entity.dns_changes || { added: [], removed: [] },
+            last_checked: entity.dns_last_checked || null,
+            scan: entity.dns_scan || null
+        },
+        errors,
+        events: recentEvents.slice(0, 100),
+        health_history: samples
+    };
+}
+
+function pdfText(value) {
+    return String(value === undefined || value === null ? '' : value)
+        .replace(/[^\x20-\x7E]/g, '?')
+        .replace(/\\/g, '\\\\')
+        .replace(/\(/g, '\\(')
+        .replace(/\)/g, '\\)');
+}
+
+function wrapPdfLine(value, width = 92) {
+    const words = String(value || '').split(/\s+/);
+    const lines = [];
+    let current = '';
+    words.forEach(word => {
+        if ((current + ' ' + word).trim().length > width && current) {
+            lines.push(current);
+            current = word;
+        } else {
+            current = (current + ' ' + word).trim();
+        }
+    });
+    if (current) lines.push(current);
+    return lines.length ? lines : [''];
+}
+
+function buildSimplePdf(lines) {
+    const visibleLines = lines.flatMap(line => wrapPdfLine(line)).slice(0, 52);
+    let stream = 'BT\n/F1 9 Tf\n50 752 Td\n';
+    visibleLines.forEach((line, index) => {
+        if (index > 0) stream += '0 -14 Td\n';
+        stream += `(${pdfText(line)}) Tj\n`;
+    });
+    stream += 'ET';
+
+    const objects = [
+        '<< /Type /Catalog /Pages 2 0 R >>',
+        '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+        '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
+        '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+        `<< /Length ${Buffer.byteLength(stream, 'utf8')} >>\nstream\n${stream}\nendstream`
+    ];
+    let pdf = '%PDF-1.4\n%\xE2\xE3\xCF\xD3\n';
+    const offsets = [0];
+    objects.forEach((object, index) => {
+        offsets[index + 1] = Buffer.byteLength(pdf, 'binary');
+        pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+    });
+    const xrefOffset = Buffer.byteLength(pdf, 'binary');
+    pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+    for (let i = 1; i <= objects.length; i++) {
+        pdf += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+    }
+    pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+    return Buffer.from(pdf, 'binary');
+}
+
+function reportPdfLines(report) {
+    const entity = report.entity;
+    const summary = report.summary;
+    const lines = [
+        'FLOTEK SENTINEL SITE REPORT',
+        `Generated: ${report.generated_at}`,
+        `Monitoring period: last ${report.period_hours} hours`,
+        `Site: ${entity.name} (${entity.domain})`,
+        `URL: ${entity.url}`,
+        `Current status: ${entity.status}`,
+        `Uptime: ${summary.uptime_percent === null ? 'No samples yet' : summary.uptime_percent + '%'}`,
+        `Estimated downtime: ${summary.estimated_downtime_minutes} minutes`,
+        `Average latency: ${summary.average_latency_ms === null ? 'No samples yet' : summary.average_latency_ms + ' ms'}`,
+        `Recorded errors: ${summary.errors}`,
+        `DNS changes: ${summary.dns_changes}`,
+        '',
+        'CURRENT DNS RECORDS'
+    ];
+    (report.dns.records || []).slice(0, 28).forEach(record => {
+        lines.push(`${record.type} ${record.host} => ${record.value}${record.priority !== '-' ? ' priority ' + record.priority : ''}`);
+    });
+    lines.push('', 'RECENT ERRORS AND EVENTS');
+    (report.errors || []).slice(0, 15).forEach(event => {
+        const details = event.details && typeof event.details === 'object' ? (event.details.diagnostic || event.details.error || event.event) : event.details;
+        lines.push(`${event.timestamp || ''} ${event.event || event.type}: ${details || ''}`);
+    });
+    return lines;
+}
+
 // 4. LIVE SSL INSPECTOR
 function inspectLiveSSL(domain) {
     return new Promise((resolve) => {
@@ -868,6 +1051,63 @@ app.get('/api/dashboard-data', (req, res) => {
         down_count: downCount,
         fleet_health: Math.max(0, 100 - (downCount * 25))
     });
+});
+
+app.get('/api/report', (req, res) => {
+    const format = String(req.query.format || 'json').toLowerCase();
+    const scope = String(req.query.scope || 'site').toLowerCase();
+    const hours = Math.min(168, Math.max(1, Number(req.query.hours) || 24));
+    let report;
+
+    if (scope === 'archive') {
+        report = {
+            generated_at: new Date().toISOString(),
+            archived_events: archivedEvents.slice().sort((a, b) => new Date(b.acknowledged_at || b.timestamp || 0) - new Date(a.acknowledged_at || a.timestamp || 0))
+        };
+    } else {
+        const entity = findEntityByDomain(req.query.domain || '');
+        if (!entity) return res.status(404).json({ success: false, error: 'Monitored site or domain not found' });
+        report = buildEntityReport(entity, hours);
+    }
+
+    if (format === 'pdf') {
+        const lines = scope === 'archive'
+            ? [
+                'FLOTEK SENTINEL ARCHIVED EVENT REPORT',
+                `Generated: ${report.generated_at}`,
+                `Archived events: ${report.archived_events.length}`,
+                '',
+                ...report.archived_events.slice(0, 100).map(event => {
+                    const details = event.details && typeof event.details === 'object'
+                        ? (event.details.diagnostic || event.details.error || '')
+                        : (event.details || '');
+                    return `${event.acknowledged_at || event.timestamp || ''} ${event.site_name || event.domain || ''} ${event.event || event.type || ''} ${details}`;
+                })
+            ]
+            : reportPdfLines(report);
+        const filename = scope === 'archive' ? 'flotek-sentinel-archive.pdf' : `flotek-sentinel-${normalizeHost(report.entity.domain)}-report.pdf`;
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="${filename}"`,
+            'Cache-Control': 'no-store'
+        });
+        return res.send(buildSimplePdf(lines));
+    }
+
+    res.set('Cache-Control', 'no-store');
+    res.json({ success: true, report });
+});
+
+app.post('/api/rescan-dns', async (req, res) => {
+    const entity = findEntityByDomain(req.body && req.body.domain);
+    if (!entity) return res.status(404).json({ success: false, error: 'Monitored site or domain not found' });
+    try {
+        await refreshEntityDNS(entity);
+        saveDatabase();
+        res.json({ success: true, domain: entity.domain, dns_records: entity.dns_records, dns_scan: entity.dns_scan });
+    } catch (error) {
+        res.status(500).json({ success: false, error: normalizeErrorMessage(error) });
+    }
 });
 
 // Acknowledging an alert removes it from the active stream without deleting it.
