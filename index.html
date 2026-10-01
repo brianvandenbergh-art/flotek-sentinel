@@ -150,7 +150,7 @@
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
                         <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-virus text-rose-400"></i> Fleet Event Log</span>
                         <span class="flex items-center gap-2">
-                            <button type="button" onclick="toggleArchivedEvents()" class="text-[10px] text-slate-400 hover:text-white font-semibold cursor-pointer">Archive (<span id="archive-log-badge">0</span>)</button>
+                            <button type="button" onclick="openArchiveModal()" class="text-[10px] text-slate-400 hover:text-white font-semibold cursor-pointer">Archive (<span id="archive-log-badge">0</span>)</button>
                             <span id="waf-log-badge" class="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 text-[10px] font-mono font-bold">0</span>
                         </span>
                     </h3>
@@ -186,6 +186,24 @@
         </div>
     </div>
 
+    <!-- MODAL: ARCHIVED EVENTS -->
+    <div id="archive-modal" style="display: none;" class="fixed inset-0 z-50 items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="relative bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-2xl w-full z-10 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-base text-white flex items-center gap-2"><i class="fa-solid fa-box-archive text-amber-400"></i> Alert Archive</h3>
+                    <p class="text-[11px] text-slate-400 mt-1">Acknowledged events remain available here and are never deleted.</p>
+                </div>
+                <button type="button" onclick="closeArchiveModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="downloadArchiveReport('pdf')" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-xl font-semibold flex items-center gap-1.5 cursor-pointer"><i class="fa-solid fa-file-pdf"></i> Download PDF</button>
+                <button type="button" onclick="downloadArchiveReport('json')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-xl font-semibold flex items-center gap-1.5 cursor-pointer"><i class="fa-solid fa-download"></i> Download JSON</button>
+            </div>
+            <div id="archive-modal-events" class="space-y-2 max-h-[55vh] overflow-y-auto custom-scrollbar pr-1"></div>
+        </div>
+    </div>
+
     <!-- DRAWER: DEEP INSPECTION -->
     <div id="site-drawer" style="display: none;" class="fixed inset-0 z-50 justify-end bg-slate-950/80 backdrop-blur-sm">
         <div class="w-full sm:max-w-4xl bg-[#090e18] sm:border-l border-slate-800 p-4 sm:p-6 flex flex-col justify-between shadow-2xl custom-scrollbar overflow-y-auto">
@@ -208,6 +226,9 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
+                        <button type="button" onclick="downloadSiteReport()" class="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-file-pdf text-[10px]"></i> Report
+                        </button>
                         <!-- UNIFIED DELETE BUTTON FOR SITES & DOMAINS -->
                         <button type="button" id="btn-drawer-delete" onclick="deleteCurrentDrawerEntity()" class="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer">
                             <i class="fa-solid fa-trash text-[10px]"></i> <span id="btn-drawer-delete-text">Delete</span>
@@ -299,9 +320,14 @@
                     <div>
                         <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-2">
                             <h4 class="text-xs font-bold uppercase text-white">Discovered DNS Zone Records</h4>
-                            <button type="button" onclick="exportDNSZoneFile()" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5 self-start sm:self-auto cursor-pointer">
-                                <i class="fa-solid fa-download"></i> Backup DNS (.json)
-                            </button>
+                            <div class="flex gap-2 self-start sm:self-auto">
+                                <button type="button" onclick="rescanActiveDNS()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
+                                    <i class="fa-solid fa-rotate"></i> Rescan
+                                </button>
+                                <button type="button" onclick="exportDNSZoneFile()" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
+                                    <i class="fa-solid fa-download"></i> Backup DNS (.json)
+                                </button>
+                            </div>
                         </div>
 
                         <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-x-auto custom-scrollbar text-xs">
@@ -464,10 +490,60 @@
         window.eventLabel = function(event) {
             var details = event && event.details;
             if (details && typeof details === 'object') {
+                if (details.cause_label) return details.cause_label;
                 if (details.diagnostic) return details.diagnostic;
                 if (details.error) return details.error;
             }
             return event && event.type === 'RECOVERY' ? 'Service restored.' : 'Review event evidence.';
+        };
+
+        window.formatEventTitle = function(event) {
+            var raw = String(event && (event.event || event.type) || 'EVENT').replace(/^OUTAGE_DETECTED_/, '');
+            var titles = {
+                'SITE_OUTAGE_DETECTED': 'Website unavailable',
+                'DNS_CHANGE_DETECTED': 'DNS records changed',
+                'SERVICE_RESTORED': 'Website restored',
+                'SERVICE_RESTORED_200_OK': 'Website restored',
+                'FAILED_LOGIN_ATTEMPT': 'Failed login attempt',
+                'FILE_CHANGE_DETECTED': 'Verified file change',
+                'ADMIN_LOGIN_SUCCESS': 'Administrator login'
+            };
+            if (titles[raw]) return titles[raw];
+            var causeTitles = {
+                DNS_CHANGE_CORRELATED: 'DNS changed before outage',
+                DNS_RESOLUTION_FAILURE: 'DNS resolution failed',
+                DNS_CHANGE_AND_SERVER_UNREACHABLE: 'DNS changed and server unreachable',
+                SERVER_UNREACHABLE: 'Server unreachable',
+                VERIFIED_FILE_CHANGE: 'Verified file change',
+                WORDPRESS_RUNTIME_FAILURE: 'Website application error',
+                HTTP_SERVER_ERROR: 'Web server error',
+                HTTP_REQUEST_FAILURE: 'HTTP request failed'
+            };
+            return causeTitles[raw] || raw.replace(/_/g, ' ').toLowerCase().replace(/(^|\s)\S/g, function(letter) { return letter.toUpperCase(); });
+        };
+
+        window.formatDetails = function(details) {
+            if (details === null || details === undefined) return '';
+            if (typeof details !== 'object') return String(details);
+            var parts = [];
+            Object.keys(details).forEach(function(key) {
+                var value = details[key];
+                if (key === 'server_reachability' && value && typeof value === 'object') {
+                    value = (value.state || 'unknown') + (value.addresses && value.addresses.length ? ' [' + value.addresses.join(', ') + ']' : '');
+                } else if (key === 'agent_health' && value && typeof value === 'object') {
+                    value = value.reachable ? 'Sentinel agent responded' : (value.reason || 'Sentinel agent unavailable');
+                } else if (Array.isArray(value)) {
+                    value = value.map(function(item) {
+                        return typeof item === 'object'
+                            ? [item.type, item.host, item.value].filter(Boolean).join(' ')
+                            : String(item);
+                    }).join(', ');
+                } else if (typeof value === 'object') {
+                    value = JSON.stringify(value);
+                }
+                parts.push(key.replace(/_/g, ' ') + ': ' + value);
+            });
+            return parts.join(' · ');
         };
 
         window.setTxt = function(id, val) {
@@ -761,31 +837,43 @@
             }
         };
 
-        window.toggleArchivedEvents = function() {
-            var container = document.getElementById('archived-events-container');
-            if (!container) return;
-            container.style.display = container.style.display === 'none' ? 'block' : 'none';
+        window.openArchiveModal = function() {
+            var modal = document.getElementById('archive-modal');
+            if (modal) modal.style.display = 'flex';
             window.renderArchivedEvents();
         };
 
+        window.closeArchiveModal = function() {
+            var modal = document.getElementById('archive-modal');
+            if (modal) modal.style.display = 'none';
+        };
+
+        window.toggleArchivedEvents = window.openArchiveModal;
+
         window.renderArchivedEvents = function() {
-            var container = document.getElementById('archived-events-container');
-            if (!container) return;
+            var containers = [
+                document.getElementById('archived-events-container'),
+                document.getElementById('archive-modal-events')
+            ].filter(Boolean);
+            if (!containers.length) return;
             var archived = window.globalData.archived_events || [];
             if (!archived.length) {
-                container.innerHTML = '<div class="text-slate-500 text-[11px] p-2 text-center">No acknowledged alerts.</div>';
+                containers.forEach(function(container) {
+                    container.innerHTML = '<div class="text-slate-500 text-[11px] p-2 text-center">No acknowledged alerts.</div>';
+                });
                 return;
             }
             var html = '';
-            for (var i = 0; i < Math.min(archived.length, 25); i++) {
+            for (var i = 0; i < archived.length; i++) {
                 var event = archived[i];
                 html += '<div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[11px] flex items-center justify-between gap-2">' +
-                    '<div class="min-w-0"><div class="font-bold text-slate-300 truncate">' + window.escapeHtml(event.event || 'ARCHIVED_EVENT') + '</div>' +
-                    '<div class="text-slate-500 text-[10px] truncate">' + window.escapeHtml(event.site_name || event.domain || '') + ' · ' + window.escapeHtml(window.eventLabel(event)) + '</div></div>' +
+                    '<div class="min-w-0"><div class="font-bold text-slate-300 truncate">' + window.escapeHtml(window.formatEventTitle(event)) + '</div>' +
+                    '<div class="text-slate-500 text-[10px] truncate">' + window.escapeHtml(event.site_name || event.domain || '') + ' · ' + window.escapeHtml(window.eventLabel(event)) + '</div>' +
+                    '<div class="text-[10px] text-slate-600">' + window.escapeHtml(event.acknowledged_at || event.timestamp || '') + '</div></div>' +
                     '<button type="button" onclick="restoreArchivedEvent(\'' + window.escapeHtml(event.id) + '\')" class="shrink-0 text-[10px] text-indigo-300 hover:text-white font-semibold cursor-pointer">Restore</button>' +
                     '</div>';
             }
-            container.innerHTML = html;
+            containers.forEach(function(container) { container.innerHTML = html; });
         };
 
         window.renderEvents = function(events) {
@@ -814,7 +902,7 @@
                     '<div class="min-w-0">' +
                         '<div class="font-bold ' + color + ' flex items-center gap-1.5">' +
                             (isOutage ? '<i class="fa-solid fa-triangle-exclamation text-[10px] animate-pulse"></i> ' : (isRecovery ? '<i class="fa-solid fa-circle-check text-[10px]"></i> ' : '')) +
-                            window.escapeHtml(e.event || 'INCIDENT_LOG') +
+                            window.escapeHtml(window.formatEventTitle(e)) +
                         '</div>' +
                         '<div class="text-slate-500 text-[10px] truncate">' + window.escapeHtml(cleanSiteName) + ' · ' + window.escapeHtml(window.eventLabel(e)) + '</div>' +
                     '</div>' +
@@ -1066,19 +1154,11 @@
                         var isOutage = se.type === 'OUTAGE';
                         var seColor = isOutage ? 'text-rose-400' : (se.type === 'RECOVERY' ? 'text-emerald-400' : (se.type === 'AUDIT' ? 'text-indigo-400' : 'text-rose-400'));
                         
-                        var detailsStr = '';
-                        if (se.details && typeof se.details === 'object') {
-                            var dKeys = Object.keys(se.details);
-                            for (var dk = 0; dk < dKeys.length; dk++) {
-                                detailsStr += dKeys[dk] + ': ' + se.details[dKeys[dk]] + ' · ';
-                            }
-                        } else {
-                            detailsStr = String(se.details || '');
-                        }
+                        var detailsStr = window.formatDetails(se.details);
 
                         sEventsHtml += '<div class="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs space-y-1">' +
                             '<div class="flex justify-between items-center font-bold ' + seColor + '">' +
-                                '<span>' + (isOutage ? '<i class="fa-solid fa-triangle-exclamation mr-1 animate-pulse"></i> ' : '') + window.escapeHtml(se.event) + '</span>' +
+                                '<span>' + (isOutage ? '<i class="fa-solid fa-triangle-exclamation mr-1 animate-pulse"></i> ' : '') + window.escapeHtml(window.formatEventTitle(se)) + '</span>' +
                                 '<span class="text-[10px] text-slate-500 mono">' + new Date(se.timestamp).toLocaleTimeString() + '</span>' +
                             '</div>' +
                             '<div class="text-[11px] text-slate-300">' + window.escapeHtml(detailsStr) + '</div>' +
@@ -1121,6 +1201,66 @@
             } finally {
                 btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Scan & Add';
                 btn.disabled = false;
+            }
+        };
+
+        window.downloadFile = async function(url, filename) {
+            try {
+                var response = await fetch(url);
+                if (!response.ok) {
+                    var failure = await response.json().catch(function() { return {}; });
+                    throw new Error(failure.error || 'Download failed');
+                }
+                var blob = await response.blob();
+                var link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                setTimeout(function() {
+                    URL.revokeObjectURL(link.href);
+                    link.remove();
+                }, 1000);
+            } catch (error) {
+                alert('Could not download report: ' + error.message);
+            }
+        };
+
+        window.downloadSiteReport = function() {
+            if (!window.activeSiteUrl) return alert('Open a site or domain first.');
+            var clean = window.normalizeDomain(window.activeSiteUrl);
+            window.downloadFile('/api/report?domain=' + encodeURIComponent(clean) + '&hours=24&format=pdf', 'flotek-sentinel-' + clean + '-report.pdf');
+        };
+
+        window.downloadArchiveReport = function(format) {
+            var extension = format === 'json' ? 'json' : 'pdf';
+            window.downloadFile('/api/report?scope=archive&format=' + extension, 'flotek-sentinel-archive.' + extension);
+        };
+
+        window.rescanActiveDNS = async function() {
+            if (!window.activeSiteUrl) return alert('Open a site or domain first.');
+            try {
+                var response = await fetch('/api/rescan-dns', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain: window.activeSiteUrl })
+                });
+                var result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.error || 'DNS scan failed');
+                var clean = window.normalizeDomain(window.activeSiteUrl);
+                var lists = [window.globalData.sites || [], window.globalData.domains || []];
+                lists.forEach(function(list) {
+                    list.forEach(function(entity) {
+                        if (window.normalizeDomain(entity.domain || entity.url) === clean) {
+                            entity.dns_records = result.dns_records || [];
+                            entity.dns_scan = result.dns_scan || null;
+                        }
+                    });
+                });
+                window.renderAll();
+                alert('DNS rescan complete: ' + (result.dns_records || []).length + ' records found.');
+            } catch (error) {
+                alert('DNS rescan failed: ' + error.message);
             }
         };
 
