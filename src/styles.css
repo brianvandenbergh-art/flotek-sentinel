@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --color-bg: #f6f3f7;
+  --color-surface: #ffffff;
+  --color-ink: #4c1c4c;
+  --color-muted: #6e5a70;
+  --color-line: #e6dce8;
+  --color-plum: #8a3c8f;
+  --color-plum-deep: #4c1c4c;
+  --color-plum-soft: #f4e9f5;
+  --color-orange: #ee792c;
+  --color-orange-deep: #c45e16;
+  --color-orange-soft: #fff1e6;
+  --color-teal: #0f7a62;
+  --color-teal-bright: #5bbb9e;
+  --color-teal-soft: #e5f6f0;
+  --color-down: #b4234a;
+  --color-down-soft: #fde8ee;
+  --color-warn: #8a5a12;
+  --color-warn-soft: #fff6e8;
+  --radius-card: 1.25rem;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-ink);
+    text-wrap: pretty;
+  }
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-plum);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
