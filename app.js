@@ -285,6 +285,7 @@ async function wpCall(mon, path, method, body) {
 async function loadWp(mon) {
   mon.wpError = "";
   mon.wp = await wpCall(mon, "health", "GET");
+  if (mon.wp?.visits) mon.visits = mon.wp.visits;
   save();
   openDrawer(mon.id);
 }
@@ -502,6 +503,7 @@ function seoPane(m) {
   const steps = Array.isArray(m.journey?.steps) ? m.journey.steps : [];
   const journey = steps.map((s) => `<tr><td>${esc(s.path)}</td><td>${s.status}</td><td>${s.ok ? "Ok" : "Failed"}</td></tr>`).join("");
   return `<button class="btn plum small" id="runSeo" type="button">Run SEO and speed audit</button>
+    <p>Page views and visitors are on the Analytics tab, not in this speed score.</p>
     ${latest ? `<div class="stats">${stat("Speed", latest.score)}${stat("SEO", latest.seo)}${stat("LCP", latest.lcp?.value || "—")}${stat("CLS", latest.cls?.value || "—")}</div>` : ""}
     <h3>History</h3><table><tr><th>When</th><th>Speed</th><th>SEO</th><th>LCP</th><th>CLS</th><th>INP</th></tr>${history || "<tr><td colspan='6'>Not run yet.</td></tr>"}</table>
     <h3>SEO checks</h3><table><tr><th>Check</th><th>Score</th><th>Detail</th></tr>${audits || "<tr><td colspan='3'>Not run yet.</td></tr>"}</table>
@@ -546,7 +548,18 @@ function analytics(m) {
   const times = hist.map((h) => h.ms).filter((n) => n != null);
   const avg = times.length ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) + " ms" : "—";
   const rows = hist.slice().reverse().slice(0, 20).map((h) => `<tr><td>${esc(new Date(h.at).toLocaleString())}</td><td>${h.up ? "Up" : "Down"}</td><td>${h.ms ?? "—"}</td></tr>`).join("");
-  return `<div class="stats">${stat("Checks stored", hist.length)}${stat("Uptime", uptime)}${stat("Average", avg)}${stat("Open incidents", state.incidents.filter((i) => i.host === m.host).length)}</div><p>This is Sentinel's own record of checks for this website. Visitor numbers from Google or Jetpack stay in those products.</p><table><tr><th>When</th><th>Result</th><th>Response</th></tr>${rows || "<tr><td colspan='3'>No checks yet.</td></tr>"}</table>`;
+  const visits = m.visits || m.wp?.visits || null;
+  const days = (visits?.days || []).slice().reverse().map((d) => `<tr><td>${esc(d.day)}</td><td>${d.views}</td><td>${d.visitors}</td></tr>`).join("");
+  const pages = (visits?.pages || []).map((p) => `<tr><td>${esc(p.path)}</td><td>${p.views}</td></tr>`).join("");
+  const jetpack = (visits?.jetpack || []).map((d) => `<tr><td>${esc(d.day)}</td><td>${d.views}</td></tr>`).join("");
+  const refresh = m.secret ? `<button class="btn plum small" id="loadVisits" type="button">Refresh page views</button>` : `<p>Save the agent secret on the WordPress tab. Page views are read from the website, not from this browser.</p>`;
+  return `${refresh}
+    <div class="stats">${stat("Page views", visits ? visits.views : "—")}${stat("Visitors", visits ? visits.visitors : "—")}${stat("Uptime", uptime)}${stat("Average response", avg)}</div>
+    <p>${esc(visits?.note || "Page views appear here after the new Sentinel file is on the website and someone opens a public page.")}</p>
+    <h3>Daily visits</h3><table><tr><th>Day</th><th>Page views</th><th>Visitors</th></tr>${days || "<tr><td colspan='3'>No visits recorded yet.</td></tr>"}</table>
+    <h3>Top pages</h3><table><tr><th>Page</th><th>Views</th></tr>${pages || "<tr><td colspan='2'>No pages recorded yet.</td></tr>"}</table>
+    ${jetpack ? `<h3>Jetpack views</h3><table><tr><th>Day</th><th>Views</th></tr>${jetpack}</table>` : ""}
+    <h3>Uptime checks</h3><table><tr><th>When</th><th>Result</th><th>Response</th></tr>${rows || "<tr><td colspan='3'>No checks yet.</td></tr>"}</table>`;
 }
 function wordpress(m) {
   const secret = `<label for="secret">Agent secret</label><input id="secret" value="${esc(m.secret || "")}" placeholder="Same secret you pasted in the PHP file" /><button class="btn plum small" id="saveSecret" type="button" style="margin-top:10px">Save secret</button>`;
@@ -554,12 +567,12 @@ function wordpress(m) {
   if (!m.wp) return intro + `<div style="height:10px"></div><button class="btn ghost small" id="loadWp" type="button">Load WordPress</button><p class="err">${esc(m.wpError || "")}</p>`;
   const w = m.wp;
   const users = (w.users || []).map((u) => `<tr><td>${esc(u.user_login)}</td><td>${esc(u.user_email)}</td><td>${esc((u.roles || []).join(", "))}</td><td class="act">${canEditMon(m) ? `<button class="btn ghost small" data-wpdel="${u.id}" type="button">Remove</button>` : ""}</td></tr>`).join("");
-  const plugins = (w.plugins || []).map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.version)}${p.has_update ? " → " + esc(p.new_version) : ""}</td><td>${p.active ? "Active" : "Off"}</td><td class="act">${canEditMon(m) ? `<button class="btn ghost small" data-disable="${esc(p.file)}" type="button">Disable</button>` : ""}</td></tr>`).join("");
+  const plugins = (w.plugins || []).map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.version)}${p.has_update ? " → " + esc(p.new_version) : ""}</td><td>${p.active ? "Active" : "Off"}</td><td class="act">${p.has_update && canEditMon(m) ? `<button class="btn plum small" data-update="${esc(p.file)}" type="button">Update</button> ` : ""}${canEditMon(m) ? `<button class="btn ghost small" data-disable="${esc(p.file)}" type="button">Disable</button>` : ""}</td></tr>`).join("");
   const backups = (w.backups || []).map((b) => `<tr><td>${esc(b.filename)}</td><td>${esc(b.filesize)}</td><td>${esc(b.location || "wp-content/flotek-backups")}</td><td class="act">${canEditMon(m) ? `<button class="btn ghost small" data-restore="${esc(b.filename)}" type="button">Restore</button>` : ""}</td></tr>`).join("");
   const forms = canEditMon(m) ? `
     <h3>Plugin updates and backups</h3>
-    <p>Update plugins installs the available updates on this website now. Disable turns one plugin off. Use that if an update breaks the site.</p>
-    <div class="row"><button class="btn plum small" id="updatePlugins" type="button">Update plugins</button><button class="btn ghost small" id="makeBackup" type="button">Back up database</button><button class="btn ghost small" id="fullBackup" type="button">Back up files and database</button><button class="btn ghost small" id="recovery" type="button">${m.recovery ? "Recovery mode is on" : "Turn on recovery mode"}</button></div>
+    <p>Each plugin with an update has its own Update button. Only that plugin is changed. Disable turns one plugin off if the new version breaks the site.</p>
+    <div class="row"><button class="btn ghost small" id="makeBackup" type="button">Back up database</button><button class="btn ghost small" id="fullBackup" type="button">Back up files and database</button><button class="btn ghost small" id="recovery" type="button">${m.recovery ? "Recovery mode is on" : "Turn on recovery mode"}</button></div>
     <p>Backups are saved on the website in <b>wp-content/flotek-backups/</b>. Restore puts that copy back. Recovery mode switches normal plugins off for Sentinel's request, so a broken plugin cannot stop the restore. It cannot repair wp-config.php or the Sentinel file itself.</p>
     <label>Upload a .sql or .zip backup</label>
     <input id="backupFile" type="file" accept=".sql,.zip,application/zip,application/sql" />
@@ -595,12 +608,13 @@ function bindPane(m) {
   if ($("loadWp")) $("loadWp").onclick = () => go(() => loadWp(m));
   if ($("saveSettings")) $("saveSettings").onclick = () => go(async () => { await wpCall(m, "update-settings", "POST", { site_name: $("siteName").value, tagline: $("tagline").value }); await loadWp(m); });
   if ($("addWpUser")) $("addWpUser").onclick = () => go(async () => { await wpCall(m, "create-user", "POST", { username: $("wu").value, email: $("we").value, password: $("wpw").value, role: $("wr").value }); await loadWp(m); });
-  if ($("updatePlugins")) $("updatePlugins").onclick = () => { if (confirm("Install the available plugin updates on this website now?")) go(async () => { await wpCall(m, "update-plugins", "POST"); await loadWp(m); }); };
+  if ($("loadVisits")) $("loadVisits").onclick = () => go(async () => { m.visits = await wpCall(m, "visits", "GET"); save(); openDrawer(m.id); });
   if ($("makeBackup")) $("makeBackup").onclick = () => go(async () => { await wpCall(m, "create-backup", "POST"); m.wpError = "Database backup saved in wp-content/flotek-backups/."; await loadWp(m); });
   if ($("recovery")) $("recovery").onclick = () => { m.recovery = !m.recovery; save(); m.wpError = m.recovery ? "Recovery mode is on. Plugin loads are skipped for Sentinel requests." : "Recovery mode is off."; openDrawer(m.id); };
   if ($("uploadBackup")) $("uploadBackup").onclick = () => go(() => uploadBackup(m));
   $("pane").querySelectorAll("[data-wpdel]").forEach((b) => { b.onclick = () => { if (confirm("Delete this WordPress user?")) go(async () => { await wpCall(m, "delete-user", "POST", { user_id: Number(b.dataset.wpdel) }); await loadWp(m); }); }; });
   $("pane").querySelectorAll("[data-disable]").forEach((b) => { b.onclick = () => go(async () => { await wpCall(m, "disable-plugin", "POST", { plugin: b.dataset.disable }); await loadWp(m); }); });
+  $("pane").querySelectorAll("[data-update]").forEach((b) => { b.onclick = () => { const name = b.closest("tr") ? b.closest("tr").children[0].textContent : "this plugin"; if (confirm("Update only " + name + "? The other plugins stay as they are.")) go(async () => { const result = await wpCall(m, "update-plugin", "POST", { plugin: b.dataset.update }); m.wpError = result.detail || "Plugin updated."; await loadWp(m); }); }; });
   $("pane").querySelectorAll("[data-restore]").forEach((b) => { b.onclick = () => { if (confirm("Restore this backup over the live site? Turn recovery mode on first if a plugin is causing a fatal error.")) go(async () => { const result = await wpCall(m, "restore-backup", "POST", { filename: b.dataset.restore }); m.wpError = result.detail || "Restore finished."; await loadWp(m); }); }; });
   if ($("relay")) $("relay").onclick = () => go(async () => { m.relay = await wpCall(m, "relay", "GET"); syncIncidents(m); save(); openDrawer(m.id); });
   if ($("runSeo")) $("runSeo").onclick = () => go(() => runSeo(m));
