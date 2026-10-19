@@ -16,6 +16,20 @@ if (!defined('FLOTEK_SENTINEL_SECRET')) {
     define('FLOTEK_SENTINEL_SECRET', 'REPLACE_WITH_SECRET_FROM_SENTINEL_SETTINGS');
 }
 
+add_action('init', function () {
+    $uri = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '';
+    if (strpos($uri, 'flotek/v1') === false) {
+        return;
+    }
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Headers: X-Hub-Secret, Content-Type, X-Flotek-Disable');
+    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        status_header(204);
+        exit;
+    }
+}, 0);
+
 /**
  * A faulty plugin can fatal before REST runs. This filter runs first and can
  * skip that plugin for the current request when Sentinel sends X-Flotek-Disable.
@@ -51,6 +65,7 @@ add_action('rest_api_init', function () {
         array('create-backup', 'POST', 'flotek_sentinel_create_backup'),
         array('rollback', 'POST', 'flotek_sentinel_rollback'),
         array('disable-plugin', 'POST', 'flotek_sentinel_disable_plugin'),
+        array('update-settings', 'POST', 'flotek_sentinel_update_settings'),
     );
     foreach ($routes as $route) {
         register_rest_route('flotek/v1', '/' . $route[0], array(
@@ -117,6 +132,7 @@ function flotek_sentinel_health() {
     return array(
         'success' => true,
         'site_name' => get_bloginfo('name'),
+        'tagline' => get_bloginfo('description'),
         'site_url' => home_url(),
         'wp_version' => get_bloginfo('version'),
         'php_version' => PHP_VERSION,
@@ -272,6 +288,22 @@ function flotek_sentinel_rollback($request) {
         $wpdb->query($statement);
     }
     return array('success' => true, 'filename' => $filename);
+}
+
+function flotek_sentinel_update_settings($request) {
+    $name = sanitize_text_field((string) $request->get_param('site_name'));
+    $tagline = sanitize_text_field((string) $request->get_param('tagline'));
+    if ($name !== '') {
+        update_option('blogname', $name);
+    }
+    if ($tagline !== '') {
+        update_option('blogdescription', $tagline);
+    }
+    return array(
+        'success' => true,
+        'site_name' => get_bloginfo('name'),
+        'tagline' => get_bloginfo('description'),
+    );
 }
 
 function flotek_sentinel_disable_plugin($request) {
