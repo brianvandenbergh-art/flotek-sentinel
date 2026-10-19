@@ -203,11 +203,11 @@ async function registration(domain) {
   const name = registrar?.vcardArray?.[1]?.find((v) => v[0] === "fn")?.[3] || "";
   return {
     name: data.ldhName || domain,
-    status: (data.status || []).join(", ") || "\u2014",
+    status: (data.status || []).join(", ") || "—",
     registered: date("registration"),
     changed: date("last changed"),
     expires: date("expiration"),
-    registrar: name || "\u2014",
+    registrar: name || "—",
     nameservers: (data.nameservers || []).map((n) => n.ldhName).filter(Boolean)
   };
 }
@@ -262,16 +262,16 @@ function render() {
   $("login").classList.toggle("hidden", !!state.user);
   $("app").classList.toggle("hidden", !state.user);
   if (!state.user) return;
-  $("who").textContent = state.user.name + " \u00b7 " + state.user.role;
+  $("who").textContent = state.user.name + " · " + state.user.role;
   $("teamNav").classList.toggle("hidden", state.user.role !== "admin");
   const mons = state.monitors;
   const up = mons.filter((m) => m.result?.reach?.up).length;
   const down = mons.filter((m) => m.result?.reach && !m.result.reach.up).length;
   const times = mons.map((m) => m.result?.reach?.ms).filter((n) => n != null);
-  const avg = times.length ? Math.round(times.reduce((a,b) => a+b, 0) / times.length) : "\u2014";
+  const avg = times.length ? Math.round(times.reduce((a,b) => a+b, 0) / times.length) : "—";
   const expiring = mons.filter((m) => m.result?.cert && m.result.cert.days < 30).length;
   $("stats").innerHTML = [
-    ["Monitors", mons.length], ["Reachable", up], ["Unreachable", down], ["Avg response", avg === "\u2014" ? "\u2014" : avg + " ms"]
+    ["Monitors", mons.length], ["Reachable", up], ["Unreachable", down], ["Avg response", avg === "—" ? "—" : avg + " ms"]
   ].map(([k,v]) => `<div class="stat"><span>${k}</span><b>${v}</b></div>`).join("") + `<div class="stat"><span>Certificates under 30 days</span><b>${expiring}</b></div>`;
   $("stats").style.gridTemplateColumns = "repeat(5,1fr)";
   $("addForm").classList.toggle("hidden", !canEdit());
@@ -279,9 +279,9 @@ function render() {
     const reach = m.result?.reach;
     const pill = m.checking ? `<span class="pill">Checking</span>` : !m.result ? `<span class="pill">Not checked</span>` : reach ? `<span class="pill ${reach.up ? "up" : "down"}">${reach.up ? "Reachable" : "Unreachable"}</span>` : `<span class="pill up">Domain</span>`;
     const when = m.result ? new Date(m.result.at).toLocaleString() : "Waiting for the first check";
-    const extra = m.result?.cert ? ` \u00b7 Certificate ${m.result.cert.days} days` : "";
-    return `<button class="mon" data-id="${m.id}"><div><strong>${m.host}</strong><div class="meta">${m.kind} \u00b7 ${when}${extra}</div>${m.error ? `<div class="err">${m.error}</div>` : ""}</div><div>${pill}</div></button>`;
-  }).join("") : `<div class="card" style="width:100%"><p>No monitors yet. Add a website or press \u201cCheck flotek.io\u201d.</p></div>`;
+    const extra = m.result?.cert ? ` · Certificate ${m.result.cert.days} days` : "";
+    return `<button class="mon" data-id="${m.id}"><div><strong>${m.host}</strong><div class="meta">${m.kind} · ${when}${extra}</div>${m.error ? `<div class="err">${m.error}</div>` : ""}</div><div>${pill}</div></button>`;
+  }).join("") : `<div class="card" style="width:100%"><p>No monitors yet. Add a website or press “Check flotek.io”.</p></div>`;
   const rows = state.users.map((u) => `<tr><td>${u.name}</td><td>${u.username}</td><td>${u.role}</td><td>${u.username === "flotek" ? "" : `<button data-del="${u.username}" class="btn ghost" type="button">Remove</button>`}</td></tr>`).join("");
   $("userTable").innerHTML = `<tr><th>Name</th><th>Username</th><th>Role</th><th></th></tr>` + rows;
   $("userForm").classList.toggle("hidden", state.user.role !== "admin");
@@ -295,14 +295,14 @@ function openDrawer(id) {
   const tabs = ["reach","dns","mail","certificate","registration"].map((t) => `<button type="button" data-tab="${t}" class="${state.tab===t?"on":""}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("");
   let body = "<p>Run a check to fill this in.</p>";
   if (r && state.tab === "reach") {
-    body = r.reach ? `<p><b>${r.reach.up ? "The website answered." : "The website did not answer."}</b></p><p>Response time: ${r.reach.ms ?? "\u2014"} ms. The browser can see that the site is there. The exact status code is read by the server build.</p>` : `<p>This is a domain monitor, so there is no page to open. Use DNS and Registration.</p>`;
+    body = r.reach ? `<p><b>${r.reach.up ? "The website answered." : "The website did not answer."}</b></p><p>Response time: ${r.reach.ms ?? "—"} ms. The browser can see that the site is there. The exact status code is read by the server build.</p>` : `<p>This is a domain monitor, so there is no page to open. Use DNS and Registration.</p>`;
   }
   if (r && state.tab === "dns") {
     body = r.records.length ? `<table><tr><th>Type</th><th>Value</th></tr>${r.records.map((row) => `<tr><td>${row.type}</td><td>${escape(row.data)}</td></tr>`).join("")}</table>` : "<p>No public records were returned.</p>";
   }
   if (r && state.tab === "mail") {
     const mail = r.mail || {};
-    body = `<table><tr><th>Check</th><th>Result</th></tr><tr><td>SPF</td><td>${escape(mail.spf||"\u2014")}</td></tr><tr><td>DMARC</td><td>${escape(mail.dmarc||"\u2014")}</td></tr><tr><td>DKIM selectors</td><td>${escape(mail.dkim||"\u2014")}</td></tr><tr><td>Spamhaus</td><td>${escape(mail.blacklist||"\u2014")}</td></tr></table>`;
+    body = `<table><tr><th>Check</th><th>Result</th></tr><tr><td>SPF</td><td>${escape(mail.spf||"—")}</td></tr><tr><td>DMARC</td><td>${escape(mail.dmarc||"—")}</td></tr><tr><td>DKIM selectors</td><td>${escape(mail.dkim||"—")}</td></tr><tr><td>Spamhaus</td><td>${escape(mail.blacklist||"—")}</td></tr></table>`;
   }
   if (r && state.tab === "certificate") {
     const c = r.cert;
@@ -355,7 +355,7 @@ $("userForm").onsubmit = async (e) => {
   e.preventDefault();
   const username = $("nUser").value.trim().toLowerCase();
   const password = $("nPass").value;
-  if (!/^[a-z][a-z0-9._-]{2,31}$/.test(username)) { $("userErr").textContent = "Usernames start with a letter and use 3\u201332 letters, numbers, dots or dashes."; return; }
+  if (!/^[a-z][a-z0-9._-]{2,31}$/.test(username)) { $("userErr").textContent = "Usernames start with a letter and use 3–32 letters, numbers, dots or dashes."; return; }
   if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) { $("userErr").textContent = "Passwords need 8 characters, a letter and a number."; return; }
   if (state.users.some((u) => u.username === username)) { $("userErr").textContent = "That username is already in use."; return; }
   state.users.push({ username, name:$("nName").value.trim(), role:$("nRole").value, hash: await sha(password) });
