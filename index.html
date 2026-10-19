@@ -321,7 +321,7 @@ function openDrawer(id) {
   $("drawer").querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { state.tab = b.dataset.tab; openDrawer(m.id); });
 }
 function escape(value) {
-  return String(value).replace(/[&<>"]/g, (c) => ({ "&":"&","<":"<",">":">","\"":""" }[c]));
+  return String(value).replace(/[&<>"]/g, (c) => "&#" + c.charCodeAt(0) + ";");
 }
 
 $("loginForm").onsubmit = async (e) => {
