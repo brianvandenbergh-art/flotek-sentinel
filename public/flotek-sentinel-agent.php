@@ -64,6 +64,8 @@ add_action('rest_api_init', function () {
         array('update-plugins', 'POST', 'flotek_sentinel_update_plugins'),
         array('create-backup', 'POST', 'flotek_sentinel_create_backup'),
         array('rollback', 'POST', 'flotek_sentinel_rollback'),
+        array('restore-backup', 'POST', 'flotek_sentinel_restore_backup'),
+        array('upload-backup', 'POST', 'flotek_sentinel_upload_backup'),
         array('disable-plugin', 'POST', 'flotek_sentinel_disable_plugin'),
         array('update-settings', 'POST', 'flotek_sentinel_update_settings'),
         array('security', 'GET', 'flotek_sentinel_security'),
@@ -130,7 +132,7 @@ function flotek_sentinel_health() {
     $dir = WP_CONTENT_DIR . '/flotek-backups';
     if (is_dir($dir)) {
         foreach (scandir($dir) as $file) {
-            if (substr($file, -4) !== '.sql') {
+            if (!preg_match('/\.(sql|zip)$/i', $file)) {
                 continue;
             }
             $path = $dir . '/' . $file;
@@ -278,18 +280,9 @@ function flotek_sentinel_create_backup() {
     );
 }
 
-function flotek_sentinel_rollback($request) {
+function flotek_sentinel_run_sql($sql) {
     global $wpdb;
-    $filename = basename((string) $request->get_param('filename'));
-    if (!preg_match('/^db-[0-9]{8}-[0-9]{6}\.sql$/', $filename)) {
-        return new WP_Error('bad_request', 'That backup name is not valid', array('status' => 400));
-    }
-    $path = flotek_sentinel_backup_dir() . '/' . $filename;
-    if (!is_readable($path)) {
-        return new WP_Error('missing', 'Backup file was not found on this site', array('status' => 404));
-    }
-    $sql = file_get_contents($path);
-    if ($sql === false || strlen($sql) > 20 * 1024 * 1024) {
+    if (!is_string($sql) || $sql === '' || strlen($sql) > 20 * 1024 * 1024) {
         return new WP_Error('failed', 'Backup is missing or larger than 20 MB', array('status' => 400));
     }
     $statements = array_filter(array_map('trim', preg_split('/;\s*\n/', $sql)));
@@ -299,7 +292,114 @@ function flotek_sentinel_rollback($request) {
         }
         $wpdb->query($statement);
     }
-    return array('success' => true, 'filename' => $filename);
+    return true;
+}
+
+function flotek_sentinel_rollback($request) {
+    $filename = basename((string) $request->get_param('filename'));
+    if (!preg_match('/^(db|upload)-[0-9]{8}-[0-9]{6}\.sql$/', $filename)) {
+        return new WP_Error('bad_request', 'That backup name is not valid', array('status' => 400));
+    }
+    $path = flotek_sentinel_backup_dir() . '/' . $filename;
+    if (!is_readable($path)) {
+        return new WP_Error('missing', 'Backup file was not found on this site', array('status' => 404));
+    }
+    $ok = flotek_sentinel_run_sql((string) file_get_contents($path));
+    if (is_wp_error($ok)) {
+        return $ok;
+    }
+    return array('success' => true, 'filename' => $filename, 'detail' => 'The database was restored from ' . $filename . '. Plugin files were not changed.');
+}
+
+function flotek_sentinel_restore_backup($request) {
+    $filename = basename((string) $request->get_param('filename'));
+    if (substr($filename, -4) === '.sql') {
+        return flotek_sentinel_rollback($request);
+    }
+    if (!preg_match('/^(site|upload)-[0-9]{8}-[0-9]{6}\.zip$/', $filename)) {
+        return new WP_Error('bad_request', 'That backup name is not valid', array('status' => 400));
+    }
+    $path = flotek_sentinel_backup_dir() . '/' . $filename;
+    if (!is_readable($path)) {
+        return new WP_Error('missing', 'Backup file was not found on this site', array('status' => 404));
+    }
+    if (!class_exists('ZipArchive')) {
+        return new WP_Error('failed', 'This server does not have ZipArchive', array('status' => 500));
+    }
+    $zip = new ZipArchive();
+    if ($zip->open($path) !== true) {
+        return new WP_Error('failed', 'Could not open the zip', array('status' => 500));
+    }
+    $root = wp_normalize_path(WP_CONTENT_DIR);
+    $restored = 0;
+    $sql_done = false;
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $name = str_replace('\\', '/', (string) $zip->getNameIndex($i));
+        if ($name === '' || strpos($name, '..') !== false) {
+            continue;
+        }
+        if (substr($name, -4) === '.sql' && strpos($name, '/') === false) {
+            $ok = flotek_sentinel_run_sql((string) $zip->getFromIndex($i));
+            if (is_wp_error($ok)) {
+                $zip->close();
+                return $ok;
+            }
+            $sql_done = true;
+            continue;
+        }
+        if (!preg_match('#^(themes|plugins)/#', $name) || substr($name, -1) === '/') {
+            continue;
+        }
+        if (strpos($name, 'flotek-sentinel-agent.php') !== false) {
+            continue;
+        }
+        $dest = wp_normalize_path(WP_CONTENT_DIR . '/' . $name);
+        if (strpos($dest, $root . '/') !== 0) {
+            continue;
+        }
+        wp_mkdir_p(dirname($dest));
+        $bytes = $zip->getFromIndex($i);
+        if ($bytes === false) {
+            continue;
+        }
+        file_put_contents($dest, $bytes);
+        $restored++;
+    }
+    $zip->close();
+    return array(
+        'success' => true,
+        'detail' => 'Restored ' . $restored . ' plugin and theme files' . ($sql_done ? ' and the database' : '') . ' from ' . $filename . '. The Sentinel file was left in place.',
+    );
+}
+
+function flotek_sentinel_upload_backup($request) {
+    $original = strtolower(basename((string) $request->get_param('filename')));
+    $ext = '';
+    if (substr($original, -4) === '.zip') {
+        $ext = 'zip';
+    } elseif (substr($original, -4) === '.sql') {
+        $ext = 'sql';
+    }
+    if ($ext === '') {
+        return new WP_Error('bad_request', 'Upload a .sql or .zip file', array('status' => 400));
+    }
+    $bytes = base64_decode((string) $request->get_param('content'), true);
+    if ($bytes === false || strlen($bytes) < 32 || strlen($bytes) > 8 * 1024 * 1024) {
+        return new WP_Error('bad_request', 'The file must be between 32 bytes and 8 MB', array('status' => 400));
+    }
+    if ($ext === 'zip' && substr($bytes, 0, 2) !== 'PK') {
+        return new WP_Error('bad_request', 'That is not a zip file', array('status' => 400));
+    }
+    $filename = 'upload-' . gmdate('Ymd-His') . '.' . $ext;
+    $path = flotek_sentinel_backup_dir() . '/' . $filename;
+    if (file_put_contents($path, $bytes) === false) {
+        return new WP_Error('failed', 'Could not store the upload', array('status' => 500));
+    }
+    return array(
+        'success' => true,
+        'filename' => $filename,
+        'detail' => 'Stored as ' . $filename . ' in wp-content/flotek-backups/. Press Restore on that row to put it back.',
+    );
 }
 
 function flotek_sentinel_update_settings($request) {
