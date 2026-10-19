@@ -27,9 +27,18 @@ function hostOf(value) {
   if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(raw)) throw new Error("Enter a name like flotek.io");
   return raw;
 }
-function canEdit() { return state.user && state.user.role !== "viewer"; }
-function websites() { return state.monitors.filter((m) => m.kind === "website"); }
-function domains() { return state.monitors.filter((m) => m.kind === "domain"); }
+function canEdit() { return state.user && state.user.role === "admin"; }
+function allowed(mon) {
+  if (!state.user) return false;
+  if (state.user.role === "admin") return true;
+  return (state.user.scope || []).includes(mon.kind + ":" + mon.host);
+}
+function canEditMon(mon) {
+  if (!state.user || state.user.role === "viewer") return false;
+  return state.user.role === "admin" || allowed(mon);
+}
+function websites() { return state.monitors.filter((m) => m.kind === "website" && allowed(m)); }
+function domains() { return state.monitors.filter((m) => m.kind === "domain" && allowed(m)); }
 
 async function dns(name, type) {
   const res = await fetch("https://dns.google/resolve?name=" + encodeURIComponent(name) + "&type=" + type);
@@ -46,19 +55,18 @@ async function reach(url) {
   }
 }
 async function certificate(host) {
-  const res = await fetch("https://api.certspotter.com/v1/issuances?domain=" + encodeURIComponent(host) + "&include_subdomains=false&expand=issuer");
-  if (!res.ok) return null;
+  const res = await fetch("https://api.certspotter.com/v1/issuances?domain=" + encodeURIComponent(host) + "&include_subdomains=true&expand=issuer&expand=dns_names");
+  if (!res.ok) return [];
   const list = await res.json();
-  if (!Array.isArray(list) || !list.length) return null;
-  list.sort((a, b) => new Date(b.not_after) - new Date(a.not_after));
-  const cert = list[0];
-  return {
+  if (!Array.isArray(list)) return [];
+  return list.map((cert) => ({
     issuer: cert.issuer?.friendly_name || cert.issuer?.name || "Unknown",
     from: cert.not_before,
     until: cert.not_after,
     days: Math.round((new Date(cert.not_after) - Date.now()) / 86400000),
-    revoked: !!cert.revoked
-  };
+    revoked: !!cert.revoked,
+    names: (cert.dns_names || []).slice(0, 6).join(", ")
+  })).sort((a, b) => new Date(b.from) - new Date(a.from));
 }
 async function registration(domain) {
   const boot = await fetch("https://data.iana.org/rdap/dns.json").then((r) => r.json());
@@ -95,19 +103,41 @@ async function mail(host, addresses) {
     const rows = await dns(sel + "._domainkey." + host, "TXT");
     if (rows.length) dkim.push(sel);
   }
-  let listed = "Not checked";
+  let listed = [];
   const ip = (addresses || []).find((d) => /^\d+\.\d+\.\d+\.\d+$/.test(d));
   if (ip) {
-    const rev = ip.split(".").reverse().join(".") + ".zen.spamhaus.org";
-    const bl = await dns(rev, "A");
-    listed = bl.length ? "Listed" : "Not listed";
+    const zones = [["Spamhaus", "zen.spamhaus.org"], ["Barracuda", "b.barracudacentral.org"], ["SORBS", "dnsbl.sorbs.net"]];
+    for (const zone of zones) {
+      const rev = ip.split(".").reverse().join(".") + "." + zone[1];
+      const bl = await dns(rev, "A");
+      listed.push(zone[0] + ": " + (bl.length ? "listed" : "clear"));
+    }
   }
+  const spf = txt.find((d) => d.toLowerCase().includes("v=spf1")) || "";
+  const dmarcRaw = dmarc.find((d) => d.toLowerCase().includes("v=dmarc1")) || "";
   return {
-    spf: txt.find((d) => d.includes("v=spf1")) || "Missing",
-    dmarc: dmarc.find((d) => d.includes("v=DMARC1")) || "Missing",
+    spf: spf || "Missing",
+    spfNote: spfNote(spf),
+    dmarc: dmarcRaw || "Missing",
+    dmarcNote: dmarcNote(dmarcRaw),
     dkim: dkim.length ? dkim.join(", ") : "No common selector",
-    blacklist: listed
+    blacklist: listed.length ? listed.join("; ") : "No address to test"
   };
+}
+function spfNote(spf) {
+  if (!spf) return "No SPF record was published.";
+  if (!/^v=spf1(\s|$)/i.test(spf)) return "SPF must start with v=spf1.";
+  if (/\+all\b/i.test(spf)) return "SPF ends with +all, so any server may send mail.";
+  if (!/[~\-\?]all\b/i.test(spf) && !/\ball\b/i.test(spf)) return "SPF has no all mechanism, so the policy is unfinished.";
+  return "SPF syntax is usable.";
+}
+function dmarcNote(record) {
+  if (!record) return "No DMARC record was published.";
+  if (!/^v=DMARC1\b/i.test(record)) return "DMARC must start with v=DMARC1.";
+  const policy = (record.match(/\bp=([a-z]+)/i) || [])[1] || "";
+  if (!policy) return "DMARC has no p= policy.";
+  if (policy.toLowerCase() === "none") return "DMARC policy is none, so failing mail is still delivered.";
+  return "DMARC policy is " + policy + ".";
 }
 function daysUntil(value) {
   if (!value) return null;
@@ -118,14 +148,22 @@ function problems(mon) {
   const r = mon.result;
   if (!r) return [];
   const list = [];
-  if (mon.kind === "website" && r.reach && !r.reach.up) list.push({ code: "down", message: "Website did not answer" });
-  if (r.cert?.revoked) list.push({ code: "cert-revoked", message: "Certificate is revoked" });
-  else if (r.cert && r.cert.days < 30) list.push({ code: "cert-soon", message: "Certificate expires in " + r.cert.days + " days" });
-  if (r.mail?.spf === "Missing") list.push({ code: "spf", message: "SPF record is missing" });
-  if (r.mail?.dmarc === "Missing") list.push({ code: "dmarc", message: "DMARC record is missing" });
-  if (r.mail?.blacklist === "Listed") list.push({ code: "blacklist", message: "Address is listed on Spamhaus" });
+  if (mon.kind === "website" && r.reach && !r.reach.up) list.push({ code: "down", message: mon.host + " did not answer on https://" + mon.host + "/. The check could not open the homepage." });
+  if (r.cert?.revoked) list.push({ code: "cert-revoked", message: "Certificate for " + mon.host + " is revoked. Issuer " + r.cert.issuer + "." });
+  else if (r.cert && r.cert.days < 30) list.push({ code: "cert-soon", message: "Certificate for " + mon.host + " expires on " + r.cert.until + " (" + r.cert.days + " days)." });
+  if (r.mail?.spf === "Missing") list.push({ code: "spf", message: mon.host + ": " + (r.mail.spfNote || "SPF record is missing.") });
+  else if (r.mail?.spfNote && /any server|unfinished|must start/.test(r.mail.spfNote)) list.push({ code: "spf-bad", message: mon.host + ": " + r.mail.spfNote });
+  if (r.mail?.dmarc === "Missing") list.push({ code: "dmarc", message: mon.host + ": " + (r.mail.dmarcNote || "DMARC record is missing.") });
+  if ((r.mail?.blacklist || "").includes("listed")) list.push({ code: "blacklist", message: mon.host + " blacklist: " + r.mail.blacklist });
   const left = daysUntil(r.rdap?.expires);
-  if (left != null && left < 30) list.push({ code: "domain-soon", message: "Domain expires in " + left + " days" });
+  if (left != null && left < 30) list.push({ code: "domain-soon", message: mon.host + " registration expires on " + r.rdap.expires + " (" + left + " days)." });
+  (mon.dnsChanges || []).forEach((change) => list.push({ code: "dns-" + change.type, message: mon.host + " " + change.type + " changed. Was: " + (change.old || "empty") + ". Now: " + (change.now || "empty") + "." }));
+  (mon.security?.files?.changes || []).forEach((change) => list.push({ code: "file-" + change.file, message: mon.host + ": " + change.detail }));
+  if (mon.seo?.robots_blocks_google) list.push({ code: "robots-block", message: mon.host + ": robots.txt is blocking Googlebot or all crawlers from the whole site." });
+  if (mon.seo && !mon.seo.robots_present) list.push({ code: "robots-missing", message: mon.host + ": robots.txt is not on the server." });
+  (mon.seo?.broken_links || []).slice(0, 6).forEach((link) => list.push({ code: "link-" + link.status + "-" + link.url, message: mon.host + " broken link " + link.url + " returned " + link.status + "." }));
+  (mon.security?.vulns || []).forEach((vuln) => list.push({ code: "vuln-" + vuln.slug, message: mon.host + ": " + vuln.plugin + " " + vuln.version + " is affected. " + (vuln.cve || vuln.title) }));
+  if (mon.relay?.open) list.push({ code: "relay", message: mon.relay.detail });
   return list;
 }
 function syncIncidents(mon) {
@@ -134,8 +172,9 @@ function syncIncidents(mon) {
   mon.silenced = mon.silenced || {};
   Object.keys(mon.silenced).forEach((code) => { if (!codes.has(code)) delete mon.silenced[code]; });
   found.forEach((p) => {
-    if (mon.silenced[p.code]) return;
-    if (state.incidents.some((i) => i.host === mon.host && i.kind === mon.kind && i.code === p.code)) return;
+    if (mon.silenced && mon.silenced[p.code] === p.message) return;
+    if (state.incidents.some((i) => i.host === mon.host && i.kind === mon.kind && i.code === p.code && i.message === p.message)) return;
+    state.incidents = state.incidents.filter((i) => !(i.host === mon.host && i.kind === mon.kind && i.code === p.code));
     state.incidents.unshift({ id: crypto.randomUUID(), host: mon.host, kind: mon.kind, code: p.code, message: p.message, at: new Date().toISOString() });
   });
 }
@@ -146,12 +185,27 @@ async function runCheck(mon) {
     const records = {};
     for (const type of TYPES) records[type] = await dns(mon.host, type);
     const flat = TYPES.flatMap((type) => records[type].map((data) => ({ type, data })));
+    const watch = ["A", "AAAA", "MX", "CNAME", "TXT"];
+    const snap = {};
+    watch.forEach((type) => { snap[type] = (records[type] || []).slice().sort(); });
+    mon.dnsChanges = [];
+    if (mon.dnsSnap) {
+      watch.forEach((type) => {
+        const old = (mon.dnsSnap[type] || []).join(" | ");
+        const now = snap[type].join(" | ");
+        if (old !== now) mon.dnsChanges.push({ type, old, now });
+      });
+    }
+    mon.dnsSnap = snap;
+    const certs = await certificate(mon.host).catch(() => []);
+    const currentCert = certs.reduce((best, cert) => (!best || new Date(cert.until) > new Date(best.until) ? cert : best), null);
     const site = mon.kind === "website" ? await reach("https://" + mon.host + "/") : null;
     mon.result = {
       at: new Date().toISOString(),
       records: flat,
       reach: site,
-      cert: await certificate(mon.host).catch(() => null),
+      cert: currentCert,
+      certs,
       rdap: await registration(mon.host).catch((e) => ({ error: e.message })),
       mail: await mail(mon.host, records.A).catch(() => null)
     };
@@ -190,6 +244,47 @@ async function loadWp(mon) {
   save();
   openDrawer(mon.id);
 }
+async function runSecurity(mon) {
+  mon.wpError = "";
+  mon.security = await wpCall(mon, "security", "GET");
+  syncIncidents(mon);
+  save();
+  openDrawer(mon.id);
+}
+async function runSeo(mon) {
+  mon.wpError = "";
+  const endpoint = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=" + encodeURIComponent("https://" + mon.host + "/") + "&strategy=mobile&category=performance&category=seo";
+  const res = await fetch(endpoint);
+  if (!res.ok) throw new Error("PageSpeed returned " + res.status + ". Wait a minute and run it again.");
+  const data = await res.json();
+  const audits = data.lighthouseResult?.audits || {};
+  const pick = (id) => audits[id] ? { title: audits[id].title, value: audits[id].displayValue || "", score: audits[id].score } : null;
+  const requests = (audits["network-requests"]?.details?.items || []).map((item) => ({
+    url: item.url,
+    type: item.resourceType || "",
+    size: item.transferSize || 0,
+    time: item.networkEndTime && item.networkRequestTime ? Math.round(item.networkEndTime - item.networkRequestTime) : null
+  })).sort((a, b) => b.size - a.size).slice(0, 20);
+  mon.seoAudits = ["is-crawlable", "robots-txt", "document-title", "meta-description", "http-status-code", "link-text", "crawlable-anchors", "canonical"].map(pick).filter(Boolean);
+  mon.waterfall = requests;
+  mon.vitals = mon.vitals || [];
+  mon.vitals.push({
+    at: new Date().toISOString(),
+    score: Math.round((data.lighthouseResult?.categories?.performance?.score || 0) * 100),
+    seo: Math.round((data.lighthouseResult?.categories?.seo?.score || 0) * 100),
+    lcp: pick("largest-contentful-paint"),
+    cls: pick("cumulative-layout-shift"),
+    inp: pick("interaction-to-next-paint") || pick("experimental-interaction-to-next-paint")
+  });
+  mon.vitals = mon.vitals.slice(-12);
+  if (mon.secret && mon.kind === "website") {
+    mon.seo = await wpCall(mon, "seo", "GET").catch((error) => ({ robots_present: false, robots_blocks_google: false, sitemaps: [], broken_links: [], broken_images: [], error: error.message }));
+    mon.journey = await wpCall(mon, "journey", "GET").catch(() => null);
+  }
+  syncIncidents(mon);
+  save();
+  openDrawer(mon.id);
+}
 
 function stat(label, value) {
   return `<div class="stat"><span>${label}</span><b>${value}</b></div>`;
@@ -217,7 +312,11 @@ function render() {
   if (!state.user) return;
   $("who").textContent = state.user.name + " · " + state.user.role;
   $("teamNav").classList.toggle("hidden", state.user.role !== "admin");
-  const open = state.incidents.length;
+  const visibleIncidents = state.incidents.filter((item) => {
+    const mon = state.monitors.find((m) => m.host === item.host && m.kind === item.kind);
+    return mon ? allowed(mon) : state.user.role === "admin";
+  });
+  const open = visibleIncidents.length;
   $("incBadge").textContent = String(open);
   $("incBadge").classList.toggle("hidden", open === 0);
   const webs = websites();
@@ -234,16 +333,21 @@ function render() {
     stat("Domains", doms.length),
     stat("Certificates under 30 days", doms.filter((m) => m.result?.cert && m.result.cert.days < 30).length),
     stat("Registration under 30 days", doms.filter((m) => { const d = daysUntil(m.result?.rdap?.expires); return d != null && d < 30; }).length),
-    stat("Open incidents", state.incidents.filter((i) => i.kind === "domain").length)
+    stat("Open incidents", visibleIncidents.filter((i) => i.kind === "domain").length)
   ].join("");
   $("webForm").classList.toggle("hidden", !canEdit());
   $("domForm").classList.toggle("hidden", !canEdit());
   $("webList").innerHTML = webs.length ? webs.map(card).join("") : `<div class="card"><p>No websites yet. Add one, or press Check flotek.io.</p></div>`;
   $("domList").innerHTML = doms.length ? doms.map(card).join("") : `<div class="card"><p>No domains yet. Add a domain name on its own, separate from the websites.</p></div>`;
-  $("incTable").innerHTML = state.incidents.length
-    ? `<tr><th>When</th><th>Name</th><th>Type</th><th>Problem</th><th></th></tr>` + state.incidents.map((i) => `<tr><td>${esc(new Date(i.at).toLocaleString())}</td><td>${esc(i.host)}</td><td>${esc(i.kind)}</td><td>${esc(i.message)}</td><td>${canEdit() ? `<button class="btn ghost small" data-ack="${i.id}" type="button">Acknowledge</button>` : ""}</td></tr>`).join("")
+  $("incTable").innerHTML = visibleIncidents.length
+    ? `<tr><th>When</th><th>Name</th><th>Type</th><th>What happened</th><th class="act"></th></tr>` + visibleIncidents.map((i) => `<tr><td>${esc(new Date(i.at).toLocaleString())}</td><td>${esc(i.host)}</td><td>${esc(i.kind)}</td><td>${esc(i.message)}</td><td class="act">${canEditMon(state.monitors.find((m) => m.host === i.host && m.kind === i.kind) || { kind: i.kind, host: i.host }) ? `<button class="btn ghost small" data-ack="${i.id}" type="button">Acknowledge</button>` : ""}</td></tr>`).join("")
     : `<tr><td>No open incidents.</td></tr>`;
-  $("userTable").innerHTML = `<tr><th>Name</th><th>Username</th><th>Role</th><th></th></tr>` + state.users.map((u) => `<tr><td>${esc(u.name)}</td><td>${esc(u.username)}</td><td>${esc(u.role)}</td><td>${u.username === "flotek" ? "" : `<button data-del="${esc(u.username)}" class="btn ghost small" type="button">Remove</button>`}</td></tr>`).join("");
+  const box = $("scopeBox");
+  if (box && box.dataset.count !== String(state.monitors.length)) {
+    box.dataset.count = String(state.monitors.length);
+    box.innerHTML = `<span class="meta">Viewer and Operator only see the ticked names.</span><div class="scope">${state.monitors.map((m) => `<label><input type="checkbox" name="scope" value="${m.kind}:${esc(m.host)}" /> ${esc(m.host)} · ${m.kind}</label>`).join("")}</div>`;
+  }
+  $("userTable").innerHTML = `<tr><th>Name</th><th>Username</th><th>Role</th><th>Access</th><th class="act"></th></tr>` + state.users.map((u) => `<tr><td>${esc(u.name)}</td><td>${esc(u.username)}</td><td>${esc(u.role)}</td><td>${u.role === "admin" ? "All" : esc((u.scope || []).join(", ") || "None")}</td><td class="act">${u.username === "flotek" ? "" : `<button data-del="${esc(u.username)}" class="btn ghost small" type="button">Remove</button>`}</td></tr>`).join("");
   $("userForm").classList.toggle("hidden", state.user.role !== "admin");
 }
 
@@ -252,16 +356,17 @@ function table(rows) {
 }
 function openDrawer(id) {
   const m = state.monitors.find((x) => x.id === id);
-  if (!m) return;
+  if (!m || !allowed(m)) return;
   state.open = id;
+  const labels = { overview: "Overview", dns: "DNS", mail: "Mail", certificate: "Certificate", registration: "Registration", wordpress: "WordPress", analytics: "Analytics", seo: "SEO", security: "Security" };
   const tabs = m.kind === "website"
-    ? ["overview", "dns", "mail", "certificate", "registration", "wordpress", "analytics"]
-    : ["overview", "dns", "mail", "certificate", "registration"];
+    ? ["overview", "dns", "mail", "certificate", "registration", "seo", "security", "wordpress", "analytics"]
+    : ["overview", "dns", "mail", "certificate", "registration", "seo"];
   if (!tabs.includes(state.tab)) state.tab = "overview";
-  const tabHtml = tabs.map((t) => `<button type="button" data-tab="${t}" class="${state.tab === t ? "on" : ""}">${t[0].toUpperCase() + t.slice(1)}</button>`).join("");
-  const actions = canEdit()
-    ? `<button class="btn plum small" id="re" type="button">Check again</button><button class="btn ghost small" id="pdfOne" type="button">Download PDF</button><button class="btn ghost small" id="remove" type="button">Remove</button>`
-    : `<button class="btn ghost small" id="pdfOne" type="button">Download PDF</button>`;
+  const tabHtml = tabs.map((t) => `<button type="button" data-tab="${t}" class="${state.tab === t ? "on" : ""}">${labels[t]}</button>`).join("");
+  const actions = canEditMon(m)
+    ? `<button class="btn plum small" id="re" type="button">Check again</button><button class="btn ghost small" id="pdfOne" type="button">PDF report</button><button class="btn ghost small" id="remove" type="button">Remove</button>`
+    : `<button class="btn ghost small" id="pdfOne" type="button">PDF report</button>`;
   $("drawer").classList.remove("hidden");
   $("drawer").innerHTML = `<div class="panel"><div class="row"><div class="grow"><h2>${esc(m.host)}</h2><p class="meta">${m.kind === "website" ? "Website" : "Domain"}</p></div><button class="btn ghost small" id="close" type="button">Close</button>${actions}</div><div class="tabs">${tabHtml}</div><div class="card" id="pane"></div></div>`;
   $("pane").innerHTML = pane(m);
@@ -284,27 +389,84 @@ function pane(m) {
     const reachLine = m.kind === "website" ? (r.reach?.up ? "Website answered in " + r.reach.ms + " ms" : "Website did not answer") : "Domain only. There is no page to open.";
     return `<p><b>${esc(reachLine)}</b></p><p>Last check ${esc(new Date(r.at).toLocaleString())}</p>`;
   }
+  if (state.tab === "seo") return seoPane(m);
+  if (state.tab === "security") return securityPane(m);
+  if (state.tab === "wordpress") return wordpress(m);
   if (!r) return "<p>Run a check first.</p>";
   if (state.tab === "dns") {
     const rows = r.records.length ? `<table><tr><th>Type</th><th>Value</th></tr>${r.records.map((row) => `<tr><td>${esc(row.type)}</td><td>${esc(row.data)}</td></tr>`).join("")}</table>` : "<p>No public records were returned.</p>";
     return `<button class="btn plum small" id="dnsCsv" type="button">Export DNS</button><div style="height:12px"></div>${rows}`;
   }
-  if (state.tab === "mail") {
-    const mail = r.mail || {};
-    return table([["SPF", mail.spf], ["DMARC", mail.dmarc], ["DKIM selectors", mail.dkim], ["Spamhaus", mail.blacklist]]);
-  }
-  if (state.tab === "certificate") {
-    const c = r.cert;
-    return c ? table([["Issuer", c.issuer], ["Valid from", c.from], ["Expires", c.until], ["Days left", c.days], ["Revoked", c.revoked ? "Yes" : "No"]]) : "<p>No public certificate was found.</p>";
-  }
+  if (state.tab === "mail") return mailPane(m);
+  if (state.tab === "certificate") return certPane(m);
   if (state.tab === "registration") {
     const d = r.rdap || {};
     if (d.error) return `<p>${esc(d.error)}</p>`;
     return table([["Name", d.name], ["Registrar", d.registrar], ["Status", d.status], ["Registered", d.registered], ["Updated", d.changed], ["Expires", d.expires], ["Name servers", (d.nameservers || []).join(", ")]]);
   }
   if (state.tab === "analytics") return analytics(m);
-  if (state.tab === "wordpress") return wordpress(m);
   return "";
+}
+function mailPane(m) {
+  const mail = m.result.mail || {};
+  const relay = m.relay ? `<p><b>${esc(m.relay.detail)}</b></p>` : "";
+  return table([["SPF", mail.spf], ["SPF check", mail.spfNote], ["DMARC", mail.dmarc], ["DMARC check", mail.dmarcNote], ["DKIM selectors", mail.dkim], ["Blacklists", mail.blacklist]])
+    + relay
+    + (canEditMon(m) && m.kind === "website" ? `<button class="btn ghost small" id="relay" type="button">Test open relay</button>` : "");
+}
+function certPane(m) {
+  const certs = m.result.certs || [];
+  if (!certs.length) return "<p>No public certificates were found.</p>";
+  return `<table><tr><th>Issued</th><th>Expires</th><th>Issuer</th><th>Names</th><th>State</th></tr>${certs.slice(0, 12).map((c) => `<tr><td>${esc(c.from)}</td><td>${esc(c.until)}</td><td>${esc(c.issuer)}</td><td>${esc(c.names || "")}</td><td>${c.revoked ? "Revoked" : c.days + " days"}</td></tr>`).join("")}</table>`;
+}
+function seoPane(m) {
+  const latest = (m.vitals || [])[m.vitals.length - 1];
+  const history = (m.vitals || []).slice().reverse().map((v) => `<tr><td>${esc(new Date(v.at).toLocaleString())}</td><td>${v.score}</td><td>${v.seo}</td><td>${esc(v.lcp?.value || "—")}</td><td>${esc(v.cls?.value || "—")}</td><td>${esc(v.inp?.value || "—")}</td></tr>`).join("");
+  const audits = (m.seoAudits || []).map((a) => `<tr><td>${esc(a.title)}</td><td>${a.score == null ? "—" : Math.round(a.score * 100)}</td><td>${esc(a.value || "")}</td></tr>`).join("");
+  const water = (m.waterfall || []).slice(0, 15).map((item) => `<tr><td>${esc(item.url)}</td><td>${esc(item.type || "")}</td><td>${item.size ? Math.round(item.size / 1024) + " KB" : "—"}</td><td>${item.time ?? "—"}</td></tr>`).join("");
+  const seo = m.seo;
+  const crawl = seo ? `<p>robots.txt ${seo.robots_present ? "is present" : "is missing"}. ${seo.robots_blocks_google ? "It blocks crawlers." : "It does not block the whole site."}</p>
+    <table><tr><th>Sitemap</th><th>Status</th></tr>${(seo.sitemaps || []).map((s) => `<tr><td>${esc(s.url)}</td><td>${s.status}</td></tr>`).join("")}</table>
+    <h3>Broken links</h3>${(seo.broken_links || []).length ? `<table><tr><th>URL</th><th>Status</th></tr>${seo.broken_links.map((l) => `<tr><td>${esc(l.url)}</td><td>${l.status}</td></tr>`).join("")}</table>` : "<p>No broken internal links in the sample.</p>"}
+    <h3>Broken images</h3>${(seo.broken_images || []).length ? (seo.broken_images || []).map((l) => `<p>${esc(l.url)} · ${l.status}</p>`).join("") : "<p>No broken images in the sample.</p>"}` : "<p>WordPress crawl runs when the agent secret is saved.</p>";
+  const journey = (m.journey?.steps || []).map((s) => `<tr><td>${esc(s.path)}</td><td>${s.status}</td><td>${s.ok ? "Ok" : "Failed"}</td></tr>`).join("");
+  return `<button class="btn plum small" id="runSeo" type="button">Run SEO and speed audit</button>
+    ${latest ? `<div class="stats">${stat("Speed", latest.score)}${stat("SEO", latest.seo)}${stat("LCP", latest.lcp?.value || "—")}${stat("CLS", latest.cls?.value || "—")}</div>` : ""}
+    <h3>History</h3><table><tr><th>When</th><th>Speed</th><th>SEO</th><th>LCP</th><th>CLS</th><th>INP</th></tr>${history || "<tr><td colspan='6'>Not run yet.</td></tr>"}</table>
+    <h3>SEO checks</h3><table><tr><th>Check</th><th>Score</th><th>Detail</th></tr>${audits || "<tr><td colspan='3'>Not run yet.</td></tr>"}</table>
+    <h3>Largest files</h3><table><tr><th>File</th><th>Type</th><th>Size</th><th>ms</th></tr>${water || "<tr><td colspan='4'>Not run yet.</td></tr>"}</table>
+    <h3>Crawl</h3>${crawl}
+    <h3>Shop path</h3>${journey ? `<table><tr><th>Path</th><th>Status</th><th>Result</th></tr>${journey}</table><p>${esc(m.journey.detail || "")}</p>` : "<p>Included with the SEO audit when the agent is connected.</p>"}
+    <p class="err">${esc(m.wpError || "")}</p>`;
+}
+function securityPane(m) {
+  if (!canEditMon(m) && state.user.role === "viewer") {
+    const s = m.security;
+    if (!s) return "<p>An operator needs to load the security check. You can still download the PDF report.</p>";
+  }
+  const s = m.security;
+  const policy = s?.policy || {};
+  const controls = canEditMon(m) ? `<button class="btn plum small" id="loadSecurity" type="button">Load security</button>
+    <div class="row"><label><input id="autoCore" type="checkbox" ${policy.core ? "checked" : ""} style="width:auto;height:auto" /> Core updates</label>
+    <label><input id="autoPlugins" type="checkbox" ${policy.plugins ? "checked" : ""} style="width:auto;height:auto" /> Plugin updates</label>
+    <label><input id="autoThemes" type="checkbox" ${policy.themes ? "checked" : ""} style="width:auto;height:auto" /> Theme updates</label>
+    <button class="btn ghost small" id="savePolicy" type="button">Save schedule</button></div>
+    <div class="row"><button class="btn ghost small" id="pushCore" type="button">Update core now</button><button class="btn ghost small" id="pushThemes" type="button">Update themes now</button><button class="btn ghost small" id="acceptFiles" type="button">Accept file changes</button></div>` : `<button class="btn ghost small" id="loadSecurity" type="button">Refresh</button>`;
+  if (!s) return controls + `<p class="err">${esc(m.wpError || "")}</p>`;
+  const files = Object.entries(s.files?.files || {}).map(([name, hash]) => `<tr><td>${esc(name)}</td><td>${hash ? esc(hash.slice(0, 16)) : "Not on the server"}</td></tr>`).join("");
+  const changes = (s.files?.changes || []).map((c) => `<p><b>${esc(c.file)}</b> ${esc(c.change)}. ${esc(c.detail)}</p>`).join("") || "<p>No core file changes since the baseline.</p>";
+  const vulns = (s.vulns || []).map((v) => `<tr><td>${esc(v.plugin)}</td><td>${esc(v.version)}</td><td>${esc(v.cve || v.title)}</td></tr>`).join("") || "<tr><td colspan='3'>No known vulnerability matched the installed versions.</td></tr>";
+  const logins = (s.logins || []).map((l) => `<tr><td>${esc(l.time)}</td><td>${esc(l.ip)}</td><td>${esc(l.username)}</td><td class="act">${canEditMon(m) ? `<button class="btn ghost small" data-block="${esc(l.ip)}" type="button">Block</button> <button class="btn ghost small" data-allow="${esc(l.ip)}" type="button">Allow</button>` : ""}</td></tr>`).join("");
+  const cloud = canEditMon(m) ? `<h3>Off-site backup</h3><p>Paste a Supabase project URL and service key to upload the zip there. Leave this empty to keep the zip on the website only.</p>
+    <label>Supabase URL</label><input id="sbUrl" placeholder="https://project.supabase.co" />
+    <label>Service key</label><input id="sbKey" type="password" />
+    <label>Bucket</label><input id="sbBucket" placeholder="sentinel" />
+    <div class="row"><button class="btn ghost small" id="saveCloud" type="button">Save destination</button><button class="btn plum small" id="fullBackup" type="button">Create full backup</button></div>` : "";
+  return `${controls}<h3>File integrity</h3>${changes}<table><tr><th>File</th><th>Fingerprint</th></tr>${files}</table>
+    <h3>Vulnerabilities</h3><table><tr><th>Plugin</th><th>Version</th><th>Finding</th></tr>${vulns}</table>
+    <h3>Failed logins</h3><table><tr><th>When</th><th>Address</th><th>Username</th><th class="act"></th></tr>${logins || "<tr><td colspan='4'>None recorded.</td></tr>"}</table>
+    <p>Blocked: ${esc((s.blocked || []).join(", ") || "none")}. Allowed: ${esc((s.allowed || []).join(", ") || "none")}.</p>
+    ${cloud}<p class="err">${esc(m.wpError || "")}</p>`;
 }
 function analytics(m) {
   const hist = m.history || [];
@@ -320,10 +482,10 @@ function wordpress(m) {
   const intro = `<p>Upload <b>flotek-sentinel-agent.php</b> to <b>wp-content/mu-plugins/</b> on this WordPress site. Put a secret in that file, then paste the same secret here. Sentinel does not log in to wp-admin.</p>${secret}`;
   if (!m.wp) return intro + `<div style="height:10px"></div><button class="btn ghost small" id="loadWp" type="button">Load WordPress</button><p class="err">${esc(m.wpError || "")}</p>`;
   const w = m.wp;
-  const users = (w.users || []).map((u) => `<tr><td>${esc(u.user_login)}</td><td>${esc(u.user_email)}</td><td>${esc((u.roles || []).join(", "))}</td><td>${canEdit() ? `<button class="btn ghost small" data-wpdel="${u.id}" type="button">Delete</button>` : ""}</td></tr>`).join("");
-  const plugins = (w.plugins || []).map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.version)}${p.has_update ? " → " + esc(p.new_version) : ""}</td><td>${p.active ? "Active" : "Off"}</td><td>${canEdit() ? `<button class="btn ghost small" data-disable="${esc(p.file)}" type="button">Disable</button>` : ""}</td></tr>`).join("");
-  const backups = (w.backups || []).map((b) => `<tr><td>${esc(b.filename)}</td><td>${esc(b.filesize)}</td><td>${canEdit() ? `<button class="btn ghost small" data-restore="${esc(b.filename)}" type="button">Restore</button>` : ""}</td></tr>`).join("");
-  const forms = canEdit() ? `
+  const users = (w.users || []).map((u) => `<tr><td>${esc(u.user_login)}</td><td>${esc(u.user_email)}</td><td>${esc((u.roles || []).join(", "))}</td><td class="act">${canEditMon(m) ? `<button class="btn ghost small" data-wpdel="${u.id}" type="button">Remove</button>` : ""}</td></tr>`).join("");
+  const plugins = (w.plugins || []).map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.version)}${p.has_update ? " → " + esc(p.new_version) : ""}</td><td>${p.active ? "Active" : "Off"}</td><td class="act">${canEditMon(m) ? `<button class="btn ghost small" data-disable="${esc(p.file)}" type="button">Disable</button>` : ""}</td></tr>`).join("");
+  const backups = (w.backups || []).map((b) => `<tr><td>${esc(b.filename)}</td><td>${esc(b.filesize)}</td><td class="act">${canEditMon(m) ? `<button class="btn ghost small" data-restore="${esc(b.filename)}" type="button">Restore</button>` : ""}</td></tr>`).join("");
+  const forms = canEditMon(m) ? `
     <h3>Site settings</h3>
     <label>Site name</label><input id="siteName" value="${esc(w.site_name || "")}" />
     <label>Tagline</label><input id="tagline" value="${esc(w.tagline || "")}" />
@@ -351,6 +513,17 @@ function bindPane(m) {
   $("pane").querySelectorAll("[data-wpdel]").forEach((b) => { b.onclick = () => { if (confirm("Delete this WordPress user?")) go(async () => { await wpCall(m, "delete-user", "POST", { user_id: Number(b.dataset.wpdel) }); await loadWp(m); }); }; });
   $("pane").querySelectorAll("[data-disable]").forEach((b) => { b.onclick = () => go(async () => { await wpCall(m, "disable-plugin", "POST", { plugin: b.dataset.disable }); await loadWp(m); }); });
   $("pane").querySelectorAll("[data-restore]").forEach((b) => { b.onclick = () => { if (confirm("Restore this backup over the current database?")) go(async () => { await wpCall(m, "rollback", "POST", { filename: b.dataset.restore }); await loadWp(m); }); }; });
+  if ($("relay")) $("relay").onclick = () => go(async () => { m.relay = await wpCall(m, "relay", "GET"); syncIncidents(m); save(); openDrawer(m.id); });
+  if ($("runSeo")) $("runSeo").onclick = () => go(() => runSeo(m));
+  if ($("loadSecurity")) $("loadSecurity").onclick = () => go(() => runSecurity(m));
+  if ($("savePolicy")) $("savePolicy").onclick = () => go(async () => { await wpCall(m, "update-policy", "POST", { core: $("autoCore").checked, plugins: $("autoPlugins").checked, themes: $("autoThemes").checked }); await runSecurity(m); });
+  if ($("pushCore")) $("pushCore").onclick = () => { if (confirm("Update WordPress core on this site now?")) go(async () => { await wpCall(m, "update-core", "POST"); await runSecurity(m); }); };
+  if ($("pushThemes")) $("pushThemes").onclick = () => go(async () => { await wpCall(m, "update-themes", "POST"); await runSecurity(m); });
+  if ($("acceptFiles")) $("acceptFiles").onclick = () => go(async () => { await wpCall(m, "accept-files", "POST"); await runSecurity(m); });
+  if ($("saveCloud")) $("saveCloud").onclick = () => go(async () => { await wpCall(m, "backup-settings", "POST", { supabase_url: $("sbUrl").value, supabase_key: $("sbKey").value, bucket: $("sbBucket").value }); m.wpError = "Backup destination saved."; openDrawer(m.id); });
+  if ($("fullBackup")) $("fullBackup").onclick = () => go(async () => { const result = await wpCall(m, "create-full-backup", "POST"); m.wpError = result.detail || "Backup created."; await loadWp(m); });
+  $("pane").querySelectorAll("[data-block]").forEach((b) => { b.onclick = () => go(async () => { await wpCall(m, "block-ip", "POST", { ip: b.dataset.block, block: true }); await runSecurity(m); }); });
+  $("pane").querySelectorAll("[data-allow]").forEach((b) => { b.onclick = () => go(async () => { await wpCall(m, "allow-ip", "POST", { ip: b.dataset.allow, allow: true }); await runSecurity(m); }); });
 }
 function exportDns(m) {
   const lines = ["Type,Value"].concat((m.result?.records || []).map((r) => r.type + "," + JSON.stringify(r.data)));
@@ -447,18 +620,24 @@ $("webList").onclick = (e) => { const b = e.target.closest("[data-id]"); if (b) 
 $("domList").onclick = (e) => { const b = e.target.closest("[data-id]"); if (b) { state.tab = "overview"; openDrawer(b.dataset.id); } };
 $("incTable").onclick = (e) => {
   const id = e.target.dataset.ack;
-  if (!id || !canEdit()) return;
+  if (!id) return;
   const item = state.incidents.find((i) => i.id === id);
   const mon = state.monitors.find((m) => m.host === item.host && m.kind === item.kind);
-  if (mon) { mon.silenced = mon.silenced || {}; mon.silenced[item.code] = true; }
+  if (mon && !canEditMon(mon)) return;
+  if (!mon && state.user.role !== "admin") return;
+  if (mon) { mon.silenced = mon.silenced || {}; mon.silenced[item.code] = item.message; }
   state.incidents = state.incidents.filter((i) => i.id !== id);
   save();
   render();
 };
 $("pdfIncidents").onclick = () => {
   const lines = ["Flotek Sentinel incidents", new Date().toLocaleString(), ""];
-  if (!state.incidents.length) lines.push("No open incidents.");
-  state.incidents.forEach((i) => lines.push(new Date(i.at).toLocaleString() + "  " + i.kind + "  " + i.host + "  " + i.message));
+  const rows = state.incidents.filter((item) => {
+    const mon = state.monitors.find((m) => m.host === item.host && m.kind === item.kind);
+    return mon ? allowed(mon) : state.user.role === "admin";
+  });
+  if (!rows.length) lines.push("No open incidents.");
+  rows.forEach((i) => lines.push(new Date(i.at).toLocaleString() + "  " + i.kind + "  " + i.host + "  " + i.message));
   downloadPdf("sentinel-incidents.pdf", lines);
 };
 $("userForm").onsubmit = async (e) => {
@@ -468,7 +647,10 @@ $("userForm").onsubmit = async (e) => {
   if (!/^[a-z][a-z0-9._-]{2,31}$/.test(username)) { $("userErr").textContent = "Usernames start with a letter and use 3 to 32 letters, numbers, dots or dashes."; return; }
   if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) { $("userErr").textContent = "Passwords need 8 characters, a letter and a number."; return; }
   if (state.users.some((u) => u.username === username)) { $("userErr").textContent = "That username is already in use."; return; }
-  state.users.push({ username, name: $("nName").value.trim(), role: $("nRole").value, hash: await sha(password) });
+  const role = $("nRole").value;
+  const scope = [...document.querySelectorAll("input[name=scope]:checked")].map((input) => input.value);
+  if (role !== "admin" && !scope.length) { $("userErr").textContent = "Tick the websites or domains this person may see."; return; }
+  state.users.push({ username, name: $("nName").value.trim(), role, hash: await sha(password), scope });
   save();
   $("userErr").textContent = "";
   e.target.reset();

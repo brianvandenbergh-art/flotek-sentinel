@@ -66,6 +66,18 @@ add_action('rest_api_init', function () {
         array('rollback', 'POST', 'flotek_sentinel_rollback'),
         array('disable-plugin', 'POST', 'flotek_sentinel_disable_plugin'),
         array('update-settings', 'POST', 'flotek_sentinel_update_settings'),
+        array('security', 'GET', 'flotek_sentinel_security'),
+        array('update-policy', 'POST', 'flotek_sentinel_update_policy'),
+        array('update-core', 'POST', 'flotek_sentinel_update_core'),
+        array('update-themes', 'POST', 'flotek_sentinel_update_themes'),
+        array('block-ip', 'POST', 'flotek_sentinel_block_ip'),
+        array('allow-ip', 'POST', 'flotek_sentinel_allow_ip'),
+        array('accept-files', 'POST', 'flotek_sentinel_accept_files'),
+        array('seo', 'GET', 'flotek_sentinel_seo'),
+        array('relay', 'GET', 'flotek_sentinel_relay'),
+        array('journey', 'GET', 'flotek_sentinel_journey'),
+        array('backup-settings', 'POST', 'flotek_sentinel_backup_settings'),
+        array('create-full-backup', 'POST', 'flotek_sentinel_full_backup'),
     );
     foreach ($routes as $route) {
         register_rest_route('flotek/v1', '/' . $route[0], array(
@@ -324,4 +336,463 @@ function flotek_sentinel_disable_plugin($request) {
     }
     deactivate_plugins($plugin, true);
     return array('success' => true, 'disabled' => $plugin);
+}
+
+function flotek_sentinel_ip() {
+    $keys = array('HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR');
+    foreach ($keys as $key) {
+        if (empty($_SERVER[$key])) {
+            continue;
+        }
+        $ip = trim(explode(',', (string) $_SERVER[$key])[0]);
+        if (filter_var($ip, FILTER_VALIDATE_IP)) {
+            return $ip;
+        }
+    }
+    return '0.0.0.0';
+}
+
+add_action('wp_login_failed', function ($username) {
+    $log = get_option('flotek_login_log', array());
+    if (!is_array($log)) {
+        $log = array();
+    }
+    array_unshift($log, array(
+        'time' => gmdate('c'),
+        'ip' => flotek_sentinel_ip(),
+        'username' => sanitize_user((string) $username),
+        'result' => 'failed',
+    ));
+    update_option('flotek_login_log', array_slice($log, 0, 80), false);
+});
+
+add_filter('authenticate', function ($user, $username, $password) {
+    if ($username === '' && $password === '') {
+        return $user;
+    }
+    $ip = flotek_sentinel_ip();
+    $allowed = get_option('flotek_allowed_ips', array());
+    $blocked = get_option('flotek_blocked_ips', array());
+    if (is_array($allowed) && in_array($ip, $allowed, true)) {
+        return $user;
+    }
+    if (is_array($blocked) && in_array($ip, $blocked, true)) {
+        return new WP_Error('flotek_blocked', 'This address is blocked by Flotek Sentinel.');
+    }
+    return $user;
+}, 1, 3);
+
+add_filter('auto_update_core', function () {
+    return (bool) get_option('flotek_auto_core');
+});
+add_filter('auto_update_plugin', function () {
+    return (bool) get_option('flotek_auto_plugins');
+});
+add_filter('auto_update_theme', function () {
+    return (bool) get_option('flotek_auto_themes');
+});
+
+function flotek_sentinel_critical_files() {
+    $root = ABSPATH;
+    $config = file_exists($root . 'wp-config.php') ? $root . 'wp-config.php' : dirname($root) . '/wp-config.php';
+    return array(
+        'wp-config.php' => $config,
+        'index.php' => $root . 'index.php',
+        '.htaccess' => $root . '.htaccess',
+        'robots.txt' => $root . 'robots.txt',
+    );
+}
+
+function flotek_sentinel_file_audit() {
+    $current = array();
+    foreach (flotek_sentinel_critical_files() as $name => $path) {
+        $current[$name] = is_readable($path) ? hash_file('sha256', $path) : '';
+    }
+    $baseline = get_option('flotek_file_baseline', array());
+    if (!is_array($baseline) || !$baseline) {
+        update_option('flotek_file_baseline', $current, false);
+        return array('saved_baseline' => true, 'files' => $current, 'changes' => array());
+    }
+    $changes = array();
+    foreach ($current as $name => $hash) {
+        $old = array_key_exists($name, $baseline) ? (string) $baseline[$name] : null;
+        if ($old === null && $hash !== '') {
+            $changes[] = array('file' => $name, 'change' => 'added', 'detail' => $name . ' was added. It was not on the server when the baseline was saved.');
+        } elseif ($old !== null && $old !== '' && $hash === '') {
+            $changes[] = array('file' => $name, 'change' => 'removed', 'detail' => $name . ' was removed from the server.');
+        } elseif ($old !== null && $hash !== '' && $old !== $hash) {
+            $changes[] = array(
+                'file' => $name,
+                'change' => 'modified',
+                'detail' => $name . ' was modified. Old fingerprint ' . substr($old, 0, 12) . ', new fingerprint ' . substr($hash, 0, 12) . '.',
+            );
+        }
+    }
+    return array('saved_baseline' => false, 'files' => $current, 'changes' => $changes);
+}
+
+function flotek_sentinel_affected($version, $rule) {
+    $max = isset($rule['max_version']) ? (string) $rule['max_version'] : '';
+    $op = isset($rule['max_operator']) ? (string) $rule['max_operator'] : 'lt';
+    if ($max === '') {
+        return false;
+    }
+    if ($op === 'le') {
+        return version_compare($version, $max, '<=');
+    }
+    return version_compare($version, $max, '<');
+}
+
+function flotek_sentinel_security() {
+    if (!function_exists('get_plugins')) {
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+    }
+    $vulns = get_transient('flotek_vulns');
+    if (!is_array($vulns)) {
+        $vulns = array();
+        $n = 0;
+        foreach (get_plugins() as $file => $plugin) {
+            if ($n++ >= 12) {
+                break;
+            }
+            $slug = dirname($file);
+            if ($slug === '.') {
+                $slug = basename($file, '.php');
+            }
+            $res = wp_remote_get('https://www.wpvulnerability.net/plugin/' . rawurlencode($slug), array(
+                'timeout' => 8,
+                'headers' => array('Accept' => 'application/json'),
+            ));
+            if (is_wp_error($res) || wp_remote_retrieve_response_code($res) !== 200) {
+                continue;
+            }
+            $body = json_decode(wp_remote_retrieve_body($res), true);
+            $list = $body['data']['vulnerability'] ?? array();
+            if (!is_array($list)) {
+                continue;
+            }
+            foreach ($list as $item) {
+                if (!flotek_sentinel_affected($plugin['Version'], $item['operator'] ?? array())) {
+                    continue;
+                }
+                $cve = '';
+                foreach (($item['source'] ?? array()) as $source) {
+                    if (!empty($source['id']) && strpos($source['id'], 'CVE-') === 0) {
+                        $cve = $source['id'];
+                        break;
+                    }
+                }
+                $vulns[] = array(
+                    'plugin' => $plugin['Name'],
+                    'slug' => $slug,
+                    'version' => $plugin['Version'],
+                    'title' => $item['name'] ?? $slug,
+                    'cve' => $cve,
+                );
+                break;
+            }
+        }
+        set_transient('flotek_vulns', $vulns, 12 * HOUR_IN_SECONDS);
+    }
+    $log = get_option('flotek_login_log', array());
+    return array(
+        'files' => flotek_sentinel_file_audit(),
+        'vulns' => $vulns,
+        'logins' => is_array($log) ? array_slice($log, 0, 20) : array(),
+        'blocked' => array_values((array) get_option('flotek_blocked_ips', array())),
+        'allowed' => array_values((array) get_option('flotek_allowed_ips', array())),
+        'policy' => array(
+            'core' => (bool) get_option('flotek_auto_core'),
+            'plugins' => (bool) get_option('flotek_auto_plugins'),
+            'themes' => (bool) get_option('flotek_auto_themes'),
+        ),
+        'theme' => wp_get_theme()->get('Name'),
+        'supabase' => get_option('flotek_supabase_url', '') !== '',
+    );
+}
+
+function flotek_sentinel_update_policy($request) {
+    update_option('flotek_auto_core', (bool) $request->get_param('core'), false);
+    update_option('flotek_auto_plugins', (bool) $request->get_param('plugins'), false);
+    update_option('flotek_auto_themes', (bool) $request->get_param('themes'), false);
+    return array('success' => true);
+}
+
+function flotek_sentinel_update_core() {
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    require_once ABSPATH . 'wp-admin/includes/update.php';
+    require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+    wp_version_check();
+    $core = get_site_transient('update_core');
+    $offer = (is_object($core) && !empty($core->updates)) ? $core->updates[0] : null;
+    if (!$offer || empty($offer->response) || $offer->response === 'latest') {
+        return array('success' => true, 'updated' => false, 'detail' => 'WordPress core is already current.');
+    }
+    $skin = new Automatic_Upgrader_Skin();
+    $upgrader = new Core_Upgrader($skin);
+    $result = $upgrader->upgrade($offer);
+    if (is_wp_error($result)) {
+        return new WP_Error('failed', $result->get_error_message(), array('status' => 500));
+    }
+    return array('success' => true, 'updated' => true, 'detail' => 'WordPress core update was pushed.');
+}
+
+function flotek_sentinel_update_themes() {
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    require_once ABSPATH . 'wp-admin/includes/theme.php';
+    require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+    require_once ABSPATH . 'wp-admin/includes/update.php';
+    wp_update_themes();
+    $updates = get_site_transient('update_themes');
+    $slugs = array();
+    if (is_object($updates) && !empty($updates->response)) {
+        $slugs = array_keys($updates->response);
+    }
+    if (!$slugs) {
+        return array('success' => true, 'updated' => array());
+    }
+    $skin = new Automatic_Upgrader_Skin();
+    $upgrader = new Theme_Upgrader($skin);
+    $result = $upgrader->bulk_upgrade($slugs);
+    return array('success' => !is_wp_error($result), 'updated' => $slugs);
+}
+
+function flotek_sentinel_ip_list($key, $ip, $add) {
+    if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+        return new WP_Error('bad_request', 'That is not an IP address', array('status' => 400));
+    }
+    $list = get_option($key, array());
+    if (!is_array($list)) {
+        $list = array();
+    }
+    $list = array_values(array_filter($list, function ($item) use ($ip) {
+        return $item !== $ip;
+    }));
+    if ($add) {
+        $list[] = $ip;
+    }
+    update_option($key, $list, false);
+    return array('success' => true, 'list' => $list);
+}
+
+function flotek_sentinel_block_ip($request) {
+    $ip = (string) $request->get_param('ip');
+    $block = (bool) $request->get_param('block');
+    return flotek_sentinel_ip_list('flotek_blocked_ips', $ip, $block);
+}
+
+function flotek_sentinel_allow_ip($request) {
+    $ip = (string) $request->get_param('ip');
+    $allow = (bool) $request->get_param('allow');
+    return flotek_sentinel_ip_list('flotek_allowed_ips', $ip, $allow);
+}
+
+function flotek_sentinel_accept_files() {
+    delete_option('flotek_file_baseline');
+    return flotek_sentinel_file_audit();
+}
+
+function flotek_sentinel_seo() {
+    $robots_path = ABSPATH . 'robots.txt';
+    $robots = is_readable($robots_path) ? (string) file_get_contents($robots_path) : '';
+    $blocks = (bool) preg_match('/User-agent:\s*\*\s+Disallow:\s*\/\s*($|\r|\n)/i', $robots)
+        || (bool) preg_match('/User-agent:\s*Googlebot[\s\S]{0,200}Disallow:\s*\/\s*($|\r|\n)/i', $robots);
+    $sitemaps = array();
+    foreach (array('/wp-sitemap.xml', '/sitemap.xml', '/sitemap_index.xml') as $path) {
+        $res = wp_remote_head(home_url($path), array('timeout' => 8, 'redirection' => 3));
+        $sitemaps[] = array(
+            'url' => home_url($path),
+            'status' => is_wp_error($res) ? 0 : (int) wp_remote_retrieve_response_code($res),
+        );
+    }
+    $home = wp_remote_get(home_url('/'), array('timeout' => 12));
+    $html = is_wp_error($home) ? '' : (string) wp_remote_retrieve_body($home);
+    $host = wp_parse_url(home_url(), PHP_URL_HOST);
+    preg_match_all('/href=["\']([^"\']+)["\']/i', $html, $hrefs);
+    $broken = array();
+    $seen = array();
+    foreach ($hrefs[1] as $href) {
+        if (count($broken) >= 12 || count($seen) >= 25) {
+            break;
+        }
+        if ($href === '' || $href[0] === '#' || strpos($href, 'mailto:') === 0 || strpos($href, 'tel:') === 0) {
+            continue;
+        }
+        if (strpos($href, '//') === 0) {
+            $href = 'https:' . $href;
+        } elseif ($href[0] === '/') {
+            $href = home_url($href);
+        } elseif (!preg_match('#^https?://#', $href)) {
+            continue;
+        }
+        $href = strtok($href, '#');
+        $link_host = wp_parse_url($href, PHP_URL_HOST);
+        if ($link_host && $link_host !== $host) {
+            continue;
+        }
+        if (isset($seen[$href])) {
+            continue;
+        }
+        $seen[$href] = true;
+        $res = wp_remote_head($href, array('timeout' => 6, 'redirection' => 5));
+        $code = is_wp_error($res) ? 0 : (int) wp_remote_retrieve_response_code($res);
+        if ($code === 0 || $code >= 400) {
+            $broken[] = array('url' => $href, 'status' => $code);
+        }
+    }
+    preg_match_all('/<img[^>]+src=["\']([^"\']+)["\']/i', $html, $imgs);
+    $images = array();
+    foreach (array_slice($imgs[1], 0, 12) as $src) {
+        if (strpos($src, '//') === 0) {
+            $src = 'https:' . $src;
+        } elseif ($src !== '' && $src[0] === '/') {
+            $src = home_url($src);
+        }
+        if (!preg_match('#^https?://#', $src)) {
+            continue;
+        }
+        $res = wp_remote_head($src, array('timeout' => 6, 'redirection' => 3));
+        $code = is_wp_error($res) ? 0 : (int) wp_remote_retrieve_response_code($res);
+        if ($code === 0 || $code >= 400) {
+            $images[] = array('url' => $src, 'status' => $code);
+        }
+    }
+    return array(
+        'robots_present' => $robots !== '',
+        'robots_blocks_google' => $blocks,
+        'sitemaps' => $sitemaps,
+        'broken_links' => $broken,
+        'broken_images' => $images,
+    );
+}
+
+function flotek_sentinel_relay() {
+    $domain = wp_parse_url(home_url(), PHP_URL_HOST);
+    $mx = array();
+    $host = $domain;
+    if (function_exists('getmxrr') && getmxrr($domain, $mx) && !empty($mx[0])) {
+        $host = $mx[0];
+    }
+    $fp = @fsockopen($host, 25, $errno, $errstr, 8);
+    if (!$fp) {
+        return array('tested' => false, 'host' => $host, 'open' => false, 'detail' => 'Port 25 could not be opened from this server. ' . $errstr);
+    }
+    stream_set_timeout($fp, 8);
+    $banner = fgets($fp, 512);
+    fwrite($fp, "EHLO sentinel.flotek.io\r\n");
+    $ehlo = '';
+    for ($i = 0; $i < 12; $i++) {
+        $line = fgets($fp, 512);
+        if ($line === false) {
+            break;
+        }
+        $ehlo .= $line;
+        if (isset($line[3]) && $line[3] === ' ') {
+            break;
+        }
+    }
+    fwrite($fp, "MAIL FROM:<audit@sentinel.flotek.io>\r\n");
+    fgets($fp, 512);
+    fwrite($fp, "RCPT TO:<relay-test@example.net>\r\n");
+    $rcpt = (string) fgets($fp, 512);
+    fwrite($fp, "RSET\r\n");
+    fgets($fp, 512);
+    fwrite($fp, "QUIT\r\n");
+    fclose($fp);
+    $open = strpos($rcpt, '250') === 0;
+    return array(
+        'tested' => true,
+        'host' => $host,
+        'open' => $open,
+        'detail' => $open ? 'Open relay: ' . $host . ' accepted mail for an outside address.' : $host . ' refused an outside recipient.',
+        'banner' => trim((string) $banner),
+    );
+}
+
+function flotek_sentinel_journey() {
+    $steps = array();
+    foreach (array('/', '/shop/', '/cart/', '/checkout/', '/my-account/') as $path) {
+        $res = wp_remote_get(home_url($path), array('timeout' => 10, 'redirection' => 5));
+        $code = is_wp_error($res) ? 0 : (int) wp_remote_retrieve_response_code($res);
+        $steps[] = array('path' => $path, 'status' => $code, 'ok' => $code >= 200 && $code < 400);
+    }
+    return array(
+        'woocommerce' => class_exists('WooCommerce'),
+        'steps' => $steps,
+        'detail' => 'Each step is a real request to the site. A scripted browser checkout is not run from this page.',
+    );
+}
+
+function flotek_sentinel_backup_settings($request) {
+    update_option('flotek_supabase_url', esc_url_raw((string) $request->get_param('supabase_url')), false);
+    $key = (string) $request->get_param('supabase_key');
+    if ($key !== '') {
+        update_option('flotek_supabase_key', $key, false);
+    }
+    $bucket = sanitize_file_name((string) $request->get_param('bucket'));
+    update_option('flotek_supabase_bucket', $bucket !== '' ? $bucket : 'sentinel', false);
+    return array('success' => true);
+}
+
+function flotek_sentinel_full_backup() {
+    if (!class_exists('ZipArchive')) {
+        return new WP_Error('failed', 'This server does not have ZipArchive', array('status' => 500));
+    }
+    $dir = flotek_sentinel_backup_dir();
+    $sql_name = 'db-' . gmdate('Ymd-His') . '.sql';
+    $sql = flotek_sentinel_create_backup();
+    if (is_wp_error($sql)) {
+        return $sql;
+    }
+    $zip_name = 'site-' . gmdate('Ymd-His') . '.zip';
+    $zip_path = $dir . '/' . $zip_name;
+    $zip = new ZipArchive();
+    if ($zip->open($zip_path, ZipArchive::CREATE) !== true) {
+        return new WP_Error('failed', 'Could not create the zip file', array('status' => 500));
+    }
+    $sql_path = $dir . '/' . $sql['filename'];
+    if (is_readable($sql_path)) {
+        $zip->addFile($sql_path, $sql['filename']);
+    }
+    $roots = array('themes', 'plugins', 'mu-plugins');
+    foreach ($roots as $folder) {
+        $base = WP_CONTENT_DIR . '/' . $folder;
+        if (!is_dir($base)) {
+            continue;
+        }
+        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS));
+        $added = 0;
+        foreach ($iterator as $file) {
+            if ($added >= 400 || !$file->isFile() || $file->getSize() > 8 * 1024 * 1024) {
+                continue;
+            }
+            $zip->addFile($file->getPathname(), $folder . '/' . substr($file->getPathname(), strlen($base) + 1));
+            $added++;
+        }
+    }
+    $zip->close();
+    $remote = '';
+    $url = untrailingslashit((string) get_option('flotek_supabase_url', ''));
+    $key = (string) get_option('flotek_supabase_key', '');
+    $bucket = (string) get_option('flotek_supabase_bucket', 'sentinel');
+    if ($url !== '' && $key !== '') {
+        $upload = wp_remote_post($url . '/storage/v1/object/' . rawurlencode($bucket) . '/' . rawurlencode($zip_name), array(
+            'timeout' => 60,
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $key,
+                'apikey' => $key,
+                'Content-Type' => 'application/zip',
+                'x-upsert' => 'true',
+            ),
+            'body' => file_get_contents($zip_path),
+        ));
+        $remote = is_wp_error($upload) ? $upload->get_error_message() : 'Uploaded to Supabase bucket ' . $bucket;
+    }
+    return array(
+        'success' => true,
+        'filename' => $zip_name,
+        'filesize' => size_format(filesize($zip_path)),
+        'remote' => $remote,
+        'detail' => 'Zip holds the database, themes and plugins. Uploads are left out so the request can finish. ' . $remote,
+    );
 }
