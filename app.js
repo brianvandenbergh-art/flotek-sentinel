@@ -139,6 +139,27 @@ function dmarcNote(record) {
   if (policy.toLowerCase() === "none") return "DMARC policy is none, so failing mail is still delivered.";
   return "DMARC policy is " + policy + ".";
 }
+function recordBar(mon, site) {
+  if (!site) return;
+  mon.bars = mon.bars || [];
+  mon.bars.push({ t: Date.now(), up: !!site.up, ms: site.ms });
+  if (mon.bars.length > 60) mon.bars = mon.bars.slice(-60);
+}
+function uptimeBar(mon) {
+  const slots = (mon.bars || []).slice(-48);
+  const pad = Array(Math.max(0, 48 - slots.length)).fill(null);
+  const last = slots[slots.length - 1];
+  const down = last && !last.up;
+  const cells = pad.concat(slots).map((slot, index, all) => {
+    const scanning = mon.scanning && index === all.length - 1;
+    if (!slot) return `<i class="${scanning ? "scan" : ""}"></i>`;
+    const when = new Date(slot.t).toLocaleString();
+    const label = slot.up ? "Up" : "Down";
+    return `<i class="${scanning ? "scan" : slot.up ? "ok" : "bad"}" title="${label} ${esc(when)}${slot.ms ? " · " + slot.ms + " ms" : ""}"></i>`;
+  }).join("");
+  const text = mon.scanning ? "Scanning" : !last ? "Waiting" : down ? "Down" : "Up";
+  return `<div class="barline"><span class="${down ? "bad" : ""}">${text}</span><div class="bar" aria-label="Uptime">${cells}</div></div>`;
+}
 function daysUntil(value) {
   if (!value) return null;
   const n = Math.round((new Date(value) - Date.now()) / 86400000);
@@ -146,9 +167,13 @@ function daysUntil(value) {
 }
 function problems(mon) {
   const r = mon.result;
-  if (!r) return [];
   const list = [];
-  if (mon.kind === "website" && r.reach && !r.reach.up) list.push({ code: "down", message: mon.host + " did not answer on https://" + mon.host + "/. The check could not open the homepage." });
+  const lastBar = (mon.bars || []).slice(-1)[0];
+  if (mon.kind === "website" && (lastBar?.up === false || (r?.reach && !r.reach.up))) {
+    const when = lastBar ? new Date(lastBar.t).toLocaleString() : "the last check";
+    list.push({ code: "down", message: mon.host + " went offline at " + when + ". The homepage did not answer." });
+  }
+  if (!r) return list;
   if (r.cert?.revoked) list.push({ code: "cert-revoked", message: "Certificate for " + mon.host + " is revoked. Issuer " + r.cert.issuer + "." });
   else if (r.cert && r.cert.days < 30) list.push({ code: "cert-soon", message: "Certificate for " + mon.host + " expires on " + r.cert.until + " (" + r.cert.days + " days)." });
   if (r.mail?.spf === "Missing") list.push({ code: "spf", message: mon.host + ": " + (r.mail.spfNote || "SPF record is missing.") });
@@ -197,9 +222,10 @@ async function runCheck(mon) {
       });
     }
     mon.dnsSnap = snap;
-    const certs = await certificate(mon.host).catch(() => []);
+    const certs = (await certificate(mon.host).catch(() => [])).slice(0, 12);
     const currentCert = certs.reduce((best, cert) => (!best || new Date(cert.until) > new Date(best.until) ? cert : best), null);
     const site = mon.kind === "website" ? await reach("https://" + mon.host + "/") : null;
+    recordBar(mon, site);
     mon.result = {
       at: new Date().toISOString(),
       records: flat,
@@ -252,19 +278,30 @@ async function runSecurity(mon) {
   openDrawer(mon.id);
 }
 async function runSeo(mon) {
-  mon.wpError = "";
+  const button = $("runSeo");
+  if (button) button.textContent = "Running…";
+  mon.wpError = "The speed audit is running. You can keep using the rest of the page.";
   const endpoint = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=" + encodeURIComponent("https://" + mon.host + "/") + "&strategy=mobile&category=performance&category=seo";
-  const res = await fetch(endpoint);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 40000);
+  let res;
+  try {
+    res = await fetch(endpoint, { signal: controller.signal });
+  } catch (error) {
+    throw new Error(error.name === "AbortError" ? "PageSpeed took too long and was stopped. Try again in a minute." : "PageSpeed could not be reached.");
+  } finally {
+    clearTimeout(timer);
+  }
   if (!res.ok) throw new Error("PageSpeed returned " + res.status + ". Wait a minute and run it again.");
   const data = await res.json();
   const audits = data.lighthouseResult?.audits || {};
-  const pick = (id) => audits[id] ? { title: audits[id].title, value: audits[id].displayValue || "", score: audits[id].score } : null;
+  const pick = (id) => audits[id] ? { title: String(audits[id].title || id).slice(0, 80), value: String(audits[id].displayValue || "").slice(0, 80), score: audits[id].score } : null;
   const requests = (audits["network-requests"]?.details?.items || []).map((item) => ({
-    url: item.url,
+    url: String(item.url || "").slice(0, 120),
     type: item.resourceType || "",
     size: item.transferSize || 0,
     time: item.networkEndTime && item.networkRequestTime ? Math.round(item.networkEndTime - item.networkRequestTime) : null
-  })).sort((a, b) => b.size - a.size).slice(0, 20);
+  })).sort((a, b) => b.size - a.size).slice(0, 12);
   mon.seoAudits = ["is-crawlable", "robots-txt", "document-title", "meta-description", "http-status-code", "link-text", "crawlable-anchors", "canonical"].map(pick).filter(Boolean);
   mon.waterfall = requests;
   mon.vitals = mon.vitals || [];
@@ -299,7 +336,8 @@ function pill(mon) {
 function card(mon) {
   const when = mon.result ? new Date(mon.result.at).toLocaleString() : "Not checked yet";
   const extra = mon.result?.cert ? " · Certificate " + mon.result.cert.days + " days" : "";
-  return `<button class="mon" data-id="${mon.id}"><div><strong>${esc(mon.host)}</strong><div class="meta">${when}${extra}</div>${mon.error ? `<div class="err">${esc(mon.error)}</div>` : ""}</div><div>${pill(mon)}</div></button>`;
+  const down = mon.kind === "website" && (mon.bars || []).slice(-1)[0]?.up === false;
+  return `<button class="mon${down ? " alarm" : ""}" data-id="${mon.id}"><div><strong>${esc(mon.host)}</strong><div class="meta">${when}${extra}</div>${mon.error ? `<div class="err">${esc(mon.error)}</div>` : ""}</div><div>${pill(mon)}</div>${mon.kind === "website" ? uptimeBar(mon) : ""}</button>`;
 }
 function show(view) {
   state.view = view;
@@ -354,9 +392,13 @@ function render() {
 function table(rows) {
   return `<table>${rows.map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join("")}</table>`;
 }
+let drawing = false;
 function openDrawer(id) {
+  if (drawing) return;
   const m = state.monitors.find((x) => x.id === id);
   if (!m || !allowed(m)) return;
+  drawing = true;
+  try {
   state.open = id;
   const labels = { overview: "Overview", dns: "DNS", mail: "Mail", certificate: "Certificate", registration: "Registration", wordpress: "WordPress", analytics: "Analytics", seo: "SEO", security: "Security" };
   const tabs = m.kind === "website"
@@ -370,17 +412,23 @@ function openDrawer(id) {
   $("drawer").classList.remove("hidden");
   $("drawer").innerHTML = `<div class="panel"><div class="row"><div class="grow"><h2>${esc(m.host)}</h2><p class="meta">${m.kind === "website" ? "Website" : "Domain"}</p></div><button class="btn ghost small" id="close" type="button">Close</button>${actions}</div><div class="tabs">${tabHtml}</div><div class="card" id="pane"></div></div>`;
   $("pane").innerHTML = pane(m);
-  $("close").onclick = () => { state.open = null; $("drawer").classList.add("hidden"); };
+  $("close").onclick = (e) => { e.stopPropagation(); state.open = null; $("drawer").classList.add("hidden"); };
   $("drawer").onclick = (e) => { if (e.target.id === "drawer") $("close").click(); };
-  if ($("re")) $("re").onclick = () => runCheck(m);
-  if ($("remove")) $("remove").onclick = () => {
+  if ($("re")) $("re").onclick = (e) => { e.stopPropagation(); runCheck(m); };
+  if ($("remove")) $("remove").onclick = (e) => {
+    e.stopPropagation();
     state.monitors = state.monitors.filter((x) => x.id !== m.id);
     state.incidents = state.incidents.filter((i) => !(i.host === m.host && i.kind === m.kind));
     state.open = null; save(); $("drawer").classList.add("hidden"); render();
   };
-  $("pdfOne").onclick = () => downloadPdf(m.host + "-report.pdf", reportLines(m));
-  $("drawer").querySelectorAll("[data-tab]").forEach((b) => { b.onclick = () => { state.tab = b.dataset.tab; openDrawer(m.id); }; });
+  $("pdfOne").onclick = (e) => { e.stopPropagation(); downloadPdf(m.host + "-report.pdf", reportLines(m)); };
+  $("drawer").querySelectorAll("[data-tab]").forEach((b) => { b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); state.tab = b.dataset.tab; drawing = false; openDrawer(m.id); }; });
   bindPane(m);
+  } catch (error) {
+    if ($("pane")) $("pane").innerHTML = `<p class="err">${esc(error.message)}</p>`;
+  } finally {
+    drawing = false;
+  }
 }
 function pane(m) {
   const r = m.result;
@@ -664,4 +712,34 @@ $("userTable").onclick = (e) => {
   render();
 };
 load();
+state.monitors.forEach((mon) => {
+  if (mon.result?.certs) mon.result.certs = mon.result.certs.slice(0, 12);
+  if (mon.waterfall) mon.waterfall = mon.waterfall.slice(0, 12).map((item) => ({ url: String(item.url || "").slice(0, 120), type: item.type || "", size: item.size || 0, time: item.time }));
+});
+let ticking = false;
+async function liveTick() {
+  if (!state.user || ticking) return;
+  const list = websites();
+  if (!list.length) return;
+  ticking = true;
+  try {
+    for (const mon of list) {
+      mon.scanning = true;
+      render();
+      const site = await reach("https://" + mon.host + "/");
+      mon.scanning = false;
+      recordBar(mon, site);
+      mon.result = mon.result || { records: [], at: new Date().toISOString() };
+      mon.result.reach = site;
+      mon.result.at = new Date().toISOString();
+      syncIncidents(mon);
+      render();
+    }
+    save();
+  } finally {
+    ticking = false;
+  }
+}
+setInterval(liveTick, 45000);
+setTimeout(liveTick, 4000);
 render();
