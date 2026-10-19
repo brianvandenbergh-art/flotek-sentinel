@@ -58,10 +58,12 @@ add_filter('option_active_plugins', function ($plugins) {
 add_action('rest_api_init', function () {
     $routes = array(
         array('health', 'GET', 'flotek_sentinel_health'),
+        array('visits', 'GET', 'flotek_sentinel_visit_report'),
         array('create-user', 'POST', 'flotek_sentinel_create_user'),
         array('reset-password', 'POST', 'flotek_sentinel_reset_password'),
         array('delete-user', 'POST', 'flotek_sentinel_delete_user'),
         array('update-plugins', 'POST', 'flotek_sentinel_update_plugins'),
+        array('update-plugin', 'POST', 'flotek_sentinel_update_one'),
         array('create-backup', 'POST', 'flotek_sentinel_create_backup'),
         array('rollback', 'POST', 'flotek_sentinel_rollback'),
         array('restore-backup', 'POST', 'flotek_sentinel_restore_backup'),
@@ -154,6 +156,7 @@ function flotek_sentinel_health() {
         'plugins' => $plugins,
         'users' => $users,
         'backups' => $backups,
+        'visits' => flotek_sentinel_visit_report(),
         'performance' => array(
             'memory' => size_format(memory_get_usage(true)),
         ),
@@ -221,6 +224,130 @@ function flotek_sentinel_update_plugins() {
     $upgrader = new Plugin_Upgrader($skin);
     $result = $upgrader->bulk_upgrade($files);
     return array('success' => !is_wp_error($result), 'updated' => $files);
+}
+
+function flotek_sentinel_update_one($request) {
+    $plugin = (string) $request->get_param('plugin');
+    if ($plugin === '' || strpos($plugin, '..') !== false || !preg_match('/^[A-Za-z0-9._\/-]+\.php$/', $plugin)) {
+        return new WP_Error('bad_request', 'Name the plugin file', array('status' => 400));
+    }
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    require_once ABSPATH . 'wp-admin/includes/plugin.php';
+    require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+    require_once ABSPATH . 'wp-admin/includes/update.php';
+    wp_update_plugins();
+    $updates = get_site_transient('update_plugins');
+    if (!is_object($updates) || empty($updates->response[$plugin])) {
+        return array('success' => true, 'updated' => false, 'detail' => 'That plugin has no update waiting.');
+    }
+    $skin = new Automatic_Upgrader_Skin();
+    $upgrader = new Plugin_Upgrader($skin);
+    $result = $upgrader->upgrade($plugin);
+    if (is_wp_error($result) || $result === false || $result === null) {
+        $message = is_wp_error($result) ? $result->get_error_message() : 'WordPress did not update that plugin.';
+        return new WP_Error('failed', $message, array('status' => 500));
+    }
+    return array('success' => true, 'updated' => true, 'detail' => basename(dirname($plugin)) . ' was updated. The other plugins were left as they are.');
+}
+
+add_action('template_redirect', function () {
+    if (is_admin() || wp_doing_ajax() || wp_doing_cron() || is_feed() || is_robots() || is_trackback()) {
+        return;
+    }
+    if (defined('REST_REQUEST') && REST_REQUEST) {
+        return;
+    }
+    $day = gmdate('Y-m-d');
+    $stats = get_option('flotek_visits', array());
+    if (!is_array($stats)) {
+        $stats = array();
+    }
+    if (!isset($stats[$day]) || !is_array($stats[$day])) {
+        $stats[$day] = array('views' => 0, 'visitors' => 0, 'pages' => array());
+    }
+    $stats[$day]['views']++;
+    $seen_key = 'flotek_seen_' . $day;
+    $seen = get_transient($seen_key);
+    if (!is_array($seen)) {
+        $seen = array();
+    }
+    $hash = substr(hash('sha256', flotek_sentinel_ip() . '|' . $day), 0, 12);
+    if (!isset($seen[$hash])) {
+        if (count($seen) < 1500) {
+            $seen[$hash] = 1;
+            set_transient($seen_key, $seen, 2 * DAY_IN_SECONDS);
+        }
+        $stats[$day]['visitors']++;
+    }
+    $path = isset($_SERVER['REQUEST_URI']) ? strtok((string) $_SERVER['REQUEST_URI'], '?') : '/';
+    $path = substr((string) $path, 0, 120);
+    if ($path === '') {
+        $path = '/';
+    }
+    if (!isset($stats[$day]['pages']) || !is_array($stats[$day]['pages'])) {
+        $stats[$day]['pages'] = array();
+    }
+    $stats[$day]['pages'][$path] = (isset($stats[$day]['pages'][$path]) ? (int) $stats[$day]['pages'][$path] : 0) + 1;
+    if (count($stats[$day]['pages']) > 25) {
+        arsort($stats[$day]['pages']);
+        $stats[$day]['pages'] = array_slice($stats[$day]['pages'], 0, 15, true);
+    }
+    ksort($stats);
+    if (count($stats) > 30) {
+        $stats = array_slice($stats, -30, null, true);
+    }
+    update_option('flotek_visits', $stats, false);
+});
+
+function flotek_sentinel_visit_report() {
+    $stats = get_option('flotek_visits', array());
+    if (!is_array($stats)) {
+        $stats = array();
+    }
+    $days = array();
+    $views = 0;
+    $visitors = 0;
+    $pages = array();
+    foreach ($stats as $day => $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $view_count = (int) ($row['views'] ?? 0);
+        $visitor_count = (int) ($row['visitors'] ?? 0);
+        $views += $view_count;
+        $visitors += $visitor_count;
+        $days[] = array('day' => (string) $day, 'views' => $view_count, 'visitors' => $visitor_count);
+        if (!empty($row['pages']) && is_array($row['pages'])) {
+            foreach ($row['pages'] as $path => $count) {
+                $pages[$path] = (isset($pages[$path]) ? (int) $pages[$path] : 0) + (int) $count;
+            }
+        }
+    }
+    arsort($pages);
+    $top = array();
+    foreach (array_slice($pages, 0, 10, true) as $path => $count) {
+        $top[] = array('path' => (string) $path, 'views' => (int) $count);
+    }
+    $jetpack = array();
+    if (function_exists('stats_get_csv')) {
+        $rows = stats_get_csv('views', array('days' => 14, 'limit' => 14));
+        if (is_array($rows)) {
+            foreach ($rows as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $jetpack[] = array('day' => (string) ($row['date'] ?? ''), 'views' => (int) ($row['views'] ?? 0));
+            }
+        }
+    }
+    return array(
+        'views' => $views,
+        'visitors' => $visitors,
+        'days' => $days,
+        'pages' => $top,
+        'jetpack' => $jetpack,
+        'note' => 'These are public page views counted by Sentinel on this website. Counting starts the day you upload this file. It is not Google search traffic.',
+    );
 }
 
 function flotek_sentinel_backup_dir() {
