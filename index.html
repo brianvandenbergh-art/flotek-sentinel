@@ -6,56 +6,7 @@
 <title>Flotek Sentinel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-<style>
-  :root { --bg:#f6f3f7; --surface:#fff; --ink:#4c1c4c; --muted:#6e5a70; --line:#e6dce8; --plum:#8a3c8f; --deep:#4c1c4c; --soft:#f4e9f5; --orange:#ee792c; --teal:#0f7a62; --teal2:#5bbb9e; --tsoft:#e5f6f0; --down:#b4234a; --dsoft:#fde8ee; --warn:#8a5a12; --wsoft:#fff6e8; }
-  * { box-sizing: border-box; }
-  body { margin:0; font-family:"Space Grotesk",sans-serif; background:var(--bg); color:var(--ink); }
-  button, input, select { font:inherit; }
-  button { cursor:pointer; }
-  .login { min-height:100vh; display:grid; place-items:center; padding:24px; }
-  .card { width:min(440px,100%); background:#fff; border:1px solid var(--line); border-radius:20px; padding:28px; }
-  .brand { display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:-.03em; }
-  h1 { font-size:28px; margin:18px 0 6px; }
-  p { color:var(--muted); line-height:1.5; }
-  label { display:block; font-size:14px; font-weight:600; margin:14px 0 6px; }
-  input, select { width:100%; height:44px; border:1px solid var(--line); border-radius:12px; padding:0 12px; background:#fff; color:var(--ink); }
-  .btn { height:44px; border:0; border-radius:999px; padding:0 16px; font-weight:700; }
-  .btn.orange { background:var(--orange); color:#fff; width:100%; margin-top:18px; }
-  .btn.plum { background:var(--plum); color:#fff; }
-  .btn.ghost { background:#fff; border:1px solid var(--line); color:var(--ink); }
-  .err { color:var(--down); font-size:14px; }
-  header.app { display:flex; align-items:center; gap:16px; padding:14px 22px; background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; }
-  header.app nav { display:flex; gap:6px; margin-left:12px; }
-  header.app nav button { background:transparent; border:0; color:var(--muted); font-weight:700; padding:8px 12px; border-radius:999px; }
-  header.app nav button.on { background:var(--soft); color:var(--plum); }
-  .spacer { flex:1; }
-  main { width:min(1100px, calc(100% - 32px)); margin:22px auto 48px; }
-  .note { background:var(--soft); border-radius:16px; padding:12px 16px; color:var(--deep); font-size:14px; margin-bottom:16px; }
-  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
-  .stat { background:#fff; border:1px solid var(--line); border-radius:18px; padding:16px; }
-  .stat b { display:block; font-size:28px; margin-top:4px; }
-  .stat span { color:var(--muted); font-size:13px; font-weight:600; }
-  .row { display:flex; gap:10px; align-items:end; margin:16px 0; flex-wrap:wrap; }
-  .row .grow { flex:1; min-width:220px; }
-  .list { display:grid; gap:10px; }
-  .mon { background:#fff; border:1px solid var(--line); border-radius:18px; padding:16px 18px; display:grid; grid-template-columns:1fr auto; gap:8px 16px; text-align:left; width:100%; }
-  .mon strong { font-size:18px; }
-  .pill { display:inline-flex; align-items:center; height:26px; padding:0 10px; border-radius:999px; font-size:12px; font-weight:700; background:var(--wsoft); color:var(--warn); }
-  .pill.up { background:var(--tsoft); color:var(--teal); }
-  .pill.down { background:var(--dsoft); color:var(--down); }
-  .meta { color:var(--muted); font-size:13px; }
-  .drawer { position:fixed; inset:0; background:rgba(76,28,76,.35); display:flex; justify-content:flex-end; }
-  .panel { width:min(640px,100%); height:100%; background:#fff; overflow:auto; padding:22px; }
-  table { width:100%; border-collapse:collapse; font-size:13px; }
-  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; word-break:break-word; }
-  th { color:var(--muted); font-size:12px; }
-  .tabs { display:flex; gap:6px; flex-wrap:wrap; margin:12px 0; }
-  .tabs button { border:1px solid var(--line); background:#fff; border-radius:999px; padding:7px 12px; font-weight:700; color:var(--muted); }
-  .tabs button.on { background:var(--deep); color:#fff; border-color:var(--deep); }
-  .hidden { display:none !important; }
-  .team { width:100%; background:#fff; border:1px solid var(--line); border-radius:18px; overflow:hidden; }
-  @media (max-width:800px) { .stats { grid-template-columns:1fr 1fr; } header.app nav { display:none; } }
-</style>
+<link rel="stylesheet" href="app.css" />
 </head>
 <body>
 <div id="login" class="login">
@@ -65,51 +16,61 @@
       flotek
     </div>
     <h1>Sentinel</h1>
-    <p>Live review build. Sign in, add a website, and the checks run immediately in the browser.</p>
+    <p>Websites and domains are kept separate. Sign in, then open the list you want.</p>
     <label for="user">Username</label>
     <input id="user" autocomplete="username" required />
     <label for="pass">Password</label>
     <input id="pass" type="password" autocomplete="current-password" required />
     <p id="loginErr" class="err"></p>
-    <button class="btn orange" type="submit">Sign in</button>
+    <button class="btn orange" type="submit" style="width:100%;margin-top:16px">Sign in</button>
   </form>
 </div>
 <div id="app" class="hidden">
   <header class="app">
-    <div class="brand">
-      <svg width="22" height="26" viewBox="0 0 23 28" aria-hidden="true"><path d="M17.66 25.69V9.45c0-.31-.08-.62-.24-.89a1.7 1.7 0 0 0-.66-.65 1.7 1.7 0 0 0-1.79 0L.89 16.02a1.7 1.7 0 0 0 0 3.09l14.08 8.12c.27.16.58.24.89.24s.62-.08.89-.24c.27-.16.5-.39.66-.66.16-.27.24-.58.25-.89z" fill="#8A3C8F"/><path d="M22.07 18.05V1.8c0-.31-.08-.62-.24-.89a1.7 1.7 0 0 0-.66-.65 1.7 1.7 0 0 0-1.79 0L5.31 8.38a1.7 1.7 0 0 0 0 3.09l14.08 8.12c.27.16.58.24.89.24s.62-.08.9-.24c.27-.16.5-.38.66-.65.16-.27.24-.58.24-.89z" fill="#5BBB9E"/></svg>
-      flotek <span style="color:#8a3c8f">sentinel</span>
-    </div>
+    <div class="brand">flotek <span style="color:#8a3c8f">sentinel</span></div>
     <nav>
-      <button type="button" data-view="monitors" class="on">Monitors</button>
+      <button type="button" data-view="websites" class="on">Websites</button>
+      <button type="button" data-view="domains">Domains</button>
+      <button type="button" data-view="incidents">Incidents <span id="incBadge" class="badge hidden">0</span></button>
       <button type="button" data-view="team" id="teamNav">Team</button>
-      <button type="button" data-view="guide">Show this</button>
     </nav>
     <div class="spacer"></div>
     <span id="who" class="meta"></span>
     <button class="btn ghost" id="out" type="button">Sign out</button>
   </header>
   <main>
-    <section id="view-monitors">
-      <p class="note">This page is the live showcase. Reachability, the full DNS list, mail records, the certificate and domain registration are checked when you add a site. WordPress backups run in the server build after approval.</p>
-      <div class="stats" id="stats"></div>
-      <form class="row" id="addForm">
-        <div>
-          <label for="kind">Type</label>
-          <select id="kind"><option value="website">Website</option><option value="domain">Domain</option></select>
-        </div>
-        <div class="grow">
-          <label for="target">Address</label>
-          <input id="target" placeholder="flotek.io" required />
-        </div>
-        <button class="btn plum" type="submit">Add and check</button>
+    <section id="view-websites">
+      <h2>Websites</h2>
+      <p class="note">A website is a page we open and, for WordPress, a site we can change. The WordPress login can stay locked. Sentinel uses the agent file and the secret, not wp-admin.</p>
+      <div class="stats" id="webStats"></div>
+      <form class="row" id="webForm">
+        <div class="grow"><label for="webTarget">Website address</label><input id="webTarget" placeholder="flotek.io" required /></div>
+        <button class="btn plum" type="submit">Add website</button>
         <button class="btn ghost" id="demo" type="button">Check flotek.io</button>
       </form>
-      <div class="list" id="list"></div>
+      <div class="list" id="webList"></div>
+    </section>
+    <section id="view-domains" class="hidden">
+      <h2>Domains</h2>
+      <p class="note">A domain is the name only: DNS, mail, certificate and registration. It is not a website and it has no WordPress users.</p>
+      <div class="stats" id="domStats"></div>
+      <form class="row" id="domForm">
+        <div class="grow"><label for="domTarget">Domain name</label><input id="domTarget" placeholder="example.com" required /></div>
+        <button class="btn plum" type="submit">Add domain</button>
+      </form>
+      <div class="list" id="domList"></div>
+    </section>
+    <section id="view-incidents" class="hidden">
+      <div class="row">
+        <div class="grow"><h2>Incidents</h2></div>
+        <button class="btn plum" id="pdfIncidents" type="button">Download PDF</button>
+      </div>
+      <p>These are open problems. Acknowledge one when you have dealt with it. It leaves this list and is not raised again until it clears and fails again.</p>
+      <div class="card" style="padding:0;overflow:auto"><table id="incTable"></table></div>
     </section>
     <section id="view-team" class="hidden">
       <h2>Team</h2>
-      <p>Only an administrator can add people. Roles are Administrator, Operator and Viewer. This review copy stores the team in this browser.</p>
+      <p>Only an administrator can add people. Roles are Administrator, Operator and Viewer.</p>
       <form class="row" id="userForm">
         <div class="grow"><label>Name</label><input id="nName" required /></div>
         <div class="grow"><label>Username</label><input id="nUser" required /></div>
@@ -118,254 +79,11 @@
         <button class="btn plum" type="submit">Add user</button>
       </form>
       <p id="userErr" class="err"></p>
-      <div class="team"><table id="userTable"></table></div>
-    </section>
-    <section id="view-guide" class="hidden">
-      <h2>How to show it</h2>
-      <div class="card" style="width:100%">
-        <p><b>1.</b> Sign in as Flotek.</p>
-        <p><b>2.</b> Press “Check flotek.io”, or type a customer domain and press “Add and check”.</p>
-        <p><b>3.</b> Open the site. Show Reach, then DNS. That table is the full record list, not a sample.</p>
-        <p><b>4.</b> Open Certificate and Registration so they can see the expiry and the registrar.</p>
-        <p><b>5.</b> Open Team and add a user with a role. Viewers cannot add sites.</p>
-        <p>After they approve it, this same product moves to a Flotek subdomain. That copy keeps the accounts on the server and adds WordPress backups and file recovery.</p>
-      </div>
+      <div class="card" style="padding:0;overflow:auto"><table id="userTable"></table></div>
     </section>
   </main>
 </div>
 <div id="drawer" class="drawer hidden"></div>
-<script>
-const ADMIN_HASH = "96d9a2539acbf3955441217a803568ebdf7fe673db1921c3e71ead99c533881a";
-const TYPES = ["A","AAAA","CNAME","MX","NS","TXT","SOA","CAA","SRV"];
-const $ = (id) => document.getElementById(id);
-const state = { user:null, monitors:[], users:[], open:null, tab:"reach" };
-
-async function sha(text) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2,"0")).join("");
-}
-function load() {
-  state.users = JSON.parse(localStorage.getItem("fs-users") || "null") || [{ username:"flotek", name:"Flotek", role:"admin", hash:ADMIN_HASH }];
-  state.monitors = JSON.parse(localStorage.getItem("fs-monitors") || "[]");
-  const id = sessionStorage.getItem("fs-session");
-  state.user = state.users.find((u) => u.username === id) || null;
-}
-function save() {
-  localStorage.setItem("fs-users", JSON.stringify(state.users));
-  localStorage.setItem("fs-monitors", JSON.stringify(state.monitors));
-}
-function hostOf(value) {
-  const raw = value.trim().toLowerCase().replace(/^https?:\/\//, "").split("/")[0];
-  if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(raw)) throw new Error("Enter a domain like flotek.io");
-  return raw;
-}
-function canEdit() { return state.user && state.user.role !== "viewer"; }
-
-async function dns(name, type) {
-  const res = await fetch("https://dns.google/resolve?name=" + encodeURIComponent(name) + "&type=" + type);
-  const json = await res.json();
-  return (json.Answer || []).map((a) => ({ type: a.type, data: String(a.data).replace(/^"|"$/g, "") }));
-}
-async function reach(url) {
-  const start = performance.now();
-  try {
-    await fetch(url, { mode:"no-cors", cache:"no-store" });
-    return { up:true, ms:Math.round(performance.now() - start) };
-  } catch {
-    return { up:false, ms:null };
-  }
-}
-async function certificate(host) {
-  const res = await fetch("https://api.certspotter.com/v1/issuances?domain=" + encodeURIComponent(host) + "&include_subdomains=false&expand=issuer");
-  if (!res.ok) return null;
-  const list = await res.json();
-  if (!Array.isArray(list) || !list.length) return null;
-  list.sort((a,b) => new Date(b.not_after) - new Date(a.not_after));
-  const cert = list[0];
-  const days = Math.round((new Date(cert.not_after) - Date.now()) / 86400000);
-  return { issuer: cert.issuer?.friendly_name || cert.issuer?.name || "Unknown", from: cert.not_before, until: cert.not_after, days, revoked: !!cert.revoked };
-}
-async function registration(domain) {
-  const boot = await fetch("https://data.iana.org/rdap/dns.json").then((r) => r.json());
-  const labels = domain.split(".");
-  let base = null;
-  for (let i = 0; i < labels.length; i++) {
-    const tld = labels.slice(i).join(".");
-    const hit = (boot.services || []).find((s) => s[0].includes(tld));
-    if (hit) { base = hit[1][0]; break; }
-  }
-  if (!base) return { error:"No registration server for this ending." };
-  const res = await fetch(base.replace(/\/$/, "") + "/domain/" + domain, { headers:{ Accept:"application/rdap+json, application/json" } });
-  if (!res.ok) return { error:"Registration lookup returned " + res.status + "." };
-  const data = await res.json();
-  const date = (action) => (data.events || []).find((e) => e.eventAction === action)?.eventDate || "";
-  const registrar = (data.entities || []).find((e) => (e.roles || []).includes("registrar"));
-  const name = registrar?.vcardArray?.[1]?.find((v) => v[0] === "fn")?.[3] || "";
-  return {
-    name: data.ldhName || domain,
-    status: (data.status || []).join(", ") || "—",
-    registered: date("registration"),
-    changed: date("last changed"),
-    expires: date("expiration"),
-    registrar: name || "—",
-    nameservers: (data.nameservers || []).map((n) => n.ldhName).filter(Boolean)
-  };
-}
-async function mail(host, addresses) {
-  const txt = await dns(host, "TXT");
-  const dmarc = await dns("_dmarc." + host, "TXT");
-  const selectors = ["default","google","selector1","selector2","k1","s1"];
-  const dkim = [];
-  for (const sel of selectors) {
-    const rows = await dns(sel + "._domainkey." + host, "TXT");
-    if (rows.length) dkim.push(sel);
-  }
-  let listed = "Not checked";
-  const ip = (addresses || []).map((a) => a.data).find((d) => /^\d+\.\d+\.\d+\.\d+$/.test(d));
-  if (ip) {
-    const rev = ip.split(".").reverse().join(".") + ".zen.spamhaus.org";
-    const bl = await dns(rev, "A");
-    listed = bl.length ? "Listed" : "Not listed";
-  }
-  return {
-    spf: txt.map((t) => t.data).find((d) => d.includes("v=spf1")) || "Missing",
-    dmarc: dmarc.map((t) => t.data).find((d) => d.includes("v=DMARC1")) || "Missing",
-    dkim: dkim.length ? dkim.join(", ") : "No common selector",
-    blacklist: listed
-  };
-}
-async function runCheck(mon) {
-  mon.checking = true; render();
-  try {
-    const records = {};
-    for (const type of TYPES) records[type] = await dns(mon.host, type);
-    const flat = TYPES.flatMap((type) => records[type].map((row) => ({ type, data: row.data })));
-    const site = mon.kind === "website" ? await reach("https://" + mon.host + "/") : null;
-    mon.result = {
-      at: new Date().toISOString(),
-      records: flat,
-      reach: site,
-      cert: await certificate(mon.host).catch(() => null),
-      rdap: await registration(mon.host).catch((e) => ({ error:e.message })),
-      mail: await mail(mon.host, records.A).catch(() => null)
-    };
-    mon.error = "";
-  } catch (error) {
-    mon.error = error.message || "The check failed.";
-  }
-  mon.checking = false;
-  save(); render();
-  if (state.open === mon.id) openDrawer(mon.id);
-}
-
-function render() {
-  $("login").classList.toggle("hidden", !!state.user);
-  $("app").classList.toggle("hidden", !state.user);
-  if (!state.user) return;
-  $("who").textContent = state.user.name + " · " + state.user.role;
-  $("teamNav").classList.toggle("hidden", state.user.role !== "admin");
-  const mons = state.monitors;
-  const up = mons.filter((m) => m.result?.reach?.up).length;
-  const down = mons.filter((m) => m.result?.reach && !m.result.reach.up).length;
-  const times = mons.map((m) => m.result?.reach?.ms).filter((n) => n != null);
-  const avg = times.length ? Math.round(times.reduce((a,b) => a+b, 0) / times.length) : "—";
-  const expiring = mons.filter((m) => m.result?.cert && m.result.cert.days < 30).length;
-  $("stats").innerHTML = [
-    ["Monitors", mons.length], ["Reachable", up], ["Unreachable", down], ["Avg response", avg === "—" ? "—" : avg + " ms"]
-  ].map(([k,v]) => `<div class="stat"><span>${k}</span><b>${v}</b></div>`).join("") + `<div class="stat"><span>Certificates under 30 days</span><b>${expiring}</b></div>`;
-  $("stats").style.gridTemplateColumns = "repeat(5,1fr)";
-  $("addForm").classList.toggle("hidden", !canEdit());
-  $("list").innerHTML = mons.length ? mons.map((m) => {
-    const reach = m.result?.reach;
-    const pill = m.checking ? `<span class="pill">Checking</span>` : !m.result ? `<span class="pill">Not checked</span>` : reach ? `<span class="pill ${reach.up ? "up" : "down"}">${reach.up ? "Reachable" : "Unreachable"}</span>` : `<span class="pill up">Domain</span>`;
-    const when = m.result ? new Date(m.result.at).toLocaleString() : "Waiting for the first check";
-    const extra = m.result?.cert ? ` · Certificate ${m.result.cert.days} days` : "";
-    return `<button class="mon" data-id="${m.id}"><div><strong>${m.host}</strong><div class="meta">${m.kind} · ${when}${extra}</div>${m.error ? `<div class="err">${m.error}</div>` : ""}</div><div>${pill}</div></button>`;
-  }).join("") : `<div class="card" style="width:100%"><p>No monitors yet. Add a website or press “Check flotek.io”.</p></div>`;
-  const rows = state.users.map((u) => `<tr><td>${u.name}</td><td>${u.username}</td><td>${u.role}</td><td>${u.username === "flotek" ? "" : `<button data-del="${u.username}" class="btn ghost" type="button">Remove</button>`}</td></tr>`).join("");
-  $("userTable").innerHTML = `<tr><th>Name</th><th>Username</th><th>Role</th><th></th></tr>` + rows;
-  $("userForm").classList.toggle("hidden", state.user.role !== "admin");
-}
-
-function openDrawer(id) {
-  const m = state.monitors.find((x) => x.id === id);
-  if (!m) return;
-  state.open = id;
-  const r = m.result;
-  const tabs = ["reach","dns","mail","certificate","registration"].map((t) => `<button type="button" data-tab="${t}" class="${state.tab===t?"on":""}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("");
-  let body = "<p>Run a check to fill this in.</p>";
-  if (r && state.tab === "reach") {
-    body = r.reach ? `<p><b>${r.reach.up ? "The website answered." : "The website did not answer."}</b></p><p>Response time: ${r.reach.ms ?? "—"} ms. The browser can see that the site is there. The exact status code is read by the server build.</p>` : `<p>This is a domain monitor, so there is no page to open. Use DNS and Registration.</p>`;
-  }
-  if (r && state.tab === "dns") {
-    body = r.records.length ? `<table><tr><th>Type</th><th>Value</th></tr>${r.records.map((row) => `<tr><td>${row.type}</td><td>${escape(row.data)}</td></tr>`).join("")}</table>` : "<p>No public records were returned.</p>";
-  }
-  if (r && state.tab === "mail") {
-    const mail = r.mail || {};
-    body = `<table><tr><th>Check</th><th>Result</th></tr><tr><td>SPF</td><td>${escape(mail.spf||"—")}</td></tr><tr><td>DMARC</td><td>${escape(mail.dmarc||"—")}</td></tr><tr><td>DKIM selectors</td><td>${escape(mail.dkim||"—")}</td></tr><tr><td>Spamhaus</td><td>${escape(mail.blacklist||"—")}</td></tr></table>`;
-  }
-  if (r && state.tab === "certificate") {
-    const c = r.cert;
-    body = c ? `<table><tr><th></th><th></th></tr><tr><td>Issuer</td><td>${escape(c.issuer)}</td></tr><tr><td>Valid from</td><td>${c.from}</td></tr><tr><td>Expires</td><td>${c.until}</td></tr><tr><td>Days left</td><td>${c.days}</td></tr><tr><td>Revoked</td><td>${c.revoked ? "Yes" : "No"}</td></tr></table>` : "<p>No public certificate was found for this name.</p>";
-  }
-  if (r && state.tab === "registration") {
-    const d = r.rdap || {};
-    body = d.error ? `<p>${escape(d.error)}</p>` : `<table><tr><td>Name</td><td>${escape(d.name||"")}</td></tr><tr><td>Registrar</td><td>${escape(d.registrar||"")}</td></tr><tr><td>Status</td><td>${escape(d.status||"")}</td></tr><tr><td>Registered</td><td>${escape(d.registered||"")}</td></tr><tr><td>Updated</td><td>${escape(d.changed||"")}</td></tr><tr><td>Expires</td><td>${escape(d.expires||"")}</td></tr><tr><td>Name servers</td><td>${escape((d.nameservers||[]).join(", "))}</td></tr></table>`;
-  }
-  $("drawer").classList.remove("hidden");
-  $("drawer").innerHTML = `<div class="panel"><div class="row"><div class="grow"><h2 style="margin:0">${m.host}</h2><p class="meta">${m.kind}</p></div><button class="btn ghost" id="close" type="button">Close</button>${canEdit()?`<button class="btn plum" id="re" type="button">Check again</button><button class="btn ghost" id="remove" type="button">Remove</button>`:""}</div><div class="tabs">${tabs}</div>${body}</div>`;
-  $("close").onclick = () => { state.open = null; $("drawer").classList.add("hidden"); };
-  $("drawer").onclick = (e) => { if (e.target.id === "drawer") $("close").click(); };
-  if ($("re")) $("re").onclick = () => runCheck(m);
-  if ($("remove")) $("remove").onclick = () => { state.monitors = state.monitors.filter((x) => x.id !== m.id); state.open = null; save(); $("drawer").classList.add("hidden"); render(); };
-  $("drawer").querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { state.tab = b.dataset.tab; openDrawer(m.id); });
-}
-function escape(value) {
-  return String(value).replace(/[&<>"]/g, (c) => "&#" + c.charCodeAt(0) + ";");
-}
-
-$("loginForm").onsubmit = async (e) => {
-  e.preventDefault();
-  const username = $("user").value.trim().toLowerCase();
-  const hash = await sha($("pass").value);
-  const found = state.users.find((u) => u.username === username && u.hash === hash);
-  $("loginErr").textContent = found ? "" : "That username or password is not correct.";
-  if (!found) return;
-  state.user = found;
-  sessionStorage.setItem("fs-session", found.username);
-  render();
-};
-$("out").onclick = () => { state.user = null; sessionStorage.removeItem("fs-session"); render(); };
-document.querySelectorAll("header.app nav button").forEach((b) => b.onclick = () => {
-  document.querySelectorAll("header.app nav button").forEach((n) => n.classList.remove("on"));
-  b.classList.add("on");
-  ["monitors","team","guide"].forEach((v) => $("view-"+v).classList.toggle("hidden", v !== b.dataset.view));
-});
-$("addForm").onsubmit = (e) => { e.preventDefault(); addMonitor($("target").value, $("kind").value); };
-$("demo").onclick = () => addMonitor("flotek.io", "website");
-function addMonitor(value, kind) {
-  if (!canEdit()) return;
-  let host; try { host = hostOf(value); } catch (error) { alert(error.message); return; }
-  if (state.monitors.some((m) => m.host === host && m.kind === kind)) { alert("That monitor is already on the list."); return; }
-  const mon = { id: crypto.randomUUID(), host, kind, result:null };
-  state.monitors.unshift(mon); save(); $("target").value = ""; runCheck(mon);
-}
-$("list").onclick = (e) => { const b = e.target.closest("[data-id]"); if (b) { state.tab = "dns"; openDrawer(b.dataset.id); } };
-$("userForm").onsubmit = async (e) => {
-  e.preventDefault();
-  const username = $("nUser").value.trim().toLowerCase();
-  const password = $("nPass").value;
-  if (!/^[a-z][a-z0-9._-]{2,31}$/.test(username)) { $("userErr").textContent = "Usernames start with a letter and use 3–32 letters, numbers, dots or dashes."; return; }
-  if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) { $("userErr").textContent = "Passwords need 8 characters, a letter and a number."; return; }
-  if (state.users.some((u) => u.username === username)) { $("userErr").textContent = "That username is already in use."; return; }
-  state.users.push({ username, name:$("nName").value.trim(), role:$("nRole").value, hash: await sha(password) });
-  save(); $("userErr").textContent = ""; e.target.reset(); render();
-};
-$("userTable").onclick = (e) => {
-  const name = e.target.dataset.del; if (!name || state.user.role !== "admin") return;
-  state.users = state.users.filter((u) => u.username !== name); save(); render();
-};
-load(); render();
-</script>
+<script src="app.js"></script>
 </body>
 </html>
