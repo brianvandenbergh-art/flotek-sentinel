@@ -69,15 +69,29 @@ async function certificate(host) {
   })).sort((a, b) => new Date(b.from) - new Date(a.from));
 }
 async function registration(domain) {
-  const boot = await fetch("https://data.iana.org/rdap/dns.json").then((r) => r.json());
   const labels = domain.split(".");
-  let base = null;
-  for (let i = 0; i < labels.length; i++) {
-    const tld = labels.slice(i).join(".");
-    const hit = (boot.services || []).find((s) => s[0].includes(tld));
-    if (hit) { base = hit[1][0]; break; }
+  const fallbacks = [
+    [["co.za", "web.za", "org.za", "net.za"], "https://whois.registry.net.za/rdap/"]
+  ];
+  let base = "";
+  try {
+    const boot = await fetch("https://data.iana.org/rdap/dns.json").then((r) => r.json());
+    for (let i = 1; i < labels.length; i++) {
+      const tld = labels.slice(i).join(".");
+      const hit = (boot.services || []).find((s) => Array.isArray(s[0]) && s[0].includes(tld));
+      if (hit && hit[1] && hit[1][0]) { base = hit[1][0]; break; }
+    }
+  } catch (error) {
+    base = "";
   }
-  if (!base) return { error: "No registration server for this ending." };
+  if (!base) {
+    for (let i = 1; i < labels.length; i++) {
+      const tld = labels.slice(i).join(".");
+      const hit = fallbacks.find((row) => row[0].includes(tld));
+      if (hit) { base = hit[1]; break; }
+    }
+  }
+  if (!base) return { error: "No registration server is published for ." + labels.slice(1).join(".") + "." };
   const res = await fetch(base.replace(/\/$/, "") + "/domain/" + domain, { headers: { Accept: "application/rdap+json, application/json" } });
   if (!res.ok) return { error: "Registration lookup returned " + res.status + "." };
   const data = await res.json();
@@ -88,7 +102,7 @@ async function registration(domain) {
     name: data.ldhName || domain,
     status: (data.status || []).join(", ") || "—",
     registered: date("registration"),
-    changed: date("last changed"),
+    changed: date("last changed") || date("last update of RDAP database"),
     expires: date("expiration"),
     registrar: name || "—",
     nameservers: (data.nameservers || []).map((n) => n.ldhName).filter(Boolean)
@@ -254,7 +268,11 @@ async function wpCall(mon, path, method, body) {
   try {
     res = await fetch("https://" + mon.host + "/wp-json/flotek/v1/" + path, {
       method,
-      headers: { "X-Hub-Secret": mon.secret, "Content-Type": "application/json" },
+      headers: {
+        "X-Hub-Secret": mon.secret,
+        "Content-Type": "application/json",
+        ...(mon.recovery ? { "X-Flotek-Disable": "*" } : {})
+      },
       body: body ? JSON.stringify(body) : undefined
     });
   } catch {
@@ -411,9 +429,9 @@ function openDrawer(id) {
     : `<button class="btn ghost small" id="pdfOne" type="button">PDF report</button>`;
   $("drawer").classList.remove("hidden");
   $("drawer").innerHTML = `<div class="panel"><div class="row"><div class="grow"><h2>${esc(m.host)}</h2><p class="meta">${m.kind === "website" ? "Website" : "Domain"}</p></div><button class="btn ghost small" id="close" type="button">Close</button>${actions}</div><div class="tabs">${tabHtml}</div><div class="card" id="pane"></div></div>`;
-  $("pane").innerHTML = pane(m);
   $("close").onclick = (e) => { e.stopPropagation(); state.open = null; $("drawer").classList.add("hidden"); };
   $("drawer").onclick = (e) => { if (e.target.id === "drawer") $("close").click(); };
+  try { $("pane").innerHTML = pane(m); } catch (error) { $("pane").innerHTML = `<p class="err">${esc(error.message)}</p>`; }
   if ($("re")) $("re").onclick = (e) => { e.stopPropagation(); runCheck(m); };
   if ($("remove")) $("remove").onclick = (e) => {
     e.stopPropagation();
@@ -468,16 +486,21 @@ function certPane(m) {
   return `<table><tr><th>Issued</th><th>Expires</th><th>Issuer</th><th>Names</th><th>State</th></tr>${certs.slice(0, 12).map((c) => `<tr><td>${esc(c.from)}</td><td>${esc(c.until)}</td><td>${esc(c.issuer)}</td><td>${esc(c.names || "")}</td><td>${c.revoked ? "Revoked" : c.days + " days"}</td></tr>`).join("")}</table>`;
 }
 function seoPane(m) {
-  const latest = (m.vitals || [])[m.vitals.length - 1];
-  const history = (m.vitals || []).slice().reverse().map((v) => `<tr><td>${esc(new Date(v.at).toLocaleString())}</td><td>${v.score}</td><td>${v.seo}</td><td>${esc(v.lcp?.value || "—")}</td><td>${esc(v.cls?.value || "—")}</td><td>${esc(v.inp?.value || "—")}</td></tr>`).join("");
-  const audits = (m.seoAudits || []).map((a) => `<tr><td>${esc(a.title)}</td><td>${a.score == null ? "—" : Math.round(a.score * 100)}</td><td>${esc(a.value || "")}</td></tr>`).join("");
-  const water = (m.waterfall || []).slice(0, 15).map((item) => `<tr><td>${esc(item.url)}</td><td>${esc(item.type || "")}</td><td>${item.size ? Math.round(item.size / 1024) + " KB" : "—"}</td><td>${item.time ?? "—"}</td></tr>`).join("");
-  const seo = m.seo;
+  const vitals = Array.isArray(m.vitals) ? m.vitals : [];
+  const latest = vitals[vitals.length - 1];
+  const history = vitals.slice().reverse().map((v) => `<tr><td>${esc(new Date(v.at).toLocaleString())}</td><td>${v.score}</td><td>${v.seo}</td><td>${esc(v.lcp?.value || "—")}</td><td>${esc(v.cls?.value || "—")}</td><td>${esc(v.inp?.value || "—")}</td></tr>`).join("");
+  const audits = (Array.isArray(m.seoAudits) ? m.seoAudits : []).map((a) => `<tr><td>${esc(a.title)}</td><td>${a.score == null ? "—" : Math.round(a.score * 100)}</td><td>${esc(a.value || "")}</td></tr>`).join("");
+  const water = (Array.isArray(m.waterfall) ? m.waterfall : []).slice(0, 15).map((item) => `<tr><td>${esc(item.url)}</td><td>${esc(item.type || "")}</td><td>${item.size ? Math.round(item.size / 1024) + " KB" : "—"}</td><td>${item.time ?? "—"}</td></tr>`).join("");
+  const seo = m.seo || null;
+  const sitemaps = Array.isArray(seo?.sitemaps) ? seo.sitemaps : [];
+  const broken = Array.isArray(seo?.broken_links) ? seo.broken_links : [];
+  const images = Array.isArray(seo?.broken_images) ? seo.broken_images : [];
   const crawl = seo ? `<p>robots.txt ${seo.robots_present ? "is present" : "is missing"}. ${seo.robots_blocks_google ? "It blocks crawlers." : "It does not block the whole site."}</p>
-    <table><tr><th>Sitemap</th><th>Status</th></tr>${(seo.sitemaps || []).map((s) => `<tr><td>${esc(s.url)}</td><td>${s.status}</td></tr>`).join("")}</table>
-    <h3>Broken links</h3>${(seo.broken_links || []).length ? `<table><tr><th>URL</th><th>Status</th></tr>${seo.broken_links.map((l) => `<tr><td>${esc(l.url)}</td><td>${l.status}</td></tr>`).join("")}</table>` : "<p>No broken internal links in the sample.</p>"}
-    <h3>Broken images</h3>${(seo.broken_images || []).length ? (seo.broken_images || []).map((l) => `<p>${esc(l.url)} · ${l.status}</p>`).join("") : "<p>No broken images in the sample.</p>"}` : "<p>WordPress crawl runs when the agent secret is saved.</p>";
-  const journey = (m.journey?.steps || []).map((s) => `<tr><td>${esc(s.path)}</td><td>${s.status}</td><td>${s.ok ? "Ok" : "Failed"}</td></tr>`).join("");
+    <table><tr><th>Sitemap</th><th>Status</th></tr>${sitemaps.map((s) => `<tr><td>${esc(s.url)}</td><td>${s.status}</td></tr>`).join("")}</table>
+    <h3>Broken links</h3>${broken.length ? `<table><tr><th>URL</th><th>Status</th></tr>${broken.map((l) => `<tr><td>${esc(l.url)}</td><td>${l.status}</td></tr>`).join("")}</table>` : "<p>No broken internal links in the sample.</p>"}
+    <h3>Broken images</h3>${images.length ? images.map((l) => `<p>${esc(l.url)} · ${l.status}</p>`).join("") : "<p>No broken images in the sample.</p>"}` : "<p>WordPress crawl runs when the agent secret is saved.</p>";
+  const steps = Array.isArray(m.journey?.steps) ? m.journey.steps : [];
+  const journey = steps.map((s) => `<tr><td>${esc(s.path)}</td><td>${s.status}</td><td>${s.ok ? "Ok" : "Failed"}</td></tr>`).join("");
   return `<button class="btn plum small" id="runSeo" type="button">Run SEO and speed audit</button>
     ${latest ? `<div class="stats">${stat("Speed", latest.score)}${stat("SEO", latest.seo)}${stat("LCP", latest.lcp?.value || "—")}${stat("CLS", latest.cls?.value || "—")}</div>` : ""}
     <h3>History</h3><table><tr><th>When</th><th>Speed</th><th>SEO</th><th>LCP</th><th>CLS</th><th>INP</th></tr>${history || "<tr><td colspan='6'>Not run yet.</td></tr>"}</table>
@@ -532,22 +555,38 @@ function wordpress(m) {
   const w = m.wp;
   const users = (w.users || []).map((u) => `<tr><td>${esc(u.user_login)}</td><td>${esc(u.user_email)}</td><td>${esc((u.roles || []).join(", "))}</td><td class="act">${canEditMon(m) ? `<button class="btn ghost small" data-wpdel="${u.id}" type="button">Remove</button>` : ""}</td></tr>`).join("");
   const plugins = (w.plugins || []).map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.version)}${p.has_update ? " → " + esc(p.new_version) : ""}</td><td>${p.active ? "Active" : "Off"}</td><td class="act">${canEditMon(m) ? `<button class="btn ghost small" data-disable="${esc(p.file)}" type="button">Disable</button>` : ""}</td></tr>`).join("");
-  const backups = (w.backups || []).map((b) => `<tr><td>${esc(b.filename)}</td><td>${esc(b.filesize)}</td><td class="act">${canEditMon(m) ? `<button class="btn ghost small" data-restore="${esc(b.filename)}" type="button">Restore</button>` : ""}</td></tr>`).join("");
+  const backups = (w.backups || []).map((b) => `<tr><td>${esc(b.filename)}</td><td>${esc(b.filesize)}</td><td>${esc(b.location || "wp-content/flotek-backups")}</td><td class="act">${canEditMon(m) ? `<button class="btn ghost small" data-restore="${esc(b.filename)}" type="button">Restore</button>` : ""}</td></tr>`).join("");
   const forms = canEditMon(m) ? `
+    <h3>Plugin updates and backups</h3>
+    <p>Update plugins installs the available updates on this website now. Disable turns one plugin off. Use that if an update breaks the site.</p>
+    <div class="row"><button class="btn plum small" id="updatePlugins" type="button">Update plugins</button><button class="btn ghost small" id="makeBackup" type="button">Back up database</button><button class="btn ghost small" id="fullBackup" type="button">Back up files and database</button><button class="btn ghost small" id="recovery" type="button">${m.recovery ? "Recovery mode is on" : "Turn on recovery mode"}</button></div>
+    <p>Backups are saved on the website in <b>wp-content/flotek-backups/</b>. Restore puts that copy back. Recovery mode switches normal plugins off for Sentinel's request, so a broken plugin cannot stop the restore. It cannot repair wp-config.php or the Sentinel file itself.</p>
+    <label>Upload a .sql or .zip backup</label>
+    <input id="backupFile" type="file" accept=".sql,.zip,application/zip,application/sql" />
+    <button class="btn ghost small" id="uploadBackup" type="button" style="margin-top:8px">Upload and store on the site</button>
     <h3>Site settings</h3>
     <label>Site name</label><input id="siteName" value="${esc(w.site_name || "")}" />
     <label>Tagline</label><input id="tagline" value="${esc(w.tagline || "")}" />
     <button class="btn plum small" id="saveSettings" type="button" style="margin-top:10px">Save settings</button>
     <h3>Add WordPress user</h3>
     <div class="row"><div class="grow"><input id="wu" placeholder="Username" /></div><div class="grow"><input id="we" placeholder="Email" /></div></div>
-    <div class="row"><div class="grow"><input id="wpw" type="password" placeholder="Password" /></div><div><select id="wr"><option>subscriber</option><option>contributor</option><option>author</option><option>editor</option><option>administrator</option></select></div><button class="btn plum small" id="addWpUser" type="button">Add user</button></div>
-    <h3>Plugins and backups</h3>
-    <div class="row"><button class="btn plum small" id="updatePlugins" type="button">Update plugins</button><button class="btn ghost small" id="makeBackup" type="button">Create backup</button></div>` : "";
+    <div class="row"><div class="grow"><input id="wpw" type="password" placeholder="Password" /></div><div><select id="wr"><option>subscriber</option><option>contributor</option><option>author</option><option>editor</option><option>administrator</option></select></div><button class="btn plum small" id="addWpUser" type="button">Add user</button></div>` : "";
   return `${intro}<p><b>${esc(w.site_name || m.host)}</b> · WordPress ${esc(w.wp_version || "")} · PHP ${esc(w.php_version || "")} · Theme ${esc(w.theme?.name || "")}</p>${forms}
     <h3>Users</h3><table><tr><th>User</th><th>Email</th><th>Role</th><th></th></tr>${users || ""}</table>
-    <h3>Plugins</h3><table><tr><th>Plugin</th><th>Version</th><th>State</th><th></th></tr>${plugins || ""}</table>
-    <h3>Backups</h3><table><tr><th>File</th><th>Size</th><th></th></tr>${backups || "<tr><td colspan='3'>No backups yet.</td></tr>"}</table>
+    <h3>Plugins</h3><table><tr><th>Plugin</th><th>Version</th><th>State</th><th class="act"></th></tr>${plugins || ""}</table>
+    <h3>Backups on the server</h3><table><tr><th>File</th><th>Size</th><th>Where</th><th class="act"></th></tr>${backups || "<tr><td colspan='4'>No backups yet. Use Back up database or Back up files and database.</td></tr>"}</table>
     <p class="err">${esc(m.wpError || "")}</p>`;
+}
+async function uploadBackup(mon) {
+  const file = $("backupFile") && $("backupFile").files ? $("backupFile").files[0] : null;
+  if (!file) throw new Error("Choose a .sql or .zip file first.");
+  if (file.size > 6 * 1024 * 1024) throw new Error("That file is over 6 MB. Create the backup from this page so it stays on the server.");
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 8000) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 8000));
+  const result = await wpCall(mon, "upload-backup", "POST", { filename: file.name, content: btoa(binary) });
+  mon.wpError = result.detail || "Upload stored on the website.";
+  await loadWp(mon);
 }
 function bindPane(m) {
   const go = (fn) => fn().catch((e) => { m.wpError = e.message; openDrawer(m.id); });
@@ -556,11 +595,13 @@ function bindPane(m) {
   if ($("loadWp")) $("loadWp").onclick = () => go(() => loadWp(m));
   if ($("saveSettings")) $("saveSettings").onclick = () => go(async () => { await wpCall(m, "update-settings", "POST", { site_name: $("siteName").value, tagline: $("tagline").value }); await loadWp(m); });
   if ($("addWpUser")) $("addWpUser").onclick = () => go(async () => { await wpCall(m, "create-user", "POST", { username: $("wu").value, email: $("we").value, password: $("wpw").value, role: $("wr").value }); await loadWp(m); });
-  if ($("updatePlugins")) $("updatePlugins").onclick = () => go(async () => { await wpCall(m, "update-plugins", "POST"); await loadWp(m); });
-  if ($("makeBackup")) $("makeBackup").onclick = () => go(async () => { await wpCall(m, "create-backup", "POST"); await loadWp(m); });
+  if ($("updatePlugins")) $("updatePlugins").onclick = () => { if (confirm("Install the available plugin updates on this website now?")) go(async () => { await wpCall(m, "update-plugins", "POST"); await loadWp(m); }); };
+  if ($("makeBackup")) $("makeBackup").onclick = () => go(async () => { await wpCall(m, "create-backup", "POST"); m.wpError = "Database backup saved in wp-content/flotek-backups/."; await loadWp(m); });
+  if ($("recovery")) $("recovery").onclick = () => { m.recovery = !m.recovery; save(); m.wpError = m.recovery ? "Recovery mode is on. Plugin loads are skipped for Sentinel requests." : "Recovery mode is off."; openDrawer(m.id); };
+  if ($("uploadBackup")) $("uploadBackup").onclick = () => go(() => uploadBackup(m));
   $("pane").querySelectorAll("[data-wpdel]").forEach((b) => { b.onclick = () => { if (confirm("Delete this WordPress user?")) go(async () => { await wpCall(m, "delete-user", "POST", { user_id: Number(b.dataset.wpdel) }); await loadWp(m); }); }; });
   $("pane").querySelectorAll("[data-disable]").forEach((b) => { b.onclick = () => go(async () => { await wpCall(m, "disable-plugin", "POST", { plugin: b.dataset.disable }); await loadWp(m); }); });
-  $("pane").querySelectorAll("[data-restore]").forEach((b) => { b.onclick = () => { if (confirm("Restore this backup over the current database?")) go(async () => { await wpCall(m, "rollback", "POST", { filename: b.dataset.restore }); await loadWp(m); }); }; });
+  $("pane").querySelectorAll("[data-restore]").forEach((b) => { b.onclick = () => { if (confirm("Restore this backup over the live site? Turn recovery mode on first if a plugin is causing a fatal error.")) go(async () => { const result = await wpCall(m, "restore-backup", "POST", { filename: b.dataset.restore }); m.wpError = result.detail || "Restore finished."; await loadWp(m); }); }; });
   if ($("relay")) $("relay").onclick = () => go(async () => { m.relay = await wpCall(m, "relay", "GET"); syncIncidents(m); save(); openDrawer(m.id); });
   if ($("runSeo")) $("runSeo").onclick = () => go(() => runSeo(m));
   if ($("loadSecurity")) $("loadSecurity").onclick = () => go(() => runSecurity(m));
