@@ -41,7 +41,8 @@
   <main>
     <section id="view-websites">
       <h2>Websites</h2>
-      <p class="note">A website is a page we open and, for WordPress, a site we can change. The WordPress login can stay locked. Sentinel uses the agent file and the secret, not wp-admin.</p>
+      <p class="note">A website is a page we open and, for WordPress, a site we can change. The list is saved in this browser. Download a copy before you switch computers, or it will not be there.</p>
+      <div class="row" style="margin-bottom:12px"><button class="btn ghost" id="exportList" type="button">Download list</button><label class="btn ghost">Restore list<input id="importList" type="file" accept="application/json,.json" hidden /></label></div>
       <div class="stats" id="webStats"></div>
       <form class="row" id="webForm">
         <div class="grow"><label for="webTarget">Website address</label><input id="webTarget" placeholder="flotek.io" required /></div>
@@ -65,7 +66,7 @@
         <div class="grow"><h2>Incidents</h2></div>
         <button class="btn plum" id="pdfIncidents" type="button">Download PDF</button>
       </div>
-      <p>These are open problems. Acknowledge one when you have dealt with it. It leaves this list and is not raised again until it clears and fails again.</p>
+      <p>Open problems are grouped by website and by domain. Acknowledge one when it is dealt with. It moves into the archive for that same website or domain.</p>
       <div class="card" style="padding:0;overflow:auto"><table id="incTable"></table></div>
     </section>
     <section id="view-team" class="hidden">
