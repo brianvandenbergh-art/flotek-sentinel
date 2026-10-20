@@ -1,23 +1,48 @@
 const ADMIN_HASH = "96d9a2539acbf3955441217a803568ebdf7fe673db1921c3e71ead99c533881a";
 const TYPES = ["A", "AAAA", "CNAME", "MX", "NS", "TXT", "SOA", "CAA", "SRV"];
 const $ = (id) => document.getElementById(id);
-const state = { user: null, monitors: [], users: [], incidents: [], open: null, tab: "overview", view: "websites" };
+const state = { user: null, monitors: [], users: [], incidents: [], archive: [], open: null, tab: "overview", view: "websites" };
 
 async function sha(text) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
+function readJson(key, fallback) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || "");
+    return value == null ? fallback : value;
+  } catch {
+    return fallback;
+  }
+}
 function load() {
-  state.users = JSON.parse(localStorage.getItem("fs-users") || "null") || [{ username: "flotek", name: "Flotek", role: "admin", hash: ADMIN_HASH }];
-  state.monitors = JSON.parse(localStorage.getItem("fs-monitors") || "[]");
-  state.incidents = JSON.parse(localStorage.getItem("fs-incidents") || "[]");
+  state.users = readJson("fs-users", null) || [{ username: "flotek", name: "Flotek", role: "admin", hash: ADMIN_HASH }];
+  state.monitors = readJson("fs-monitors", []);
+  if (!Array.isArray(state.monitors) || !state.monitors.length) {
+    const backup = readJson("fs-monitors-backup", []);
+    if (Array.isArray(backup) && backup.length) state.monitors = backup;
+  }
+  state.incidents = readJson("fs-incidents", []);
+  state.archive = readJson("fs-archive", []);
   const id = sessionStorage.getItem("fs-session");
   state.user = state.users.find((u) => u.username === id) || null;
 }
 function save() {
-  localStorage.setItem("fs-users", JSON.stringify(state.users));
-  localStorage.setItem("fs-monitors", JSON.stringify(state.monitors));
-  localStorage.setItem("fs-incidents", JSON.stringify(state.incidents));
+  const slim = state.monitors.map((mon) => {
+    const copy = { ...mon, checking: false, scanning: false };
+    delete copy.waterfall;
+    if (copy.result?.certs) copy.result = { ...copy.result, certs: copy.result.certs.slice(0, 8) };
+    return copy;
+  });
+  try {
+    localStorage.setItem("fs-users", JSON.stringify(state.users));
+    localStorage.setItem("fs-monitors", JSON.stringify(slim));
+    if (slim.length) localStorage.setItem("fs-monitors-backup", JSON.stringify(slim));
+    localStorage.setItem("fs-incidents", JSON.stringify(state.incidents));
+    localStorage.setItem("fs-archive", JSON.stringify(state.archive));
+  } catch (error) {
+    console.error(error);
+  }
 }
 function esc(value) {
   return String(value ?? "").replace(/[&<>"]/g, (c) => "&#" + c.charCodeAt(0) + ";");
@@ -43,7 +68,68 @@ function domains() { return state.monitors.filter((m) => m.kind === "domain" && 
 async function dns(name, type) {
   const res = await fetch("https://dns.google/resolve?name=" + encodeURIComponent(name) + "&type=" + type);
   const json = await res.json();
-  return (json.Answer || []).map((a) => String(a.data).replace(/^"|"$/g, ""));
+  return (json.Answer || []).filter((a) => a.type !== 5 || type === "CNAME").map((a) => String(a.data).replace(/^"|"$/g, ""));
+}
+async function pool(items, limit, fn) {
+  const out = new Array(items.length);
+  let cursor = 0;
+  async function worker() {
+    while (cursor < items.length) {
+      const index = cursor++;
+      out[index] = await fn(items[index]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+async function collectZone(mon) {
+  const host = mon.host;
+  const names = new Set([host]);
+  ["www", "mail", "ftp", "webmail", "smtp", "imap", "pop", "autodiscover", "cpanel", "webdisk", "localhost", "email", "blog", "shop", "api", "dev", "staging", "portal", "remote", "vpn", "owa", "lyncdiscover", "sip", "enterpriseregistration", "enterpriseenrollment", "msoid", "selector1._domainkey", "selector2._domainkey", "media", "rds", "mx", "mx1", "intranet", "office", "files"].forEach((label) => names.add(label + "." + host));
+  (mon.dnsHosts || []).forEach((label) => {
+    const clean = String(label).trim().toLowerCase().replace(/\.$/, "");
+    if (!clean) return;
+    names.add(clean.endsWith("." + host) || clean === host ? clean : clean + "." + host);
+  });
+  try {
+    const found = await fetch("https://api.hackertarget.com/hostsearch/?q=" + encodeURIComponent(host));
+    const text = await found.text();
+    text.split(/\s+/).forEach((line) => {
+      const name = line.split(",")[0].trim().toLowerCase();
+      if (!/^[a-z0-9._-]+$/.test(name)) return;
+      if (name === host || name.endsWith("." + host)) names.add(name);
+    });
+  } catch (error) {
+    /* public name list is optional */
+  }
+  const records = [];
+  const apexTypes = ["A", "AAAA", "MX", "NS", "TXT", "SOA", "CAA"];
+  for (const type of apexTypes) {
+    const rows = await dns(host, type).catch(() => []);
+    rows.forEach((data) => records.push({ host: "@", type, data }));
+  }
+  const others = [...names].filter((name) => name !== host).slice(0, 60);
+  await pool(others, 6, async (name) => {
+    const label = name.slice(0, -host.length - 1);
+    for (const type of ["A", "AAAA", "CNAME", "MX", "TXT"]) {
+      const rows = await dns(name, type).catch(() => []);
+      if (!rows.length) continue;
+      rows.forEach((data) => records.push({ host: label, type, data }));
+      if (type === "CNAME") break;
+    }
+  });
+  const srv = ["_sip._tls", "_sipfederationtls._tcp", "_autodiscover._tcp", "_submission._tcp", "_imaps._tcp", "_pop3s._tcp"];
+  await pool(srv, 4, async (prefix) => {
+    const rows = await dns(prefix + "." + host, "SRV").catch(() => []);
+    rows.forEach((data) => records.push({ host: prefix, type: "SRV", data }));
+  });
+  const seen = new Set();
+  return records.filter((row) => {
+    const key = row.host + "|" + row.type + "|" + row.data;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 async function reach(url) {
   const start = performance.now();
@@ -196,7 +282,7 @@ function problems(mon) {
   if ((r.mail?.blacklist || "").includes("listed")) list.push({ code: "blacklist", message: mon.host + " blacklist: " + r.mail.blacklist });
   const left = daysUntil(r.rdap?.expires);
   if (left != null && left < 30) list.push({ code: "domain-soon", message: mon.host + " registration expires on " + r.rdap.expires + " (" + left + " days)." });
-  (mon.dnsChanges || []).forEach((change) => list.push({ code: "dns-" + change.type, message: mon.host + " " + change.type + " changed. Was: " + (change.old || "empty") + ". Now: " + (change.now || "empty") + "." }));
+  (mon.dnsChanges || []).forEach((change) => list.push({ code: "dns-" + change.type, message: change.message || (mon.host + " " + change.type + " changed. Was: " + (change.old || "empty") + ". Now: " + (change.now || "empty") + ".") }));
   (mon.security?.files?.changes || []).forEach((change) => list.push({ code: "file-" + change.file, message: mon.host + ": " + change.detail }));
   if (mon.seo?.robots_blocks_google) list.push({ code: "robots-block", message: mon.host + ": robots.txt is blocking Googlebot or all crawlers from the whole site." });
   if (mon.seo && !mon.seo.robots_present) list.push({ code: "robots-missing", message: mon.host + ": robots.txt is not on the server." });
@@ -221,21 +307,17 @@ async function runCheck(mon) {
   mon.checking = true;
   render();
   try {
-    const records = {};
-    for (const type of TYPES) records[type] = await dns(mon.host, type);
-    const flat = TYPES.flatMap((type) => records[type].map((data) => ({ type, data })));
-    const watch = ["A", "AAAA", "MX", "CNAME", "TXT"];
-    const snap = {};
-    watch.forEach((type) => { snap[type] = (records[type] || []).slice().sort(); });
+    const flat = await collectZone(mon);
+    const lines = flat.map((row) => row.host + " " + row.type + " " + row.data).sort();
     mon.dnsChanges = [];
-    if (mon.dnsSnap) {
-      watch.forEach((type) => {
-        const old = (mon.dnsSnap[type] || []).join(" | ");
-        const now = snap[type].join(" | ");
-        if (old !== now) mon.dnsChanges.push({ type, old, now });
-      });
+    if (mon.dnsSnapList) {
+      const old = new Set(mon.dnsSnapList);
+      const now = new Set(lines);
+      lines.filter((line) => !old.has(line)).forEach((line) => mon.dnsChanges.push({ type: "add-" + line.slice(0, 48), message: mon.host + " DNS added " + line }));
+      mon.dnsSnapList.filter((line) => !now.has(line)).forEach((line) => mon.dnsChanges.push({ type: "del-" + line.slice(0, 48), message: mon.host + " DNS removed " + line }));
     }
-    mon.dnsSnap = snap;
+    mon.dnsSnapList = lines;
+    const apexA = flat.filter((row) => row.host === "@" && row.type === "A").map((row) => row.data);
     const certs = (await certificate(mon.host).catch(() => [])).slice(0, 12);
     const currentCert = certs.reduce((best, cert) => (!best || new Date(cert.until) > new Date(best.until) ? cert : best), null);
     const site = mon.kind === "website" ? await reach("https://" + mon.host + "/") : null;
@@ -247,7 +329,7 @@ async function runCheck(mon) {
       cert: currentCert,
       certs,
       rdap: await registration(mon.host).catch((e) => ({ error: e.message })),
-      mail: await mail(mon.host, records.A).catch(() => null)
+      mail: await mail(mon.host, apexA).catch(() => null)
     };
     mon.history = mon.history || [];
     mon.history.push({ at: mon.result.at, up: site ? site.up : true, ms: site?.ms ?? null });
@@ -396,9 +478,24 @@ function render() {
   $("domForm").classList.toggle("hidden", !canEdit());
   $("webList").innerHTML = webs.length ? webs.map(card).join("") : `<div class="card"><p>No websites yet. Add one, or press Check flotek.io.</p></div>`;
   $("domList").innerHTML = doms.length ? doms.map(card).join("") : `<div class="card"><p>No domains yet. Add a domain name on its own, separate from the websites.</p></div>`;
-  $("incTable").innerHTML = visibleIncidents.length
-    ? `<tr><th>When</th><th>Name</th><th>Type</th><th>What happened</th><th class="act"></th></tr>` + visibleIncidents.map((i) => `<tr><td>${esc(new Date(i.at).toLocaleString())}</td><td>${esc(i.host)}</td><td>${esc(i.kind)}</td><td>${esc(i.message)}</td><td class="act">${canEditMon(state.monitors.find((m) => m.host === i.host && m.kind === i.kind) || { kind: i.kind, host: i.host }) ? `<button class="btn ghost small" data-ack="${i.id}" type="button">Acknowledge</button>` : ""}</td></tr>`).join("")
-    : `<tr><td>No open incidents.</td></tr>`;
+  const visibleArchive = (state.archive || []).filter((item) => {
+    const mon = state.monitors.find((m) => m.host === item.host && m.kind === item.kind);
+    return mon ? allowed(mon) : state.user.role === "admin";
+  });
+  const grouped = (list, archived) => {
+    const keys = [];
+    list.forEach((item) => {
+      const key = item.kind + "|" + item.host;
+      if (!keys.includes(key)) keys.push(key);
+    });
+    if (!keys.length) return archived ? "<tr><td colspan='5'>No acknowledged incidents yet.</td></tr>" : "<tr><td colspan='5'>No open incidents.</td></tr>";
+    return keys.map((key) => {
+      const [kind, host] = [key.slice(0, key.indexOf("|")), key.slice(key.indexOf("|") + 1)];
+      const rows = list.filter((item) => item.host === host && item.kind === kind);
+      return `<tr><th colspan="5">${esc(host)} · ${esc(kind)}</th></tr>` + rows.map((item) => `<tr><td>${esc(new Date(item.at).toLocaleString())}</td><td>${esc(item.host)}</td><td>${esc(item.kind)}</td><td>${esc(item.message)}</td><td class="act">${archived ? esc((item.ackBy || "") + (item.ackAt ? " · " + new Date(item.ackAt).toLocaleString() : "")) : (canEditMon(state.monitors.find((m) => m.host === item.host && m.kind === item.kind) || { kind: item.kind, host: item.host }) ? `<button class="btn ghost small" data-ack="${item.id}" type="button">Acknowledge</button>` : "")}</td></tr>`).join("");
+    }).join("");
+  };
+  $("incTable").innerHTML = `<tr><th>When</th><th>Name</th><th>Type</th><th>What happened</th><th class="act"></th></tr><tr><th colspan="5">Open</th></tr>` + grouped(visibleIncidents, false) + `<tr><th colspan="5">Archive</th></tr>` + grouped(visibleArchive, true);
   const box = $("scopeBox");
   if (box && box.dataset.count !== String(state.monitors.length)) {
     box.dataset.count = String(state.monitors.length);
@@ -419,10 +516,10 @@ function openDrawer(id) {
   drawing = true;
   try {
   state.open = id;
-  const labels = { overview: "Overview", dns: "DNS", mail: "Mail", certificate: "Certificate", registration: "Registration", wordpress: "WordPress", analytics: "Analytics", seo: "SEO", security: "Security" };
+  const labels = { overview: "Overview", dns: "DNS", mail: "Mail", certificate: "Certificate", registration: "Registration", wordpress: "WordPress", analytics: "Analytics", seo: "SEO", security: "Security", incidents: "Incidents" };
   const tabs = m.kind === "website"
-    ? ["overview", "dns", "mail", "certificate", "registration", "seo", "security", "wordpress", "analytics"]
-    : ["overview", "dns", "mail", "certificate", "registration", "seo"];
+    ? ["overview", "incidents", "dns", "mail", "certificate", "registration", "seo", "security", "wordpress", "analytics"]
+    : ["overview", "incidents", "dns", "mail", "certificate", "registration", "seo"];
   if (!tabs.includes(state.tab)) state.tab = "overview";
   const tabHtml = tabs.map((t) => `<button type="button" data-tab="${t}" class="${state.tab === t ? "on" : ""}">${labels[t]}</button>`).join("");
   const actions = canEditMon(m)
@@ -459,14 +556,12 @@ function pane(m) {
   if (state.tab === "seo") return seoPane(m);
   if (state.tab === "security") return securityPane(m);
   if (state.tab === "wordpress") return wordpress(m);
-  if (!r) return "<p>Run a check first.</p>";
-  if (state.tab === "dns") {
-    const rows = r.records.length ? `<table><tr><th>Type</th><th>Value</th></tr>${r.records.map((row) => `<tr><td>${esc(row.type)}</td><td>${esc(row.data)}</td></tr>`).join("")}</table>` : "<p>No public records were returned.</p>";
-    return `<button class="btn plum small" id="dnsCsv" type="button">Export DNS</button><div style="height:12px"></div>${rows}`;
-  }
+  if (state.tab === "incidents") return incidentPane(m);
+  if (state.tab === "dns") return dnsPane(m);
   if (state.tab === "mail") return mailPane(m);
   if (state.tab === "certificate") return certPane(m);
   if (state.tab === "registration") {
+    if (!r) return "<p>Run a check first.</p>";
     const d = r.rdap || {};
     if (d.error) return `<p>${esc(d.error)}</p>`;
     return table([["Name", d.name], ["Registrar", d.registrar], ["Status", d.status], ["Registered", d.registered], ["Updated", d.changed], ["Expires", d.expires], ["Name servers", (d.nameservers || []).join(", ")]]);
@@ -474,15 +569,35 @@ function pane(m) {
   if (state.tab === "analytics") return analytics(m);
   return "";
 }
+function dnsPane(m) {
+  const records = m.result?.records || [];
+  const groups = {};
+  records.forEach((row) => { (groups[row.type] = groups[row.type] || []).push(row); });
+  const tables = Object.keys(groups).sort().map((type) => `<h3>${esc(type)} records (${groups[type].length})</h3><table><tr><th>Host</th><th>Value</th></tr>${groups[type].map((row) => `<tr><td>${esc(row.host || "@")}</td><td>${esc(row.data)}</td></tr>`).join("")}</table>`).join("");
+  return `<button class="btn plum small" id="dnsCsv" type="button">Export DNS</button>
+    <p>This works for any ending, including .com, .co.uk, .co.za, .net, .org and .eu. Public DNS does not hand over the whole zone, so names that exist only in the hosting panel have to be listed once.</p>
+    <label for="dnsHosts">Extra hostnames, one per line</label>
+    <textarea id="dnsHosts" rows="6" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:8px;font:inherit">${esc((m.dnsHosts || []).join("\n"))}</textarea>
+    <button class="btn ghost small" id="saveHosts" type="button" style="margin-top:8px">Save hostnames and scan</button>
+    ${tables || "<p>No records yet. Press Check again.</p>"}`;
+}
+function incidentPane(m) {
+  const open = state.incidents.filter((item) => item.host === m.host && item.kind === m.kind);
+  const old = (state.archive || []).filter((item) => item.host === m.host && item.kind === m.kind);
+  const openRows = open.map((item) => `<tr><td>${esc(new Date(item.at).toLocaleString())}</td><td>${esc(item.message)}</td><td class="act">${canEditMon(m) ? `<button class="btn ghost small" data-ack="${item.id}" type="button">Acknowledge</button>` : ""}</td></tr>`).join("");
+  const oldRows = old.map((item) => `<tr><td>${esc(new Date(item.at).toLocaleString())}</td><td>${esc(item.message)}</td><td>${esc(item.ackBy || "")} · ${item.ackAt ? esc(new Date(item.ackAt).toLocaleString()) : ""}</td></tr>`).join("");
+  return `<h3>Open</h3><table><tr><th>When</th><th>What happened</th><th class="act"></th></tr>${openRows || "<tr><td colspan='3'>No open incidents for this " + (m.kind === "website" ? "website" : "domain") + ".</td></tr>"}</table>
+    <h3>Archive</h3><table><tr><th>When</th><th>What happened</th><th>Acknowledged</th></tr>${oldRows || "<tr><td colspan='3'>Nothing has been acknowledged yet.</td></tr>"}</table>`;
+}
 function mailPane(m) {
-  const mail = m.result.mail || {};
+  const mail = m.result?.mail || {};
   const relay = m.relay ? `<p><b>${esc(m.relay.detail)}</b></p>` : "";
   return table([["SPF", mail.spf], ["SPF check", mail.spfNote], ["DMARC", mail.dmarc], ["DMARC check", mail.dmarcNote], ["DKIM selectors", mail.dkim], ["Blacklists", mail.blacklist]])
     + relay
     + (canEditMon(m) && m.kind === "website" ? `<button class="btn ghost small" id="relay" type="button">Test open relay</button>` : "");
 }
 function certPane(m) {
-  const certs = m.result.certs || [];
+  const certs = m.result?.certs || [];
   if (!certs.length) return "<p>No public certificates were found.</p>";
   return `<table><tr><th>Issued</th><th>Expires</th><th>Issuer</th><th>Names</th><th>State</th></tr>${certs.slice(0, 12).map((c) => `<tr><td>${esc(c.from)}</td><td>${esc(c.until)}</td><td>${esc(c.issuer)}</td><td>${esc(c.names || "")}</td><td>${c.revoked ? "Revoked" : c.days + " days"}</td></tr>`).join("")}</table>`;
 }
@@ -603,7 +718,13 @@ async function uploadBackup(mon) {
 }
 function bindPane(m) {
   const go = (fn) => fn().catch((e) => { m.wpError = e.message; openDrawer(m.id); });
+  $("pane").querySelectorAll("[data-ack]").forEach((b) => { b.onclick = () => acknowledge(b.dataset.ack); });
   if ($("dnsCsv")) $("dnsCsv").onclick = () => exportDns(m);
+  if ($("saveHosts")) $("saveHosts").onclick = () => {
+    m.dnsHosts = $("dnsHosts").value.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+    save();
+    runCheck(m);
+  };
   if ($("saveSecret")) $("saveSecret").onclick = () => { m.secret = $("secret").value.trim(); save(); m.wpError = "Secret saved in this browser."; openDrawer(m.id); };
   if ($("loadWp")) $("loadWp").onclick = () => go(() => loadWp(m));
   if ($("saveSettings")) $("saveSettings").onclick = () => go(async () => { await wpCall(m, "update-settings", "POST", { site_name: $("siteName").value, tagline: $("tagline").value }); await loadWp(m); });
@@ -629,7 +750,7 @@ function bindPane(m) {
   $("pane").querySelectorAll("[data-allow]").forEach((b) => { b.onclick = () => go(async () => { await wpCall(m, "allow-ip", "POST", { ip: b.dataset.allow, allow: true }); await runSecurity(m); }); });
 }
 function exportDns(m) {
-  const lines = ["Type,Value"].concat((m.result?.records || []).map((r) => r.type + "," + JSON.stringify(r.data)));
+  const lines = ["Type,Host,Value"].concat((m.result?.records || []).map((r) => r.type + "," + JSON.stringify(r.host || "@") + "," + JSON.stringify(r.data)));
   const blob = new Blob([lines.join("\n")], { type: "text/csv" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -642,14 +763,18 @@ function reportLines(m) {
   if (!r) return lines.concat(["No check has been run."]);
   if (m.kind === "website") lines.push(r.reach?.up ? "Reachable in " + r.reach.ms + " ms" : "Unreachable");
   lines.push("", "DNS");
-  (r.records || []).forEach((row) => lines.push(row.type + "  " + row.data));
+  (r.records || []).forEach((row) => lines.push(row.type + "  " + (row.host || "@") + "  " + row.data));
   lines.push("", "Mail", "SPF " + (r.mail?.spf || "—"), "DMARC " + (r.mail?.dmarc || "—"), "DKIM " + (r.mail?.dkim || "—"), "Spamhaus " + (r.mail?.blacklist || "—"));
   if (r.cert) lines.push("", "Certificate", r.cert.issuer, "Expires " + r.cert.until, r.cert.days + " days left");
   if (r.rdap && !r.rdap.error) lines.push("", "Registration", "Registrar " + r.rdap.registrar, "Expires " + (r.rdap.expires || "—"), "Status " + r.rdap.status);
   const mine = state.incidents.filter((i) => i.host === m.host && i.kind === m.kind);
+  const archived = (state.archive || []).filter((i) => i.host === m.host && i.kind === m.kind);
   lines.push("", "Open incidents");
   if (!mine.length) lines.push("None");
   mine.forEach((i) => lines.push(new Date(i.at).toLocaleString() + "  " + i.message));
+  lines.push("", "Acknowledged archive");
+  if (!archived.length) lines.push("None");
+  archived.forEach((i) => lines.push(new Date(i.at).toLocaleString() + "  " + i.message + "  acknowledged " + (i.ackAt ? new Date(i.ackAt).toLocaleString() : "")));
   return lines;
 }
 function downloadPdf(filename, lines) {
@@ -719,20 +844,42 @@ document.querySelectorAll("header.app nav button").forEach((b) => { b.onclick = 
 $("webForm").onsubmit = (e) => { e.preventDefault(); addMonitor($("webTarget").value, "website"); $("webTarget").value = ""; };
 $("domForm").onsubmit = (e) => { e.preventDefault(); addMonitor($("domTarget").value, "domain"); $("domTarget").value = ""; };
 $("demo").onclick = () => addMonitor("flotek.io", "website");
+$("exportList").onclick = () => {
+  const blob = new Blob([JSON.stringify({ monitors: state.monitors, incidents: state.incidents, archive: state.archive }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "flotek-sentinel-list.json";
+  a.click();
+};
+$("importList").onchange = async () => {
+  const file = $("importList").files && $("importList").files[0];
+  if (!file) return;
+  const data = JSON.parse(await file.text());
+  if (!Array.isArray(data.monitors)) { alert("That file is not a Sentinel list."); return; }
+  state.monitors = data.monitors;
+  if (Array.isArray(data.incidents)) state.incidents = data.incidents;
+  if (Array.isArray(data.archive)) state.archive = data.archive;
+  save();
+  render();
+};
 $("webList").onclick = (e) => { const b = e.target.closest("[data-id]"); if (b) { state.tab = "overview"; openDrawer(b.dataset.id); } };
 $("domList").onclick = (e) => { const b = e.target.closest("[data-id]"); if (b) { state.tab = "overview"; openDrawer(b.dataset.id); } };
-$("incTable").onclick = (e) => {
-  const id = e.target.dataset.ack;
+function acknowledge(id) {
   if (!id) return;
   const item = state.incidents.find((i) => i.id === id);
+  if (!item) return;
   const mon = state.monitors.find((m) => m.host === item.host && m.kind === item.kind);
   if (mon && !canEditMon(mon)) return;
   if (!mon && state.user.role !== "admin") return;
   if (mon) { mon.silenced = mon.silenced || {}; mon.silenced[item.code] = item.message; }
+  state.archive = state.archive || [];
+  state.archive.unshift({ ...item, ackAt: new Date().toISOString(), ackBy: state.user.username });
   state.incidents = state.incidents.filter((i) => i.id !== id);
   save();
   render();
-};
+  if (state.open) openDrawer(state.open);
+}
+$("incTable").onclick = (e) => { const button = e.target.closest("[data-ack]"); if (button) acknowledge(button.dataset.ack); };
 $("pdfIncidents").onclick = () => {
   const lines = ["Flotek Sentinel incidents", new Date().toLocaleString(), ""];
   const rows = state.incidents.filter((item) => {
@@ -741,6 +888,13 @@ $("pdfIncidents").onclick = () => {
   });
   if (!rows.length) lines.push("No open incidents.");
   rows.forEach((i) => lines.push(new Date(i.at).toLocaleString() + "  " + i.kind + "  " + i.host + "  " + i.message));
+  lines.push("", "Archive");
+  const archived = (state.archive || []).filter((item) => {
+    const mon = state.monitors.find((m) => m.host === item.host && m.kind === item.kind);
+    return mon ? allowed(mon) : state.user.role === "admin";
+  });
+  if (!archived.length) lines.push("No acknowledged incidents.");
+  archived.forEach((i) => lines.push(new Date(i.at).toLocaleString() + "  " + i.kind + "  " + i.host + "  " + i.message));
   downloadPdf("sentinel-incidents.pdf", lines);
 };
 $("userForm").onsubmit = async (e) => {
