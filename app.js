@@ -15,34 +15,87 @@ function readJson(key, fallback) {
     return fallback;
   }
 }
+function catalogOf(monitors) {
+  return (monitors || []).filter((mon) => mon && mon.host).map((mon) => ({
+    id: mon.id,
+    host: mon.host,
+    kind: mon.kind || "website",
+    secret: mon.secret || "",
+    dnsHosts: mon.dnsHosts || [],
+    silenced: mon.silenced || {}
+  }));
+}
+function mergeMonitors(lists) {
+  const by = new Map();
+  lists.forEach((list) => {
+    (list || []).forEach((mon) => {
+      if (!mon || !mon.host) return;
+      const key = (mon.kind || "website") + ":" + mon.host;
+      const prev = by.get(key) || {};
+      by.set(key, {
+        ...prev,
+        ...mon,
+        id: prev.id || mon.id,
+        kind: mon.kind || prev.kind || "website",
+        secret: mon.secret || prev.secret || "",
+        dnsHosts: (mon.dnsHosts && mon.dnsHosts.length) ? mon.dnsHosts : (prev.dnsHosts || []),
+        result: mon.result || prev.result || null,
+        history: (mon.history && mon.history.length) ? mon.history : (prev.history || []),
+        silenced: { ...(prev.silenced || {}), ...(mon.silenced || {}) }
+      });
+    });
+  });
+  return [...by.values()];
+}
 function load() {
   state.users = readJson("fs-users", null) || [{ username: "flotek", name: "Flotek", role: "admin", hash: ADMIN_HASH }];
-  state.monitors = readJson("fs-monitors", []);
-  if (!Array.isArray(state.monitors) || !state.monitors.length) {
-    const backup = readJson("fs-monitors-backup", []);
-    if (Array.isArray(backup) && backup.length) state.monitors = backup;
-  }
+  state.monitors = mergeMonitors([
+    readJson("fs-catalog", []),
+    readJson("fs-monitors-backup", []),
+    readJson("fs-monitors", [])
+  ]);
   state.incidents = readJson("fs-incidents", []);
   state.archive = readJson("fs-archive", []);
   const id = sessionStorage.getItem("fs-session");
   state.user = state.users.find((u) => u.username === id) || null;
 }
+function db() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("flotek-sentinel", 1);
+    request.onupgradeneeded = () => request.result.createObjectStore("store");
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+function readDb() {
+  return db().then((database) => new Promise((resolve) => {
+    const request = database.transaction("store", "readonly").objectStore("store").get("state");
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => resolve(null);
+  })).catch(() => null);
+}
+function writeDb(data) {
+  db().then((database) => {
+    database.transaction("store", "readwrite").objectStore("store").put(data, "state");
+  }).catch(() => {});
+}
 function save() {
+  const names = catalogOf(state.monitors);
   const slim = state.monitors.map((mon) => {
     const copy = { ...mon, checking: false, scanning: false };
     delete copy.waterfall;
-    if (copy.result?.certs) copy.result = { ...copy.result, certs: copy.result.certs.slice(0, 8) };
+    if (copy.result) {
+      copy.result = { ...copy.result, certs: (copy.result.certs || []).slice(0, 4) };
+    }
+    if (copy.history) copy.history = copy.history.slice(-20);
     return copy;
   });
-  try {
-    localStorage.setItem("fs-users", JSON.stringify(state.users));
-    localStorage.setItem("fs-monitors", JSON.stringify(slim));
-    if (slim.length) localStorage.setItem("fs-monitors-backup", JSON.stringify(slim));
-    localStorage.setItem("fs-incidents", JSON.stringify(state.incidents));
-    localStorage.setItem("fs-archive", JSON.stringify(state.archive));
-  } catch (error) {
-    console.error(error);
-  }
+  try { localStorage.setItem("fs-catalog", JSON.stringify(names)); } catch (error) { console.error(error); }
+  try { localStorage.setItem("fs-users", JSON.stringify(state.users)); } catch (error) { console.error(error); }
+  try { localStorage.setItem("fs-incidents", JSON.stringify(state.incidents.slice(0, 200))); } catch (error) { console.error(error); }
+  try { localStorage.setItem("fs-archive", JSON.stringify(state.archive.slice(0, 300))); } catch (error) { console.error(error); }
+  try { localStorage.setItem("fs-monitors", JSON.stringify(slim)); } catch (error) { console.error(error); }
+  writeDb({ monitors: slim, incidents: state.incidents, archive: state.archive, users: state.users });
 }
 function esc(value) {
   return String(value ?? "").replace(/[&<>"]/g, (c) => "&#" + c.charCodeAt(0) + ";");
@@ -844,24 +897,6 @@ document.querySelectorAll("header.app nav button").forEach((b) => { b.onclick = 
 $("webForm").onsubmit = (e) => { e.preventDefault(); addMonitor($("webTarget").value, "website"); $("webTarget").value = ""; };
 $("domForm").onsubmit = (e) => { e.preventDefault(); addMonitor($("domTarget").value, "domain"); $("domTarget").value = ""; };
 $("demo").onclick = () => addMonitor("flotek.io", "website");
-$("exportList").onclick = () => {
-  const blob = new Blob([JSON.stringify({ monitors: state.monitors, incidents: state.incidents, archive: state.archive }, null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "flotek-sentinel-list.json";
-  a.click();
-};
-$("importList").onchange = async () => {
-  const file = $("importList").files && $("importList").files[0];
-  if (!file) return;
-  const data = JSON.parse(await file.text());
-  if (!Array.isArray(data.monitors)) { alert("That file is not a Sentinel list."); return; }
-  state.monitors = data.monitors;
-  if (Array.isArray(data.incidents)) state.incidents = data.incidents;
-  if (Array.isArray(data.archive)) state.archive = data.archive;
-  save();
-  render();
-};
 $("webList").onclick = (e) => { const b = e.target.closest("[data-id]"); if (b) { state.tab = "overview"; openDrawer(b.dataset.id); } };
 $("domList").onclick = (e) => { const b = e.target.closest("[data-id]"); if (b) { state.tab = "overview"; openDrawer(b.dataset.id); } };
 function acknowledge(id) {
@@ -921,6 +956,17 @@ $("userTable").onclick = (e) => {
   render();
 };
 load();
+readDb().then((stored) => {
+  if (!stored) return;
+  const before = state.monitors.length;
+  state.monitors = mergeMonitors([state.monitors, stored.monitors]);
+  if (Array.isArray(stored.incidents) && stored.incidents.length > state.incidents.length) state.incidents = stored.incidents;
+  if (Array.isArray(stored.archive) && stored.archive.length > state.archive.length) state.archive = stored.archive;
+  if (state.monitors.length !== before) {
+    save();
+    render();
+  }
+});
 state.monitors.forEach((mon) => {
   if (mon.result?.certs) mon.result.certs = mon.result.certs.slice(0, 12);
   if (mon.waterfall) mon.waterfall = mon.waterfall.slice(0, 12).map((item) => ({ url: String(item.url || "").slice(0, 120), type: item.type || "", size: item.size || 0, time: item.time }));
